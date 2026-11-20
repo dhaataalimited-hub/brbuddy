@@ -7,11 +7,14 @@ let package = Package(
     products: [
         .executable(name: "BRBuddy", targets: ["BRBuddy"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "3.1.0"),
+    ],
     targets: [
         // Pure logic and system wrappers, no UI. Everything testable lives here.
         .target(name: "BRBuddyCore"),
         // The menu bar app.
-        .executableTarget(name: "BRBuddy", dependencies: ["BRBuddyCore"]),
+        .executableTarget(name: "BRBuddy", dependencies: ["BRBuddyCore", "KeyboardShortcuts"]),
         .testTarget(name: "BRBuddyTests", dependencies: ["BRBuddyCore"]),
     ]
 )

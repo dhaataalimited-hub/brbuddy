@@ -19,8 +19,10 @@ sequenceDiagram
 ```
 
 ## States and edge cases
-- The menu toggle uses the "system only" mode: the Mac stays awake but the screen may turn off. "System and display"
-  is for the away screen (Phase 1).
+- Which mode `AppState` holds: while BRB is up, "system and display". Otherwise, with keep-awake on and BRB
+  auto-start enabled, also "system and display", so macOS's screen saver or display sleep can't beat BRB to it.
+  With auto-start off, "system only": the Mac stays awake but the screen may turn off.
+- When BRB ends (unlocked or handed off to the real lock), `AppState` re-applies the mode above.
 - If macOS refuses the assertion, `AppState` leaves keep-awake off, so the toggle falls back to unticked.
 - Quitting or crashing releases the assertion (macOS drops a process's assertions when it exits).
 - Lid closed on battery: macOS still sleeps. Not handled yet.
@@ -31,5 +33,5 @@ sequenceDiagram
 ## Code to check
 Function names change: read the current code in these files before relying on any detail above.
 - `MenuContent.swift`, `AppState.swift`, `KeepAwake.swift`
-- Types: `MenuContent`, `AppState`, `KeepAwake`
+- Types: `MenuContent`, `AppState`, `KeepAwake`, `AwaySettings`
 - Tests: `KeepAwakeTests`

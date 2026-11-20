@@ -10,5 +10,10 @@ it was used in. Projects we only learned from (no code copied) are credited in t
   Examples: BLEUnlock (no license), Buddi, notchi, Ice, iTerm2 (GPL).
 - Art is licensed separately from code. Never bundle a project's pet art unless its art license allows it.
 
+## Package dependencies (shipped inside the app)
+- **KeyboardShortcuts** by Sindre Sorhus — MIT — https://github.com/sindresorhus/KeyboardShortcuts
+  (global BRB shortcut and its recorder). Its license text must ship with release builds (Phase 5 pipeline).
+
 ## Copied or adapted code
-_None yet._ `KeepAwake.swift` follows KeepingYouAwake's approach but is written from scratch.
+_None yet._ `ScreenLocker.swift` calls the same private macOS function as Hammerspoon's lock-screen code, written
+from scratch. `KeepAwake.swift` follows KeepingYouAwake's approach but is written from scratch.
