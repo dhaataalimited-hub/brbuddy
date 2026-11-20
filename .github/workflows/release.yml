@@ -11,12 +11,10 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
-    env:
-      KEYCHAIN: ${{ runner.temp }}/release.keychain-db
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0  # build number = commit count
 
@@ -25,6 +23,8 @@ jobs:
           P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
           P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
         run: |
+          KEYCHAIN="$RUNNER_TEMP/release.keychain-db"
+          echo "KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
           keychain_password="$(uuidgen)"
           echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/developer-id.p12"
           security create-keychain -p "$keychain_password" "$KEYCHAIN"
