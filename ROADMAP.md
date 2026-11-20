@@ -6,7 +6,7 @@ sandboxed, MIT. Fresh repo that borrows from permissively licensed projects with
 ## Phase 0: Skeleton ✅
 SwiftPM package, menu bar item, keep-awake toggle, bundling script, architecture map and docs test.
 
-## Phase 1: BRB (Away mode) — ~1 day
+## Phase 1: BRB (Away mode) ✅ (2026-11-20, except where noted)
 - Full-screen away window on every display; Dock, app switcher and Force Quit blocked while it's up.
 - Unlock with Touch ID or password (LocalAuthentication); any keypress or mouse move shows the unlock prompt.
 - Keep-awake switches to "system and display" while away.
@@ -14,7 +14,13 @@ SwiftPM package, menu bar item, keep-awake toggle, bundling script, architecture
 - Escalate to the real macOS lock screen after failed unlocks or a long time away. Reference: Hammerspoon's
   lock-screen call (private API; fine outside the App Store). Test on macOS 14, 15 and 26.
 - Global hotkey (sindresorhus/KeyboardShortcuts) and launch at login (LaunchAtLogin-Modern).
-- Warn if macOS's own screen saver or lock timer is shorter than BRB's.
+- ~~Warn if macOS's own screen saver or lock timer is shorter than BRB's.~~ Solved instead: while keep-awake and
+  auto-start are on, BRBuddy holds the display awake so macOS can't beat BRB to it.
+- **Still open:** telling real input from software-posted input (listen-only event tap checking the event source,
+  as Hammerspoon does). Today `IdleMonitor` uses HID idle time, which some remote-desktop tools and jigglers reset.
+- **Still open:** hands-on test of Touch ID unlock, wrong-password escalation and the real lock on macOS 14 and 15
+  (only checked on 26.6 so far; the lock call is verified to exist, not exercised).
+- **Still open:** Mission Control / Spaces gestures and notification banners while BRB is up.
 - Known limits, stated in the app: the power button and fast user switching can't be blocked.
 
 ## Phase 2: Knows your agent — ~½–1 day

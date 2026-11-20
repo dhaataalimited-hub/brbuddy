@@ -1,0 +1,50 @@
+import Foundation
+
+/// The user's BRB (Away mode) preferences, stored in UserDefaults.
+public struct AwaySettings: Equatable, Sendable {
+    /// Start BRB on its own after this long with no keyboard or mouse input, while keep-awake is on.
+    public var autoStartEnabled: Bool
+    public var idleMinutes: Int
+    /// Hand off to the real macOS lock screen after this many failed unlock attempts.
+    public var maxFailedAttempts: Int
+    /// Hand off to the real macOS lock screen after BRB has been up this long. 0 means never.
+    public var escalateAfterMinutes: Int
+
+    public static let defaults = AwaySettings(
+        autoStartEnabled: true, idleMinutes: 3, maxFailedAttempts: 3, escalateAfterMinutes: 60)
+
+    public init(autoStartEnabled: Bool, idleMinutes: Int, maxFailedAttempts: Int, escalateAfterMinutes: Int) {
+        self.autoStartEnabled = autoStartEnabled
+        self.idleMinutes = idleMinutes
+        self.maxFailedAttempts = maxFailedAttempts
+        self.escalateAfterMinutes = escalateAfterMinutes
+    }
+
+    private enum Key {
+        static let autoStart = "away.autoStartEnabled"
+        static let idle = "away.idleMinutes"
+        static let attempts = "away.maxFailedAttempts"
+        static let escalate = "away.escalateAfterMinutes"
+    }
+
+    /// Reads settings, falling back to `defaults` for anything unset and clamping values to sane ranges.
+    public static func load(from store: UserDefaults = .standard) -> AwaySettings {
+        let d = defaults
+        func int(_ key: String, _ fallback: Int, _ range: ClosedRange<Int>) -> Int {
+            guard store.object(forKey: key) != nil else { return fallback }
+            return min(max(store.integer(forKey: key), range.lowerBound), range.upperBound)
+        }
+        return AwaySettings(
+            autoStartEnabled: store.object(forKey: Key.autoStart) == nil ? d.autoStartEnabled : store.bool(forKey: Key.autoStart),
+            idleMinutes: int(Key.idle, d.idleMinutes, 1...120),
+            maxFailedAttempts: int(Key.attempts, d.maxFailedAttempts, 1...10),
+            escalateAfterMinutes: int(Key.escalate, d.escalateAfterMinutes, 0...24 * 60))
+    }
+
+    public func save(to store: UserDefaults = .standard) {
+        store.set(autoStartEnabled, forKey: Key.autoStart)
+        store.set(idleMinutes, forKey: Key.idle)
+        store.set(maxFailedAttempts, forKey: Key.attempts)
+        store.set(escalateAfterMinutes, forKey: Key.escalate)
+    }
+}

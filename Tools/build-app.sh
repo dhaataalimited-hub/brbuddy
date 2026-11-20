@@ -9,13 +9,18 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
 swift build -c "$config"
-bin="$(swift build -c "$config" --show-bin-path)/BRBuddy"
+binDir="$(swift build -c "$config" --show-bin-path)"
+bin="$binDir/BRBuddy"
 
 app="build/BRBuddy.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin" "$app/Contents/MacOS/BRBuddy"
 cp Config/Info.plist "$app/Contents/Info.plist"
+# Dependencies' resource bundles (e.g. KeyboardShortcuts' translations) go in Resources, where Bundle.module finds them.
+for bundle in "$binDir"/*.bundle; do
+    [ -e "$bundle" ] && cp -R "$bundle" "$app/Contents/Resources/"
+done
 codesign --force --sign - "$app"
 
 echo "Built $root/$app"
