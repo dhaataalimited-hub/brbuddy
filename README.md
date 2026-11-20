@@ -6,8 +6,7 @@ BRBuddy is a free, open-source Mac menu bar app for when you step away while an 
 Mac awake, covers the screen with a cute companion (and, if you want, a read-only view of your terminal), and asks
 for Touch ID or your password when someone touches the keyboard.
 
-> **Status: early.** Keep-awake, BRB (Away mode) and agent status work. Companion packs and the terminal mirror
-> are next. See [ROADMAP.md](ROADMAP.md).
+> **Status: early.** Keep-awake, BRB (Away mode), agent status and companions work. The terminal mirror is next. See [ROADMAP.md](ROADMAP.md).
 
 ## Using it
 - Open **Settings…** and press **Set up** for the agents you use (Claude Code, Codex, Gemini CLI, Cursor,
@@ -17,10 +16,10 @@ for Touch ID or your password when someone touches the keyboard.
   **BRB now** or **⌃⌥⌘B**.
 - Come back, press any key, and unlock with Touch ID or your password.
 - Three wrong tries, or an hour away, and BRBuddy hands off to the real macOS lock screen. Your agent keeps running.
-- Change all of this in **Settings…**.
+- Pick a companion in **Settings…**: six original critters (one per agent's vibe), or add any Codex pet with
+  **Add companion pack…**. Change everything else there too.
 
 ## Planned
-- **Companions:** original animated characters, one per agent's "vibe", plus community packs anyone can make.
 - **Terminal mirror:** a live, read-only view of the terminal your agent runs in.
 - **Walk-away lock:** starts BRB when your phone or Apple Watch leaves the room.
 
@@ -59,7 +58,7 @@ in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 | [Hammerspoon](https://github.com/hammerspoon/hammerspoon) | Real lock screen call; idle detection approach | MIT |
 | [LUCE](https://github.com/arinltte/LUCE) | Input blocking while away (planned) | MIT |
 | [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) | Terminal rendering (planned) | MIT |
-| [OpenPetsKit](https://github.com/alterhq/OpenPetsKit) and the Codex pet format | Companion packs (planned) | MIT |
+| The Codex pet format, as documented by [awesome-codex-pet](https://github.com/legeling/awesome-codex-pet) | Companion pack format (format only; no art) | MIT (docs/code) |
 
 ## Contributing
 Contributions and companion packs are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).

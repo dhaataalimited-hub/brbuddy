@@ -35,10 +35,15 @@ SwiftPM package, menu bar item, keep-awake toggle, bundling script, architecture
   status (no hooks). CPU-activity fallback for unhooked CLIs not built. "Waiting" could also push a notification
   to the phone.
 
-## Phase 3: Companions — ~½ day of code, art open-ended
+## Phase 3: Companions ✅ (2026-11-20, except where noted)
 - Pack format: Codex pet format (`pet.json` + spritesheet) plus BRBuddy fields for agent states and a required
-  `license`. Runtime: OpenPetsKit (MIT) or our own.
-- Five original starter characters (placeholder shapes first; Kenney CC0 parts or a contributor's art later).
+  `license`. Runtime: our own (OpenPetsKit not needed).
+- Six original starter characters drawn in code (Ember, Pebble, Prism, Comet, Drift, Gremlin), one per agent's
+  vibe, each with six moods. "Match my agent" picks automatically.
+- Community packs: any Codex pet (v1/v2) works; `license`, `author`, `agents` are optional BRBuddy fields. Checked
+  against all 385 pets in the awesome-codex-pet catalogue (loaded locally, none bundled).
+- **Still open:** a gallery/download of packs, a "make your own" guide with a template sheet, exporting built-ins as
+  Codex packs, pixel-art (nearest-neighbour) scaling option.
 - No vendor logos or mascots, ever.
 
 ## Phase 4: Terminal mirror — ~1 day

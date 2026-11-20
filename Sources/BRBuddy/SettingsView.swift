@@ -8,6 +8,8 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            CompanionSection(library: state.companions, agent: state.agents.relevantAgent)
+
             Section("Agents") {
                 Toggle("Keep the Mac awake while an agent is working or needs you", isOn: $state.settings.keepAwakeForAgents)
                 ForEach(AgentKind.allCases) { agent in
@@ -70,6 +72,67 @@ struct SettingsView: View {
         .frame(width: 520)
         .fixedSize()
         .onAppear { state.agents.refresh() }
+    }
+}
+
+/// Choosing the away-screen companion, with a live preview and community pack import.
+private struct CompanionSection: View {
+    @Bindable var library: CompanionLibrary
+    let agent: AgentKind?
+
+    var body: some View {
+        Section("Companion") {
+            HStack(alignment: .top, spacing: 16) {
+                CompanionView(library: library, mood: .greeting, agent: agent)
+                    .frame(width: 96, height: 88)
+                    .padding(6)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(red: 0.1, green: 0.08, blue: 0.14)))
+                VStack(alignment: .leading, spacing: 6) {
+                    Picker("Companion", selection: $library.choice) {
+                        Text("Match my agent").tag(CompanionCatalog.Choice.matchAgent)
+                        Divider()
+                        ForEach(CompanionCatalog.builtIns) { critter in
+                            Text("\(critter.name) (\(critter.agent.displayName) vibe)").tag(CompanionCatalog.Choice.builtIn(critter.id))
+                        }
+                        if !library.packs.isEmpty {
+                            Divider()
+                            ForEach(library.packs) { pack in
+                                Text(pack.displayName).tag(CompanionCatalog.Choice.pack(pack.id))
+                            }
+                        }
+                    }
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            HStack {
+                Button("Add companion pack…") { library.chooseAndImport() }
+                Button("Show companions folder") { library.revealFolder() }
+            }
+            if let error = library.importError {
+                Text(error).font(.caption).foregroundStyle(.orange)
+            }
+            ForEach(library.problems, id: \.folder) { problem in
+                Text("\(problem.folder): \(problem.reason)").font(.caption).foregroundStyle(.orange)
+            }
+            Text("Packs use the Codex pet format (pet.json + spritesheet), so pets made for Codex work here too.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .onAppear { library.reload() }
+    }
+
+    private var caption: String {
+        switch library.resolved(for: agent) {
+        case .builtIn(let critter):
+            return critter.blurb + "."
+        case .pack(let id):
+            guard let pack = library.pack(id: id) else { return "" }
+            let by = pack.author.map { " by \($0)" } ?? ""
+            let license = pack.license.map { " · \($0)" } ?? " · license not stated"
+            return "Community pack\(by)\(license)"
+        }
     }
 }
 

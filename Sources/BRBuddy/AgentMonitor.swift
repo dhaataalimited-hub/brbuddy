@@ -13,6 +13,8 @@ final class AgentMonitor {
     private(set) var hooksInstalled: Set<AgentKind> = []
     private(set) var setupErrors: [AgentKind: String] = [:]
     private(set) var listenerError: String?
+    /// The agent that sent the most recent event, kept after its session is forgotten.
+    private(set) var lastAgent: AgentKind?
 
     /// Called whenever the overall summary may have changed.
     var onChange: (() -> Void)?
@@ -22,6 +24,14 @@ final class AgentMonitor {
     let installer: AgentHookInstaller
 
     var summary: AgentTracker.Summary { tracker.summary }
+
+    /// The agent the companion should match: the one in the summary, else the latest session, else the last seen.
+    var relevantAgent: AgentKind? {
+        switch summary {
+        case .waiting(let s), .working(let s), .finished(let s): s.agent
+        case .none: tracker.orderedSessions.first?.agent ?? lastAgent
+        }
+    }
 
     /// Where the hook helper lives for agents to run: a stable path that survives moving the app.
     static let helperURL = AgentSocket.supportFolder.appending(path: "bin/\(AgentHookInstaller.helperName)")
@@ -44,6 +54,7 @@ final class AgentMonitor {
 
     private func receive(_ event: AgentEvent) {
         tracker.apply(event)
+        lastAgent = event.agent
         runningAgents.insert(event.agent)
         onChange?()
     }

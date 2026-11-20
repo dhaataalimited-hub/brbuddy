@@ -9,7 +9,7 @@ Too many failed tries, or being away too long, shows a message and switches to t
 
 ## Types involved, in order
 Start: `MenuContent` / KeyboardShortcuts / `AppState`'s idle check (`IdleMonitor` + `AwayPolicy`) → `AppState` →
-`AwayController` → `AwayWindow` per display hosting `AwayView` (`PlaceholderBuddy`) → `KeepAwake` switches to
+`AwayController` → `AwayWindow` per display hosting `AwayView` (`CompanionView`) → `KeepAwake` switches to
 system-and-display.
 Unlock: `AwayWindow` reports input → `AwayController` (phase unlocking, new `LAContext`) → `UnlockPanel` (embedded
 LocalAuthentication view; `PasswordVerifier` on a detached task) → `AwayController` ends BRB → `AppState` resets
@@ -44,7 +44,7 @@ sequenceDiagram
   every Command shortcut swallowed by `AwayWindow`; `AppDelegate` cancels quitting. If another app activates (an
   agent opening a browser), `AwayController` takes focus back.
 - The away screen shows `AgentMonitor`'s headline under the tagline ("Claude Code is working on brbuddy", orange
-  "… needs you in …" when waiting); the companion opens its eyes while an agent needs the user.
+  "… needs you in …" when waiting); the companion's mood follows `CompanionMood` (see `flows/companions.md`).
 - Displays plugged in or out: windows are rebuilt. Unlock UI is only on the first screen; others say "Unlock on your
   main display".
 - Unlock prompt goes back to the resting companion after 30 seconds without input.
@@ -66,9 +66,9 @@ sequenceDiagram
 
 ## Code to check
 Function names change: read the current code in these files before relying on any detail above.
-- `AwayController.swift`, `AwayWindow.swift`, `AwayView.swift`, `UnlockPanel.swift`, `PlaceholderBuddy.swift`,
+- `AwayController.swift`, `AwayWindow.swift`, `AwayView.swift`, `UnlockPanel.swift`, `CompanionView.swift`,
   `AppState.swift`, `AppDelegate.swift`, `AwayPolicy.swift`, `AwaySettings.swift`, `IdleMonitor.swift`,
   `ScreenLocker.swift`, `PasswordVerifier.swift`
-- Types: `AwayController`, `AwayWindow`, `AwayView`, `UnlockPanel`, `PlaceholderBuddy`, `AppState`, `AppDelegate`,
+- Types: `AwayController`, `AwayWindow`, `AwayView`, `UnlockPanel`, `CompanionView`, `AppState`, `AppDelegate`,
   `AwayPolicy`, `AwaySettings`, `IdleMonitor`, `ScreenLocker`, `PasswordVerifier`
 - Tests: `AwayPolicyTests`, `AwaySettingsTests`, `SystemHookTests`

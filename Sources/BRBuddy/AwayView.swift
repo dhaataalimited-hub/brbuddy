@@ -14,8 +14,8 @@ struct AwayView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 28) {
-                PlaceholderBuddy(isAwake: controller.phase != .resting || agentSummary.needsAttention)
-                    .frame(width: 220, height: 200)
+                companion
+                    .frame(width: 260, height: 240)
 
                 Text("BRB — my agent's got this.")
                     .font(.system(size: 42, weight: .bold, design: .rounded))
@@ -61,6 +61,19 @@ struct AwayView: View {
     }
 
     private var agentSummary: AgentTracker.Summary { controller.agents?.summary ?? .none }
+
+    @ViewBuilder private var companion: some View {
+        if let library = controller.companions {
+            CompanionView(library: library, mood: mood, agent: controller.agents?.relevantAgent)
+        }
+    }
+
+    private var mood: CompanionMood {
+        var locking = false
+        if case .lockingForReal = controller.phase { locking = true }
+        return CompanionMood.current(isUnlocking: controller.phase == .unlocking, recentFailure: controller.recentFailure,
+                                     lockingForReal: locking, agent: agentSummary)
+    }
 
     private var awayFor: String {
         let minutes = Int(Date().timeIntervalSince(controller.awaySince) / 60)

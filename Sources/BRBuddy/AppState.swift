@@ -20,6 +20,7 @@ final class AppState {
     private let keepAwake = KeepAwake()
     let away = AwayController()
     let agents = AgentMonitor()
+    let companions = CompanionLibrary()
 
     /// Keep-awake switched on by hand from the menu.
     private(set) var manualKeepAwake = false
@@ -37,6 +38,7 @@ final class AppState {
     init() {
         settings = AwaySettings.load()
         away.agents = agents
+        away.companions = companions
         away.onEnded = { [weak self] _ in self?.applyKeepAwakeMode() }
         agents.onChange = { [weak self] in self?.applyKeepAwakeMode() }
         KeyboardShortcuts.onKeyUp(for: .brbNow) { [weak self] in self?.startAway() }
