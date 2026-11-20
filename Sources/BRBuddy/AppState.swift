@@ -22,6 +22,7 @@ final class AppState {
     let agents = AgentMonitor()
     let companions = CompanionLibrary()
     let mirror = TerminalMirror()
+    let proximity = ProximityMonitor()
 
     /// Keep-awake switched on by hand from the menu.
     private(set) var manualKeepAwake = false
@@ -42,6 +43,7 @@ final class AppState {
         away.companions = companions
         away.mirror = mirror
         mirror.agents = agents
+        proximity.onLeft = { [weak self] in self?.deviceLeft() }
         away.onEnded = { [weak self] _ in self?.applyKeepAwakeMode() }
         agents.onChange = { [weak self] in self?.applyKeepAwakeMode() }
         KeyboardShortcuts.onKeyUp(for: .brbNow) { [weak self] in self?.startAway() }
@@ -82,6 +84,14 @@ final class AppState {
         guard !away.isAway else { return }
         away.start(settings: settings)
         applyKeepAwakeMode()
+    }
+
+    /// The user's phone or watch walked away (walk-away lock).
+    private func deviceLeft() {
+        switch proximity.settings.action {
+        case .startBRB: startAway()
+        case .lockMac: if !away.isAway { ScreenLocker.lockNow() }
+        }
     }
 
     private func checkIdle() {

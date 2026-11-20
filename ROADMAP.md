@@ -61,6 +61,11 @@ SwiftPM package, menu bar item, keep-awake toggle, bundling script, architecture
 - Own Homebrew tap first; homebrew/cask once the repo has the stars and is 30+ days old.
 - Before going public: trademark search, register brbuddy.app.
 
-## Phase 6: Walk-away lock — ~1–2 days
+## Phase 6: Walk-away lock ✅ (2026-11-20, except where noted)
 - Start BRB when the iPhone or Apple Watch's Bluetooth signal fades. Learn from BLEUnlock (no license: study only),
   write our own CoreBluetooth code.
+- Built: device picker (nearby Apple devices by manufacturer ID), connection with RSSI every 2 s plus advertisement
+  readings, median smoothing, 10 s weak / 60 s silent → away, 6 dB hysteresis, three ranges, action BRB or real lock.
+- **Still open:** hands-on tuning with a real iPhone and Watch (needs the owner at the Mac to allow Bluetooth and
+  walk around). Whether a locked iPhone keeps the connection reliably varies by iOS version. A "returned" action
+  (e.g. show the unlock prompt) isn't built.

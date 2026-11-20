@@ -1,8 +1,9 @@
 # BRB (Away mode)
 
 ## What the user does
-Walks away from the Mac while an agent works. BRB starts one of three ways: "BRB now" in the menu, the global
-shortcut (default ⌃⌥⌘B), or by itself after the set idle minutes while keep-awake is on. Every display shows the
+Walks away from the Mac while an agent works. BRB starts one of four ways: "BRB now" in the menu, the global
+shortcut (default ⌃⌥⌘B), by itself after the set idle minutes while keep-awake is on, or when their phone or watch
+walks away (see `flows/walk-away.md`). Every display shows the
 companion, "BRB — my agent's got this." and how long they've been away. When they come back and press a key or move
 the mouse, the main display shows Touch ID and a password field. A good fingerprint or password takes BRB down.
 Too many failed tries, or being away too long, shows a message and switches to the real macOS lock screen.
