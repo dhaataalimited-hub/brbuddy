@@ -19,6 +19,10 @@ each be hooked up from Settings: BRBuddy adds a hook that runs the `brbuddy-hook
 over a private local socket. While an agent is working or waiting for the user, BRBuddy keeps the Mac awake by itself
 and BRB can start on its own; the away screen and menu show what the agent is doing.
 
+The away screen's companion is one of six original built-in critters drawn in code (one per agent's vibe, picked
+automatically or by the user) or a community pack in the Codex pet format, and acts out a mood: resting, working,
+waiting, finished, greeting or oops.
+
 ## Scenes / surfaces
 ```mermaid
 flowchart LR
@@ -27,6 +31,7 @@ flowchart LR
   State[AppState] --> Away[AwayController]
   Away --> Win[AwayWindow per display: AwayView]
   Win --> Unlock[UnlockPanel, main display only]
+  Win --> Comp[CompanionView: CritterView or SpritePackView]
   Agents[AI agent hooks] --> Hook[brbuddy-hook helper process]
   Hook --> Sock[(agents.sock)] --> Monitor[AgentMonitor]
   State --> Monitor
@@ -37,6 +42,7 @@ flowchart LR
 | Menu bar item | Paw icon (filled while keeping awake): keep-awake toggle, BRB now, Settings, Quit | `BRBuddyApp` showing `MenuContent` |
 | Settings window | When BRB starts, when it locks for real, shortcut, launch at login | `BRBuddyApp`'s Settings scene showing `SettingsView` |
 | Away windows | One borderless window per display at screen-saver level, on every Space | `AwayController` makes `AwayWindow`s hosting `AwayView` |
+| Companion | Animated character on the away screen and in Settings' preview | `CompanionView` (built-in `CritterView` or pack `SpritePackView`) |
 | Hook helper | Command-line tool agents run on each hook; no UI, prints nothing | `brbuddy-hook/main.swift`, copied by `AgentMonitor` to Application Support |
 
 No Dock icon or main window: `LSUIElement` in `Config/Info.plist`, and `BRBuddyApp` sets the accessory activation
@@ -61,6 +67,10 @@ flowchart TD
   Core --> Inst[AgentHookInstaller: agents' JSON/TOML config files]
   Core --> Sock[AgentSocket + AgentEventListener: Unix socket]
   Core --> Scan[AgentProcessScanner: libproc, sysctl]
+  State --> Lib[CompanionLibrary]
+  Lib --> Core
+  Core --> Comp[CompanionMood, CompanionCatalog: pure]
+  Core --> Pack[CompanionPack, CompanionPackLibrary: ImageIO, Companions folder]
   Helper[brbuddy-hook] --> Sock
 ```
 Three SwiftPM targets. `BRBuddyCore` holds system wrappers and pure logic with no UI, and is what `BRBuddyTests`
@@ -79,7 +89,10 @@ dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB
 | `AwayWindow` | `BRBuddy/AwayWindow.swift` | `AwayController`, one per display while away | Main thread (AppKit) | Borderless key-capable window; reports input; swallows Command shortcuts |
 | `AwayView` | `BRBuddy/AwayView.swift` | `AwayController`, hosted in each `AwayWindow` | Main actor (view) | Companion, tagline, time away, footer per phase |
 | `UnlockPanel` | `BRBuddy/UnlockPanel.swift` | `AwayView` on the main display while unlocking | Main actor (view); password check on a detached task | Embedded Touch ID view and password field |
-| `PlaceholderBuddy` | `BRBuddy/PlaceholderBuddy.swift` | `AwayView` | Main actor (view) | Code-drawn stand-in companion until packs arrive |
+| `CompanionLibrary` | `BRBuddy/CompanionLibrary.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; frames cut on a detached task | The user's companion choice; community packs and their frames; import |
+| `CompanionView`, `SpritePackView` | `BRBuddy/CompanionView.swift` | `AwayView`, Settings | Main actor (views) | Shows the resolved companion; plays a pack's frames at 8 fps |
+| `CritterView`, `CritterDesign` | `BRBuddy/CritterView.swift` | `CompanionView`, contact sheet | Main actor (views) | Draws and animates the six built-in critters per mood |
+| `CompanionContactSheet` | `BRBuddy/CompanionContactSheet.swift` | `AppDelegate` (debug only) | Main actor | Renders every built-in in every mood to a PNG |
 | `MenuContent` | `BRBuddy/MenuContent.swift` | `BRBuddyApp`'s menu scene | Main actor (view) | Menu items |
 | `SettingsView` | `BRBuddy/SettingsView.swift` | `BRBuddyApp`'s Settings scene | Main actor (view) | Edits `AwaySettings` through `AppState` |
 | `KeepAwake` | `BRBuddyCore/KeepAwake.swift` | `AppState`, app lifetime | Used from the main actor | Holds at most one IOKit power assertion; released on `deinit` |
@@ -94,6 +107,9 @@ dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB
 | `AgentHookInstaller` | `BRBuddyCore/AgentHookInstaller.swift` | Value, held by `AgentMonitor` | Main actor in practice | Adds/removes our hooks in each agent's config; backups; Codex feature flag |
 | `AgentSocket`, `AgentEventListener` | `BRBuddyCore/AgentSocket.swift` | Static namespace; listener owned by `AgentMonitor` | Listener reads on a private serial queue | Socket path, sending (helper), listening (app) |
 | `AgentProcessScanner` | `BRBuddyCore/AgentProcessScanner.swift` | Static namespace | Any thread (run detached) | Running agent CLIs by process name or Node script path; desktop app bundle IDs |
+| `CompanionMood` | `BRBuddyCore/CompanionMood.swift` | Enum | Value type | Which mood to show, and its Codex spritesheet row |
+| `CompanionCatalog` | `BRBuddyCore/CompanionCatalog.swift` | Static namespace | Pure | Built-in list and agent matches; stored `Choice`; resolving a choice to a companion |
+| `CompanionPack`, `CompanionPackLibrary` | `BRBuddyCore/CompanionPack.swift` | Values / static namespace | Load anywhere; cut frames off the main thread | Validates a Codex pet folder, cuts frames per mood, scans and imports packs |
 
 `AppState` is passed to views by initializer; `AwayController` is reached through `AppState`. There are no
 singletons. `AwayController` notifies `AppState` that BRB ended through a callback so keep-awake can change mode.
@@ -106,7 +122,8 @@ resting after 30 seconds without input; any phase → locking for real when `Awa
 ## Data
 `AwaySettings` in UserDefaults under `away.*` keys: auto-start on/off, idle minutes (1–120, default 3), failed tries
 before real lock (1–10, default 3), minutes before real lock (0 = never, default 60). The global shortcut is stored
-by KeyboardShortcuts; `agents.keepAwake` holds "keep awake while an agent works" (default on). Launch at login is
+by KeyboardShortcuts; `agents.keepAwake` holds "keep awake while an agent works" (default on); `companion.choice` holds
+the companion (`auto`, `builtin:<id>` or `pack:<folder>`). Launch at login is
 held by macOS (`SMAppService`). Passwords are never stored or logged.
 
 Agent files: `~/Library/Application Support/BRBuddy/agents.sock` (the socket, 0600, recreated at launch) and
@@ -115,6 +132,9 @@ Agent files: `~/Library/Application Support/BRBuddy/agents.sock` (the socket, 06
 `~/.gemini/settings.json`, `~/.cursor/hooks.json`, `~/.gemini/config/hooks.json` (Antigravity, under a `brbuddy`
 group) or `~/.grok/hooks/brbuddy.json` (our own file). The first change saves `<file>.brbuddy-backup`. Agent
 sessions are kept in memory only.
+
+Companion packs live in `~/Library/Application Support/BRBuddy/Companions/<folder>/` (`pet.json` + spritesheet,
+Codex pet format v1 or v2, at most 20 MB). "Add companion pack…" validates a folder and copies it there.
 
 ## Concurrency
 Swift 6 language mode. App types are main-actor; timers hop back with `MainActor.assumeIsolated`. The password check
@@ -135,11 +155,14 @@ serial queue and hop to the main actor in `AgentMonitor`; the process scan runs 
 | The hook helper never prints, never blocks, always exits 0 | `brbuddy-hook/main.swift`, `AgentSocketTests` |
 | Only touch our own hook entries; back up first; never rewrite invalid JSON | `AgentHookInstaller`, `AgentHookInstallerTests` |
 | Agent config files change only when the user presses Set up or Remove | `AgentMonitor`, `SettingsView` |
+| Built-in companions are original and code-drawn; never bundle third-party pet art | `CritterView`, `CONTRIBUTING.md` |
+| A pack's spritesheet must stay inside its own folder | `CompanionPack`, `CompanionPackTests` |
 
 ## Debug only
-Debug builds read two environment variables in `AppDelegate`: `BRBUDDY_START_AWAY=1` opens BRB at launch, and
+Debug builds read three environment variables in `AppDelegate`: `BRBUDDY_START_AWAY=1` opens BRB at launch,
 `BRBUDDY_SNAPSHOT_DIR` then saves PNGs of the main away window resting and unlocking (`AwayController`'s debug
-snapshot code). Both are compiled out of release builds.
+snapshot code), and `BRBUDDY_COMPANION_SHEET=<file.png>` renders every built-in companion in every mood
+(`CompanionContactSheet`). All are compiled out of release builds.
 
 ## Journeys (flow pages)
 | Page | Covers |
@@ -147,6 +170,7 @@ snapshot code). Both are compiled out of release builds.
 | `flows/keep-awake.md` | Turning keep-awake on and off; which power mode is held when |
 | `flows/brb-away.md` | Starting BRB, unlocking, and handing off to the real lock screen |
 | `flows/agents.md` | Setting up an agent's hooks and how its events reach the app |
+| `flows/companions.md` | Choosing a companion, adding a pack, and how moods are picked |
 
 ## File index
 Every source file in `Sources/`. The docs test fails if a file is missing here or a listed one is gone.
@@ -159,7 +183,10 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/AwayWindow.swift`: the full-screen window used on each display.
 - `BRBuddy/AwayView.swift`: what the away windows show.
 - `BRBuddy/UnlockPanel.swift`: embedded Touch ID and password field.
-- `BRBuddy/PlaceholderBuddy.swift`: code-drawn stand-in companion.
+- `BRBuddy/CompanionLibrary.swift`: companion choice, community packs and their frames.
+- `BRBuddy/CompanionView.swift`: shows the chosen companion; sprite pack player.
+- `BRBuddy/CritterView.swift`: the six built-in critters and their shapes.
+- `BRBuddy/CompanionContactSheet.swift`: debug-only render of every critter and mood.
 - `BRBuddy/MenuContent.swift`: the menu's items.
 - `BRBuddy/SettingsView.swift`: the Settings window, including the Agents section.
 - `BRBuddy/AgentMonitor.swift`: agent events, sessions, process scan and hook setup for the app.
@@ -177,6 +204,9 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/AgentHookInstaller.swift`: adds and removes hooks in agents' config files.
 - `BRBuddyCore/AgentSocket.swift`: the local socket, sending and listening.
 - `BRBuddyCore/AgentProcessScanner.swift`: finds running agents and desktop apps.
+- `BRBuddyCore/CompanionMood.swift`: companion moods and their spritesheet rows.
+- `BRBuddyCore/CompanionCatalog.swift`: built-in companions and resolving the user's choice.
+- `BRBuddyCore/CompanionPack.swift`: loading, checking and importing Codex-format packs.
 
 **brbuddy-hook (helper)**
 - `brbuddy-hook/main.swift`: run by agent hooks; forwards one event and exits.

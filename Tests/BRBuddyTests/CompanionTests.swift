@@ -1,0 +1,104 @@
+@testable import BRBuddyCore
+import CoreGraphics
+import Foundation
+import ImageIO
+import Testing
+import UniformTypeIdentifiers
+
+struct CompanionMoodTests {
+    let session = AgentTracker.Session(agent: .claude, id: "s", cwd: nil, activity: .working, lastEvent: Date())
+
+    @Test func awayScreenEventsWinOverAgentState() {
+        #expect(CompanionMood.current(isUnlocking: false, recentFailure: false, lockingForReal: false, agent: .none) == .resting)
+        #expect(CompanionMood.current(isUnlocking: false, recentFailure: false, lockingForReal: false, agent: .working(session)) == .working)
+        #expect(CompanionMood.current(isUnlocking: false, recentFailure: false, lockingForReal: false, agent: .waiting(session)) == .waiting)
+        #expect(CompanionMood.current(isUnlocking: false, recentFailure: false, lockingForReal: false, agent: .finished(session)) == .finished)
+        #expect(CompanionMood.current(isUnlocking: true, recentFailure: false, lockingForReal: false, agent: .waiting(session)) == .greeting)
+        #expect(CompanionMood.current(isUnlocking: true, recentFailure: true, lockingForReal: false, agent: .none) == .oops)
+        #expect(CompanionMood.current(isUnlocking: false, recentFailure: false, lockingForReal: true, agent: .none) == .oops)
+    }
+}
+
+struct CompanionCatalogTests {
+    @Test func everyAgentHasItsOwnBuiltIn() {
+        let matched = Set(AgentKind.allCases.map { CompanionCatalog.builtIn(for: $0).id })
+        #expect(matched.count == AgentKind.allCases.count)
+    }
+
+    @Test func choiceRoundTripsThroughStorage() {
+        for choice in [CompanionCatalog.Choice.matchAgent, .builtIn("comet"), .pack("my-cat")] {
+            #expect(CompanionCatalog.Choice(storageValue: choice.storageValue) == choice)
+        }
+        #expect(CompanionCatalog.Choice(storageValue: nil) == .matchAgent)
+    }
+
+    @Test func resolvesChoicesWithFallbacks() {
+        let packs: [String: [AgentKind]] = ["cat": [.codex], "dog": []]
+        #expect(CompanionCatalog.resolve(.matchAgent, agent: nil, availablePacks: [:]) == .builtIn(CompanionCatalog.defaultBuiltIn))
+        #expect(CompanionCatalog.resolve(.matchAgent, agent: .gemini, availablePacks: packs) == .builtIn(CompanionCatalog.builtIn(for: .gemini)))
+        #expect(CompanionCatalog.resolve(.matchAgent, agent: .codex, availablePacks: packs) == .pack("cat"))
+        #expect(CompanionCatalog.resolve(.pack("dog"), agent: .codex, availablePacks: packs) == .pack("dog"))
+        #expect(CompanionCatalog.resolve(.pack("gone"), agent: .grok, availablePacks: packs) == .builtIn(CompanionCatalog.builtIn(for: .grok)))
+        #expect(CompanionCatalog.resolve(.builtIn("drift"), agent: .claude, availablePacks: packs) == .builtIn(CompanionCatalog.builtIn(id: "drift")!))
+    }
+}
+
+struct CompanionPackTests {
+    /// Writes a pack whose idle row has 3 drawn frames and whose other rows are blank.
+    func makePack(width: Int = 1536, height: Int = 1872, manifest: String? = nil) throws -> URL {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "brb-pack-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let context = try #require(CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                                             space: CGColorSpaceCreateDeviceRGB(),
+                                             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.setFillColor(CGColor(red: 1, green: 0.5, blue: 0.3, alpha: 1))
+        for column in 0..<3 {  // Row 0 is the top row; CGContext's origin is bottom-left.
+            context.fill(CGRect(x: column * 192 + 40, y: height - 208 + 40, width: 100, height: 120))
+        }
+        let image = try #require(context.makeImage())
+        let url = folder.appending(path: "spritesheet.png")
+        let destination = try #require(CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil))
+        CGImageDestinationAddImage(destination, image, nil)
+        #expect(CGImageDestinationFinalize(destination))
+        let json = manifest ?? #"{"id":"test","displayName":"Test Pup","spritesheetPath":"spritesheet.png","license":"CC0-1.0","agents":["codex","nope"]}"#
+        try Data(json.utf8).write(to: folder.appending(path: "pet.json"))
+        return folder
+    }
+
+    @Test func loadsAValidPackAndCutsFrames() throws {
+        let folder = try makePack()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let pack = try CompanionPack.load(from: folder)
+        #expect(pack.displayName == "Test Pup" && pack.license == "CC0-1.0" && pack.spriteVersion == 1)
+        #expect(pack.agents == [.codex])
+        let frames = pack.frames()
+        #expect(frames[.resting]?.count == 3)
+        #expect(frames[.working]?.isEmpty == true)
+    }
+
+    @Test func rejectsBadPacks() throws {
+        let wrongSize = try makePack(width: 800, height: 600)
+        defer { try? FileManager.default.removeItem(at: wrongSize) }
+        #expect(throws: CompanionPack.LoadError.wrongSize(width: 800, height: 600)) { try CompanionPack.load(from: wrongSize) }
+
+        let escaping = try makePack(manifest: #"{"spritesheetPath":"../../etc/passwd"}"#)
+        defer { try? FileManager.default.removeItem(at: escaping) }
+        #expect(throws: CompanionPack.LoadError.self) { try CompanionPack.load(from: escaping) }
+
+        let empty = FileManager.default.temporaryDirectory.appending(path: "brb-empty-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: empty) }
+        #expect(throws: CompanionPack.LoadError.missingManifest) { try CompanionPack.load(from: empty) }
+    }
+
+    @Test func importsIntoTheLibraryAndScansIt() throws {
+        let source = try makePack()
+        let root = FileManager.default.temporaryDirectory.appending(path: "brb-lib-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: source); try? FileManager.default.removeItem(at: root) }
+        try CompanionPackLibrary.importPack(from: source, into: root)
+        try FileManager.default.createDirectory(at: root.appending(path: "broken"), withIntermediateDirectories: true)
+        let scan = CompanionPackLibrary.scan(root)
+        #expect(scan.packs.map(\.id) == [source.lastPathComponent])
+        #expect(scan.problems.map(\.folder) == ["broken"])
+    }
+}

@@ -8,6 +8,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         #if DEBUG
         // Lets a developer (or a test script) open BRB straight away: BRBUDDY_START_AWAY=1. Debug builds only.
+        if let path = ProcessInfo.processInfo.environment["BRBUDDY_COMPANION_SHEET"] {
+            CompanionContactSheet.render(to: URL(fileURLWithPath: path))
+        }
         if ProcessInfo.processInfo.environment["BRBUDDY_START_AWAY"] == "1" {
             state.startAway()
             if let folder = ProcessInfo.processInfo.environment["BRBUDDY_SNAPSHOT_DIR"] {

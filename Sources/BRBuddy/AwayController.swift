@@ -23,6 +23,9 @@ final class AwayController {
     private(set) var awaySince = Date()
     private(set) var failedAttempts = 0
     private(set) var lastFailureMessage: String?
+    /// True for a few seconds after a failed unlock, so the companion can react.
+    private(set) var recentFailure = false
+    private var lastFailureAt: Date?
     /// The Touch ID session shown inside the away window. Replaced each time unlocking starts.
     private(set) var authContext = LAContext()
 
@@ -30,6 +33,8 @@ final class AwayController {
     var onEnded: ((Bool) -> Void)?
     /// What the agents are doing, shown on the away screen. Set by `AppState`.
     var agents: AgentMonitor?
+    /// Which companion to show. Set by `AppState`.
+    var companions: CompanionLibrary?
 
     private var settings = AwaySettings.defaults
     private var windows: [AwayWindow] = []
@@ -60,6 +65,7 @@ final class AwayController {
         lastInput = Date()
         failedAttempts = 0
         lastFailureMessage = nil
+        recentFailure = false
 
         NSApp.activate(ignoringOtherApps: true)
         NSApp.presentationOptions = Self.lockedDownOptions
@@ -159,6 +165,8 @@ final class AwayController {
     private func recordFailure(_ message: String) {
         failedAttempts += 1
         lastFailureMessage = message
+        lastFailureAt = Date()
+        recentFailure = true
         lastInput = Date()
         checkEscalation()
         if phase == .unlocking {
@@ -190,6 +198,7 @@ final class AwayController {
     private func tick() {
         guard isAway else { return }
         checkEscalation()
+        if recentFailure, let at = lastFailureAt, Date().timeIntervalSince(at) > 3 { recentFailure = false }
         if phase == .unlocking, Date().timeIntervalSince(lastInput) > unlockPromptTimeout {
             authContext.invalidate()
             phase = .resting
