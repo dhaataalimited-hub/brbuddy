@@ -22,6 +22,9 @@ struct MenuContent: View {
         if state.isKeepingAwake && state.settings.autoStartEnabled {
             Text("BRB starts after \(state.settings.idleMinutes) min away")
         }
+        if state.proximity.settings.isActive {
+            Text("Walk-away: \(state.proximity.statusText)")
+        }
 
         Divider()
 

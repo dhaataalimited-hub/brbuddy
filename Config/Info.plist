@@ -18,6 +18,8 @@
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>BRBuddy uses Bluetooth to notice when your iPhone or Apple Watch moves away, so it can cover or lock your screen.</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHumanReadableCopyright</key>

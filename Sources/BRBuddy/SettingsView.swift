@@ -12,6 +12,8 @@ struct SettingsView: View {
 
             MirrorSection(mirror: state.mirror)
 
+            WalkAwaySection(monitor: state.proximity)
+
             Section("Agents") {
                 Toggle("Keep the Mac awake while an agent is working or needs you", isOn: $state.settings.keepAwakeForAgents)
                 ForEach(AgentKind.allCases) { agent in
@@ -183,6 +185,89 @@ private struct MirrorSection: View {
         case .terminalWindow: "Shows the text of a Terminal, iTerm2 or Ghostty window. Needs Accessibility permission."
         case .activityFeed: "Shows what your hooked-up agents are doing (tools and commands), with no extra permissions. Never your prompts."
         }
+    }
+}
+
+/// Walk-away lock: pick a phone or watch, how far is "away", and what happens.
+private struct WalkAwaySection: View {
+    @Bindable var monitor: ProximityMonitor
+    @State private var picking = false
+
+    var body: some View {
+        Section("Walk-away lock") {
+            if !ProximityMonitor.isAvailable {
+                Text("Build BRBuddy as an app (Tools/build-app.sh) to use Bluetooth.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                Toggle("When my iPhone or Apple Watch walks away", isOn: $monitor.settings.enabled)
+                    .disabled(monitor.settings.deviceID == nil)
+                Picker("Then", selection: $monitor.settings.action) {
+                    ForEach(ProximitySettings.Action.allCases) { Text($0.title).tag($0) }
+                }
+                Picker("Away means", selection: $monitor.settings.range) {
+                    ForEach(ProximityTracker.Range.allCases) { Text($0.title).tag($0) }
+                }
+                HStack {
+                    Text(monitor.settings.deviceName.map { "Device: \($0)" } ?? "No device chosen")
+                    Spacer()
+                    Button(picking ? "Done" : "Choose device…") {
+                        picking.toggle()
+                        monitor.setPickerOpen(picking)
+                    }
+                }
+                if picking { devicePicker }
+                Text(monitor.statusText)
+                    .font(.caption)
+                    .foregroundStyle(monitor.bluetoothState == .unauthorized || monitor.bluetoothState == .poweredOff ? .orange : .secondary)
+                Text("Bluetooth signal is rough: it can't see through you, so test it a few times and adjust the range. Your phone needs Bluetooth on.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .onDisappear {
+            if picking { picking = false; monitor.setPickerOpen(false) }
+        }
+    }
+
+    @ViewBuilder private var devicePicker: some View {
+        if monitor.nearbyDevices.isEmpty {
+            HStack {
+                ProgressView().controlSize(.small)
+                Text("Looking for nearby Apple devices… keep your phone or watch unlocked and close.")
+                    .font(.caption)
+            }
+        } else {
+            ForEach(monitor.nearbyDevices) { device in
+                HStack {
+                    Image(systemName: device.name.localizedCaseInsensitiveContains("watch") ? "applewatch" : "iphone")
+                    Text(device.name)
+                    Spacer()
+                    SignalBars(rssi: device.rssi)
+                    Button("Use") {
+                        monitor.choose(device)
+                        picking = false
+                        monitor.setPickerOpen(false)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Four bars for a Bluetooth signal strength.
+private struct SignalBars: View {
+    let rssi: Int
+
+    var body: some View {
+        let lit = rssi > -55 ? 4 : rssi > -67 ? 3 : rssi > -78 ? 2 : 1
+        HStack(alignment: .bottom, spacing: 2) {
+            ForEach(1...4, id: \.self) { bar in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(bar <= lit ? Color.primary : Color.secondary.opacity(0.3))
+                    .frame(width: 3, height: CGFloat(3 + bar * 3))
+            }
+        }
+        .help("Signal \(rssi) dBm")
     }
 }
 

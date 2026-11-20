@@ -27,6 +27,9 @@ Optionally (off by default) the away screen also mirrors a read-only terminal vi
 pane (with colours), a Terminal/iTerm2/Ghostty window read through Accessibility, or an agent activity feed built
 from hook events (no permissions needed).
 
+Walk-away lock (off by default): the user picks their iPhone or Apple Watch; BRBuddy stays connected over Bluetooth
+LE, reads its signal strength, and starts BRB (or locks the Mac) when it moves away.
+
 ## Scenes / surfaces
 ```mermaid
 flowchart LR
@@ -79,6 +82,8 @@ flowchart TD
   Core --> Pack[CompanionPack, CompanionPackLibrary: ImageIO, Companions folder]
   State --> Mir[TerminalMirror]
   Mir --> AX[AccessibilityTerminalReader: ApplicationServices AX]
+  State --> Prox[ProximityMonitor: CoreBluetooth]
+  Prox --> PT[ProximityTracker, ProximitySettings: pure]
   Mir --> Core
   Core --> TText[ANSIParser, TerminalText: pure]
   Core --> Tmux[TmuxReader: tmux list-panes, capture-pane]
@@ -107,6 +112,7 @@ dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB
 | `CompanionContactSheet` | `BRBuddy/CompanionContactSheet.swift` | `AppDelegate` (debug only) | Main actor | Renders every built-in in every mood to a PNG |
 | `TerminalMirror` | `BRBuddy/TerminalMirror.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; capture on a detached task | Picks a source per `TerminalMirrorMode`, refreshes every second while retained (BRB up or Settings open) |
 | `TerminalMirrorView` | `BRBuddy/TerminalMirrorView.swift` | `AwayView`, Settings | Main actor (view) | Draws styled lines, latest that fit; no input path |
+| `ProximityMonitor` | `BRBuddy/ProximityMonitor.swift` | `AppState`, app lifetime; Bluetooth manager created only when walk-away is on or the picker is open | `@MainActor`, `@Observable`; CoreBluetooth on the main queue | Lists nearby Apple devices; connects to the chosen one, reads RSSI every 2 s, reconnects; tells `AppState` when it leaves |
 | `AccessibilityTerminalReader` | `BRBuddy/AccessibilityTerminalReader.swift` | Static namespace | Running apps on main; AX reads off main | Text of a Terminal/iTerm2/Ghostty window; Accessibility permission prompt |
 | `MenuContent` | `BRBuddy/MenuContent.swift` | `BRBuddyApp`'s menu scene | Main actor (view) | Menu items |
 | `SettingsView` | `BRBuddy/SettingsView.swift` | `BRBuddyApp`'s Settings scene | Main actor (view) | Edits `AwaySettings` through `AppState` |
@@ -129,6 +135,7 @@ dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB
 | `TmuxReader` | `BRBuddyCore/TmuxReader.swift` | Static namespace | Off the main thread (runs tmux, 2 s limit) | Finds tmux, lists panes, picks the agent's pane, captures it read-only |
 | `AgentActivityLog` | `BRBuddyCore/AgentActivityLog.swift` | Value, held by `AgentMonitor` | Value type | Rolling feed (80 entries) of agent events as styled lines |
 | `TerminalMirrorMode` | `BRBuddyCore/TerminalMirrorMode.swift` | Enum | Value type | Off / automatic / tmux / terminal window / activity feed; stored in UserDefaults |
+| `ProximityTracker`, `ProximitySettings` | `BRBuddyCore/ProximityTracker.swift` | Values, held by `ProximityMonitor` | Value types | Median-smoothed RSSI → near / away with delay and hysteresis; walk-away preferences |
 
 `AppState` is passed to views by initializer; `AwayController` is reached through `AppState`. There are no
 singletons. `AwayController` notifies `AppState` that BRB ended through a callback so keep-awake can change mode.
@@ -143,7 +150,7 @@ resting after 30 seconds without input; any phase → locking for real when `Awa
 before real lock (1–10, default 3), minutes before real lock (0 = never, default 60). The global shortcut is stored
 by KeyboardShortcuts; `agents.keepAwake` holds "keep awake while an agent works" (default on); `companion.choice` holds
 the companion (`auto`, `builtin:<id>` or `pack:<folder>`); `mirror.mode` holds the terminal mirror mode (default
-`off`). Launch at login is
+`off`); `proximity.*` holds walk-away (enabled, device ID and name, range, action). Launch at login is
 held by macOS (`SMAppService`). Passwords are never stored or logged.
 
 Agent files: `~/Library/Application Support/BRBuddy/agents.sock` (the socket, 0600, recreated at launch) and
@@ -180,6 +187,8 @@ serial queue and hop to the main actor in `AgentMonitor`; the process scan runs 
 | The mirror is display-only: never send keys, attach a tmux client or forward input | `TmuxReader`, `TerminalMirrorView` |
 | The mirror is off by default and Settings warns that anyone at the Mac can read it | `TerminalMirrorMode`, `SettingsView` |
 | Hook events carry tool details, never the user's prompt text | `AgentEvent`, `ActivityFeedTests` |
+| Touch Bluetooth only when walk-away is on or the picker is open (no surprise permission prompt) | `ProximityMonitor` |
+| The Bluetooth usage text must stay in the bundle's Info.plist, or macOS kills the app on first use | `Config/Info.plist`, `ProximityMonitor` |
 
 ## Debug only
 Debug builds read three environment variables in `AppDelegate`: `BRBUDDY_START_AWAY=<seconds>` opens BRB that many
@@ -196,6 +205,7 @@ snapshot code), and `BRBUDDY_COMPANION_SHEET=<file.png>` renders every built-in 
 | `flows/agents.md` | Setting up an agent's hooks and how its events reach the app |
 | `flows/companions.md` | Choosing a companion, adding a pack, and how moods are picked |
 | `flows/terminal-mirror.md` | Turning on the terminal mirror and where its text comes from |
+| `flows/walk-away.md` | Picking a phone or watch and what happens when it leaves |
 
 ## File index
 Every source file in `Sources/`. The docs test fails if a file is missing here or a listed one is gone.
@@ -215,6 +225,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/TerminalMirror.swift`: picks and refreshes the terminal mirror's source.
 - `BRBuddy/TerminalMirrorView.swift`: draws the read-only terminal panel.
 - `BRBuddy/AccessibilityTerminalReader.swift`: reads terminal window text via Accessibility.
+- `BRBuddy/ProximityMonitor.swift`: Bluetooth device picker and walk-away watching.
 - `BRBuddy/MenuContent.swift`: the menu's items.
 - `BRBuddy/SettingsView.swift`: the Settings window, including the Agents section.
 - `BRBuddy/AgentMonitor.swift`: agent events, sessions, process scan and hook setup for the app.
@@ -239,6 +250,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/TmuxReader.swift`: read-only tmux pane listing and capture.
 - `BRBuddyCore/AgentActivityLog.swift`: the agent activity feed.
 - `BRBuddyCore/TerminalMirrorMode.swift`: the mirror setting.
+- `BRBuddyCore/ProximityTracker.swift`: near/away decisions from signal strength; walk-away settings.
 
 **brbuddy-hook (helper)**
 - `brbuddy-hook/main.swift`: run by agent hooks; forwards one event and exits.
