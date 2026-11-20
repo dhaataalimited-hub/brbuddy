@@ -1,3 +1,4 @@
+import BRBuddyCore
 import SwiftUI
 
 /// What each away window shows: the companion, the tagline, how long you've been away, and (on the main display,
@@ -13,12 +14,18 @@ struct AwayView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 28) {
-                PlaceholderBuddy(isAwake: controller.phase != .resting)
+                PlaceholderBuddy(isAwake: controller.phase != .resting || agentSummary.needsAttention)
                     .frame(width: 220, height: 200)
 
                 Text("BRB — my agent's got this.")
                     .font(.system(size: 42, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
+
+                if let headline = agentSummary.headline {
+                    Text(headline)
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
+                        .foregroundStyle(agentSummary.needsAttention ? Color.orange : Color.white.opacity(0.8))
+                }
 
                 TimelineView(.periodic(from: .now, by: 30)) { _ in
                     Text("Away \(awayFor)")
@@ -52,6 +59,8 @@ struct AwayView: View {
                 .foregroundStyle(.orange)
         }
     }
+
+    private var agentSummary: AgentTracker.Summary { controller.agents?.summary ?? .none }
 
     private var awayFor: String {
         let minutes = Int(Date().timeIntervalSince(controller.awaySince) / 60)

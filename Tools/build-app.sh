@@ -21,6 +21,10 @@ cp Config/Info.plist "$app/Contents/Info.plist"
 for bundle in "$binDir"/*.bundle; do
     [ -e "$bundle" ] && cp -R "$bundle" "$app/Contents/Resources/"
 done
+# The hook helper agents run. The app copies it to Application Support on launch.
+mkdir -p "$app/Contents/Helpers"
+cp "$binDir/brbuddy-hook" "$app/Contents/Helpers/brbuddy-hook"
+codesign --force --sign - "$app/Contents/Helpers/brbuddy-hook"
 codesign --force --sign - "$app"
 
 echo "Built $root/$app"

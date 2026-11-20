@@ -8,6 +8,24 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("Agents") {
+                Toggle("Keep the Mac awake while an agent is working or needs you", isOn: $state.settings.keepAwakeForAgents)
+                ForEach(AgentKind.allCases) { agent in
+                    AgentRow(agent: agent, monitor: state.agents)
+                }
+                if !state.agents.runningDesktopApps.isEmpty {
+                    Text("Also open: \(state.agents.runningDesktopApps.joined(separator: ", ")). Desktop apps have no hooks, so BRBuddy can't see when they're working.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text("Set up adds BRBuddy's hook to that agent's own settings file (a backup is saved next to it). The hook only reports what the agent is doing; it can't change or block anything.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let error = state.agents.listenerError {
+                    Text(error).font(.caption).foregroundStyle(.orange)
+                }
+            }
+
             Section("Starting BRB") {
                 Toggle("Start BRB on its own while keeping the Mac awake", isOn: $state.settings.autoStartEnabled)
                 Stepper("After \(state.settings.idleMinutes) min with no keyboard or mouse",
@@ -49,7 +67,42 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460)
+        .frame(width: 520)
         .fixedSize()
+        .onAppear { state.agents.refresh() }
+    }
+}
+
+/// One agent in Settings: whether it's on this Mac, whether hooks are set up, and the button to change that.
+private struct AgentRow: View {
+    let agent: AgentKind
+    let monitor: AgentMonitor
+
+    var body: some View {
+        let installed = monitor.hooksInstalled.contains(agent)
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(agent.displayName)
+                Text(status(installed: installed))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let error = monitor.setupErrors[agent] {
+                    Text(error).font(.caption).foregroundStyle(.orange)
+                }
+            }
+            Spacer()
+            if installed {
+                Button("Remove") { monitor.removeHooks(for: agent) }
+            } else {
+                Button("Set up") { monitor.setUpHooks(for: agent) }
+                    .disabled(!monitor.isPresent(agent))
+            }
+        }
+    }
+
+    private func status(installed: Bool) -> String {
+        let running = monitor.runningAgents.contains(agent) ? " · running now" : ""
+        if installed { return "Hooked up\(running)" }
+        return monitor.isPresent(agent) ? "Not set up\(running)" : "Not found on this Mac"
     }
 }
