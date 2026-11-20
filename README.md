@@ -7,7 +7,7 @@ Mac awake, covers the screen with a cute companion (and, if you want, a read-onl
 for Touch ID or your password when someone touches the keyboard.
 
 > **Status: early.** Keep-awake, BRB (Away mode), agent status, companions, the terminal mirror and the walk-away
-> lock work. Signed releases are next. See [ROADMAP.md](ROADMAP.md).
+> lock work. The first signed release is being prepared. See [ROADMAP.md](ROADMAP.md).
 
 ## Using it
 - Open **Settings…** and press **Set up** for the agents you use (Claude Code, Codex, Gemini CLI, Cursor,
@@ -25,11 +25,18 @@ for Touch ID or your password when someone touches the keyboard.
 - **Walk-away lock:** in Settings, choose your iPhone or Apple Watch. When it leaves (near the desk, the room, or
   further), BRBuddy starts BRB or locks the Mac. Bluetooth signal is rough, so try it a few times and adjust.
 
-## Planned
-- **Signed releases:** a notarized download from GitHub Releases, `brew install`, and automatic updates.
-
 BRBuddy is an independent project. It isn't affiliated with or endorsed by Anthropic, OpenAI, Anysphere, Google or
 xAI, and it never uses their logos or mascots.
+
+## Install
+Download the latest `BRBuddy-<version>.dmg` from [Releases](https://github.com/dhaataalimited-hub/brbuddy/releases),
+open it and drag BRBuddy to Applications. Or with Homebrew:
+
+```bash
+brew install dhaataalimited-hub/tap/brbuddy
+```
+
+Releases are signed and notarized by Apple and update themselves (menu → **Check for Updates…**).
 
 ## Build and run
 Needs macOS 14 or later and Xcode 16 or later (Swift 6).
@@ -58,6 +65,8 @@ in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 |---|---|---|
 | [KeepingYouAwake](https://github.com/newmarcel/KeepingYouAwake) | Keep-awake approach | MIT |
 | [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) | Global BRB shortcut (dependency) | MIT |
+| [Sparkle](https://github.com/sparkle-project/Sparkle) | Automatic updates (dependency) | MIT-style |
+| [exelban/stats](https://github.com/exelban/stats) | Reference for the release workflow | MIT |
 | [AgentPet](https://github.com/ntd4996/agentpet) | Agent hook formats, event meanings, Codex config (adapted) | MIT (code only) |
 | [codelight](https://github.com/henrikekblad/codelight) | Reference for agent hook capabilities | MIT |
 | [Hammerspoon](https://github.com/hammerspoon/hammerspoon) | Real lock screen call; idle detection approach | MIT |

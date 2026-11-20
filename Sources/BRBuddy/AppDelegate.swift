@@ -4,6 +4,7 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let state = AppState()
+    let updates = UpdateController()
 
     func applicationDidFinishLaunching(_: Notification) {
         #if DEBUG

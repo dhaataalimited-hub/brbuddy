@@ -6,6 +6,7 @@ companion, unlocks with Touch ID. Distributed outside the App Store, not sandbox
 ## Commands
 - Build the app: `Tools/build-app.sh` (→ `build/BRBuddy.app`, ad-hoc signed)
 - Test: `swift test`
+- Release dry run: `SIGN_IDENTITY=- SPARKLE_PUBLIC_KEY=dry-run SKIP_NOTARIZE=1 Tools/release.sh 0.1.0`; real releases: tag `vX.Y.Z` (see `docs/releasing.md`)
 
 ## Working rules
 - **Where things live:** read `docs/architecture/README.md` first (surfaces, object ownership, file index), then the

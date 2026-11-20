@@ -6,6 +6,7 @@ import SwiftUI
 /// What the menu bar item shows when clicked.
 struct MenuContent: View {
     let state: AppState
+    let updates: UpdateController
 
     var body: some View {
         Toggle("Keep Mac awake", isOn: Binding(
@@ -34,6 +35,10 @@ struct MenuContent: View {
 
         SettingsLink { Text("Settings…") }
             .keyboardShortcut(",")
+
+        if updates.isAvailable {
+            Button("Check for Updates…") { updates.checkForUpdates() }
+        }
 
         Button("Quit BRBuddy") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")

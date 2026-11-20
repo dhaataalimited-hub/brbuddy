@@ -1,0 +1,337 @@
+<title>BRBuddy Architecture Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column with a sticky section bar; diagrams and tables scroll inside their own boxes. */
+:root {
+  --bg: #f6f4fa; --surface: #ffffff; --ink: #1e1a2c; --muted: #625d75; --line: #dedaea;
+  --accent: #d9622f; --accent-soft: #fbe6dc; --core: #4b55c8; --core-soft: #e4e6fb;
+  --ok: #2f8a5b; --warn: #b26a00;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "IBM Plex Sans", -apple-system, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141120; --surface: #1d1930; --ink: #ece9f6; --muted: #a39dbb; --line: #322c48;
+  --accent: #f08a5d; --accent-soft: #3a2420; --core: #8d95f2; --core-soft: #252848;
+  --ok: #5cc28c; --warn: #e3a640; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141120; --surface: #1d1930; --ink: #ece9f6; --muted: #a39dbb; --line: #322c48;
+  --accent: #f08a5d; --accent-soft: #3a2420; --core: #8d95f2; --core-soft: #252848;
+  --ok: #5cc28c; --warn: #e3a640; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+header.top { padding-block: 40px 20px; display: grid; gap: 10px; }
+.eyebrow { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(32px, 6vw, 52px)/1.05 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 700 26px/1.2 var(--display); margin: 0 0 12px; text-wrap: balance; }
+h3 { font: 600 17px/1.3 var(--body); margin: 18px 0 6px; }
+p { margin: 0 0 12px; max-width: 70ch; }
+.lede { font-size: 17px; color: var(--muted); max-width: 68ch; }
+code, .mono { font-family: var(--mono); font-size: .88em; }
+code { background: var(--core-soft); color: var(--ink); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+a { color: var(--core); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+nav.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+nav.bar .inner { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 10px; display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; }
+nav.bar a { color: var(--muted); text-decoration: none; }
+nav.bar a:hover { color: var(--ink); }
+
+section { padding-block: 36px 8px; border-bottom: 1px solid var(--line); }
+section:last-of-type { border-bottom: 0; }
+
+.facts { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 500 12px/1 var(--mono); padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); }
+.chip b { color: var(--ink); font-weight: 500; }
+
+figure { margin: 16px 0 8px; }
+.diagram { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.diagram svg { display: block; width: 100%; min-width: 760px; height: auto; color: var(--ink); }
+figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; max-width: 80ch; }
+svg .box { fill: var(--surface); stroke: var(--line); }
+svg .app { fill: var(--accent-soft); stroke: var(--accent); }
+svg .core { fill: var(--core-soft); stroke: var(--core); }
+svg .plat { fill: var(--bg); stroke: var(--line); stroke-dasharray: 4 3; }
+svg text { fill: currentColor; font-family: var(--body); font-size: 12px; }
+svg .t { font-weight: 600; font-size: 12.5px; }
+svg .s { fill: var(--muted); font-size: 10.5px; font-family: var(--mono); }
+svg .lane { fill: var(--muted); font: 600 10.5px var(--mono); letter-spacing: .08em; }
+svg .edge { stroke: var(--muted); fill: none; stroke-width: 1.2; }
+svg .elabel { fill: var(--muted); font-size: 10px; font-family: var(--mono); }
+svg a:hover rect { stroke-width: 2; }
+
+.tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 11px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; }
+
+.journeys { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-top: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card h3 { margin: 0; font: 700 18px/1.25 var(--display); }
+.chain { font: 12px/1.7 var(--mono); color: var(--muted); }
+.chain b { color: var(--ink); font-weight: 500; }
+.card ul { margin: 0; padding-left: 18px; font-size: 13.5px; }
+.card .files { font: 11.5px/1.6 var(--mono); color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; overflow-wrap: anywhere; }
+.status { font: 600 11px/1 var(--mono); padding: 4px 7px; border-radius: 5px; justify-self: start; }
+.status.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.status.todo { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+
+.qa { display: grid; gap: 4px; }
+.qa dt { font-weight: 600; margin-top: 10px; }
+.qa dd { margin: 0; color: var(--muted); max-width: 75ch; }
+.glossary { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; font-size: 14px; }
+.glossary dt { font-weight: 600; }
+.glossary dd { margin: 0; color: var(--muted); }
+footer { padding-block: 28px 0; font: 12px/1.6 var(--mono); color: var(--muted); }
+@media (max-width: 560px) { .glossary { grid-template-columns: 1fr; } .glossary dd { margin-bottom: 8px; } td:first-child { white-space: normal; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; scroll-padding-top: 60px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Architecture map · macOS 14+ menu bar app</div>
+    <h1>BRBuddy, plumbing first</h1>
+    <p class="lede">Where things live and how they connect. BRBuddy keeps a Mac awake while an AI coding agent works, covers every screen with a companion ("BRB") that needs Touch ID or the login password to dismiss, and shows what the agent is doing. Everything runs locally; there is no server. It ships outside the App Store and isn't sandboxed.</p>
+    <div class="facts">
+      <span class="chip"><b>3</b> SwiftPM targets</span>
+      <span class="chip"><b>6</b> agents hooked</span>
+      <span class="chip"><b>6</b> built-in companions</span>
+      <span class="chip"><b>0</b> singletons</span>
+      <span class="chip"><b>1</b> package dependency</span>
+    </div>
+  </header>
+</div>
+
+<nav class="bar" aria-label="Sections"><div class="inner">
+  <a href="#overview">Overview</a><a href="#owners">Who owns what</a><a href="#nav">Menus and screens</a>
+  <a href="#journeys">Journeys</a><a href="#data">Data and threads</a><a href="#rules">House rules</a>
+  <a href="#support">Support</a><a href="#glossary">Glossary</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="overview" aria-labelledby="overview-h">
+  <h2 id="overview-h">What talks to what</h2>
+  <p>Three targets. <code>BRBuddyCore</code> holds pure logic and system wrappers with no UI and is what the tests cover. <code>BRBuddy</code> is the app: SwiftUI views, <code>AppState</code> and the controllers it owns. <code>brbuddy-hook</code> is a tiny helper that agents run. Package dependencies: KeyboardShortcuts (MIT) for the global shortcut and Sparkle (MIT-style) for automatic updates. Boxes link to the journey that uses them.</p>
+  <figure>
+    <div class="diagram">
+    <svg viewBox="0 0 980 470" role="img" aria-label="Layer diagram: menu, Settings and away windows draw from AppState, which owns KeepAwake, AwayController, AgentMonitor, CompanionLibrary, TerminalMirror and ProximityMonitor; those use BRBuddyCore types, which call IOKit, LocalAuthentication, a Unix socket fed by the brbuddy-hook helper, tmux and Accessibility, and CoreBluetooth.">
+      <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" opacity=".55"/></marker></defs>
+      <text class="lane" x="12" y="30">SURFACES</text>
+      <text class="lane" x="12" y="120">STATE</text>
+      <text class="lane" x="12" y="210">CONTROLLERS</text>
+      <text class="lane" x="12" y="320">BRBUDDYCORE</text>
+      <text class="lane" x="12" y="420">PLATFORM</text>
+
+      <a href="#j-keep"><rect class="box" x="130" y="12" width="200" height="46" rx="8"/><text class="t" x="230" y="32" text-anchor="middle">Menu bar paw</text><text class="s" x="230" y="48" text-anchor="middle">MenuContent</text></a>
+      <a href="#j-agents"><rect class="box" x="400" y="12" width="200" height="46" rx="8"/><text class="t" x="500" y="32" text-anchor="middle">Settings window</text><text class="s" x="500" y="48" text-anchor="middle">SettingsView</text></a>
+      <a href="#j-brb"><rect class="box" x="670" y="12" width="290" height="46" rx="8"/><text class="t" x="815" y="32" text-anchor="middle">Away window per display</text><text class="s" x="815" y="48" text-anchor="middle">AwayWindow · AwayView · UnlockPanel</text></a>
+
+      <rect class="app" x="400" y="98" width="200" height="46" rx="8"/><text class="t" x="500" y="118" text-anchor="middle">AppState</text><text class="s" x="500" y="134" text-anchor="middle">@MainActor · owned by AppDelegate</text>
+
+      <a href="#j-keep"><rect class="app" x="130" y="186" width="120" height="46" rx="8"/><text class="t" x="190" y="206" text-anchor="middle">KeepAwake</text><text class="s" x="190" y="222" text-anchor="middle">core value</text></a>
+      <a href="#j-brb"><rect class="app" x="262" y="186" width="130" height="46" rx="8"/><text class="t" x="327" y="206" text-anchor="middle">AwayController</text><text class="s" x="327" y="222" text-anchor="middle">windows, unlock</text></a>
+      <a href="#j-agents"><rect class="app" x="404" y="186" width="130" height="46" rx="8"/><text class="t" x="469" y="206" text-anchor="middle">AgentMonitor</text><text class="s" x="469" y="222" text-anchor="middle">events, setup</text></a>
+      <a href="#j-companions"><rect class="app" x="546" y="186" width="130" height="46" rx="8"/><text class="t" x="611" y="206" text-anchor="middle">CompanionLibrary</text><text class="s" x="611" y="222" text-anchor="middle">choice, packs</text></a>
+      <a href="#j-mirror"><rect class="app" x="688" y="186" width="130" height="46" rx="8"/><text class="t" x="753" y="206" text-anchor="middle">TerminalMirror</text><text class="s" x="753" y="222" text-anchor="middle">1 s refresh</text></a>
+      <a href="#j-walk"><rect class="app" x="830" y="186" width="130" height="46" rx="8"/><text class="t" x="895" y="206" text-anchor="middle">ProximityMonitor</text><text class="s" x="895" y="222" text-anchor="middle">Bluetooth</text></a>
+
+      <rect class="core" x="130" y="290" width="160" height="56" rx="8"/><text class="t" x="210" y="312" text-anchor="middle">AwayPolicy · Settings</text><text class="s" x="210" y="330" text-anchor="middle">IdleMonitor · ScreenLocker</text>
+      <rect class="core" x="302" y="290" width="160" height="56" rx="8"/><text class="t" x="382" y="312" text-anchor="middle">PasswordVerifier</text><text class="s" x="382" y="330" text-anchor="middle">OpenDirectory check</text>
+      <rect class="core" x="474" y="290" width="160" height="56" rx="8"/><text class="t" x="554" y="312" text-anchor="middle">Agent* types</text><text class="s" x="554" y="330" text-anchor="middle">Kind · Event · Tracker · Socket</text>
+      <rect class="core" x="646" y="290" width="150" height="56" rx="8"/><text class="t" x="721" y="312" text-anchor="middle">Companion* types</text><text class="s" x="721" y="330" text-anchor="middle">Mood · Catalog · Pack</text>
+      <rect class="core" x="808" y="290" width="152" height="56" rx="8"/><text class="t" x="884" y="312" text-anchor="middle">Mirror + proximity</text><text class="s" x="884" y="330" text-anchor="middle">ANSIParser · TmuxReader</text>
+
+      <rect class="plat" x="130" y="400" width="130" height="44" rx="8"/><text x="195" y="426" text-anchor="middle">IOKit power</text>
+      <rect class="plat" x="272" y="400" width="140" height="44" rx="8"/><text x="342" y="426" text-anchor="middle">LocalAuthentication</text>
+      <rect class="plat" x="424" y="400" width="190" height="44" rx="8"/><text x="519" y="418" text-anchor="middle">agents.sock (0600)</text><text class="s" x="519" y="434" text-anchor="middle">← brbuddy-hook ← agents</text>
+      <rect class="plat" x="626" y="400" width="170" height="44" rx="8"/><text x="711" y="418" text-anchor="middle">tmux · Accessibility</text><text class="s" x="711" y="434" text-anchor="middle">read-only</text>
+      <rect class="plat" x="808" y="400" width="152" height="44" rx="8"/><text x="884" y="426" text-anchor="middle">CoreBluetooth</text>
+
+      <path class="edge" d="M230 58 V78 H500 V98" marker-end="url(#arrow)"/>
+      <path class="edge" d="M500 58 V98" marker-end="url(#arrow)"/>
+      <path class="edge" d="M815 58 V78 H500 V98" marker-end="url(#arrow)"/>
+      <text class="elabel" x="610" y="74">read + change</text>
+      <path class="edge" d="M500 144 V164 H190 V186" marker-end="url(#arrow)"/>
+      <path class="edge" d="M500 164 H895 V186" marker-end="url(#arrow)"/>
+      <path class="edge" d="M327 164 V186" marker-end="url(#arrow)"/><path class="edge" d="M469 164 V186" marker-end="url(#arrow)"/>
+      <path class="edge" d="M611 164 V186" marker-end="url(#arrow)"/><path class="edge" d="M753 164 V186" marker-end="url(#arrow)"/>
+      <text class="elabel" x="512" y="160">owns</text>
+      <path class="edge" d="M190 232 V400" marker-end="url(#arrow)"/>
+      <path class="edge" d="M327 232 V262 H210 V290" marker-end="url(#arrow)"/>
+      <path class="edge" d="M352 232 V290" marker-end="url(#arrow)"/>
+      <path class="edge" d="M469 232 V262 H554 V290" marker-end="url(#arrow)"/>
+      <path class="edge" d="M611 232 V262 H721 V290" marker-end="url(#arrow)"/>
+      <path class="edge" d="M753 232 V262 H860 V290" marker-end="url(#arrow)"/>
+      <path class="edge" d="M920 232 V400" marker-end="url(#arrow)"/>
+      <path class="edge" d="M382 346 V372 H342 V400" marker-end="url(#arrow)"/>
+      <path class="edge" d="M554 400 V346" marker-end="url(#arrow)"/><text class="elabel" x="560" y="378">events in</text>
+      <path class="edge" d="M860 346 V372 H711 V400" marker-end="url(#arrow)"/>
+    </svg>
+    </div>
+    <figcaption>Views read and change <code>AppState</code>; <code>AppState</code> owns one of each controller for the app's lifetime; controllers call pure <code>BRBuddyCore</code> types, which wrap the platform. Agent events are the one arrow that comes in from outside: agents run the helper, the helper writes one JSON line to a private socket.</figcaption>
+  </figure>
+
+  <h3>Surfaces</h3>
+  <div class="tablebox"><table>
+    <tr><th>Surface</th><th>What it is</th><th>Made by</th></tr>
+    <tr><td>Menu bar item</td><td>Paw (filled while kept awake): keep-awake toggle, BRB now, agents list, Settings, Quit. No Dock icon (<code>LSUIElement</code>).</td><td><code>BRBuddyApp</code> → <code>MenuContent</code></td></tr>
+    <tr><td>Settings window</td><td>Companion, terminal mirror, walk-away, agents, starting BRB, locking for real, general.</td><td><code>BRBuddyApp</code> → <code>SettingsView</code></td></tr>
+    <tr><td>Away windows</td><td>One borderless window per display at screen-saver level, on every Space.</td><td><code>AwayController</code> → <code>AwayWindow</code> hosting <code>AwayView</code></td></tr>
+    <tr><td>Companion</td><td>Animated character on the away screen and in Settings' preview.</td><td><code>CompanionView</code> (<code>CritterView</code> or <code>SpritePackView</code>)</td></tr>
+    <tr><td>Terminal mirror</td><td>Read-only panel below the companion when enabled.</td><td><code>TerminalMirrorView</code></td></tr>
+    <tr><td>Hook helper</td><td>Command-line tool agents run on each hook; prints nothing, always exits 0.</td><td>main.swift in the brbuddy-hook target, copied to Application Support by <code>AgentMonitor</code></td></tr>
+  </table></div>
+</section>
+
+<section id="owners" aria-labelledby="owners-h">
+  <h2 id="owners-h">Who owns what</h2>
+  <p><code>AppState</code> is passed to views by initializer; controllers are reached through it. There are no singletons. <code>AwayController</code> tells <code>AppState</code> that BRB ended through a callback, so keep-awake can change mode.</p>
+  <div class="tablebox"><table>
+    <tr><th>Type</th><th>File</th><th>Created by · lifetime</th><th>Thread</th><th>Job</th></tr>
+    <tr><td><code>AppDelegate</code></td><td class="mono">BRBuddy/AppDelegate.swift</td><td>SwiftUI adaptor · app</td><td>Main</td><td>Owns <code>AppState</code> and <code>UpdateController</code>; refuses to quit while BRB is up; debug launch hooks</td></tr>
+    <tr><td><code>UpdateController</code></td><td class="mono">BRBuddy/UpdateController.swift</td><td><code>AppDelegate</code> · app</td><td>Main</td><td>Sparkle updates and Check for Updates…; only in release builds that carry a feed and public key</td></tr>
+    <tr><td><code>AppState</code></td><td class="mono">BRBuddy/AppState.swift</td><td><code>AppDelegate</code> · app</td><td>Main, observable</td><td>Keep-awake decision, 5 s idle check, global shortcut, launch at login, walk-away action</td></tr>
+    <tr><td><code>AwayController</code></td><td class="mono">BRBuddy/AwayController.swift</td><td><code>AppState</code> · app</td><td>Main, observable</td><td>Windows, locked-down presentation options, focus guard, unlock, failures, escalation</td></tr>
+    <tr><td><code>AgentMonitor</code></td><td class="mono">BRBuddy/AgentMonitor.swift</td><td><code>AppState</code> · app</td><td>Main; socket on own queue</td><td>Listener, <code>AgentTracker</code>, activity feed, process scan every 15 s, hook setup</td></tr>
+    <tr><td><code>CompanionLibrary</code></td><td class="mono">BRBuddy/CompanionLibrary.swift</td><td><code>AppState</code> · app</td><td>Main; frames cut detached</td><td>Companion choice, packs and their frames, import</td></tr>
+    <tr><td><code>TerminalMirror</code></td><td class="mono">BRBuddy/TerminalMirror.swift</td><td><code>AppState</code> · app</td><td>Main; capture detached</td><td>Picks a source, refreshes once a second while retained</td></tr>
+    <tr><td><code>ProximityMonitor</code></td><td class="mono">BRBuddy/ProximityMonitor.swift</td><td><code>AppState</code> · app</td><td>Main (CoreBluetooth queue)</td><td>Device picker; connects, reads signal every 2 s, reports departure</td></tr>
+    <tr><td><code>KeepAwake</code></td><td class="mono">BRBuddyCore/KeepAwake.swift</td><td><code>AppState</code> · app</td><td>Main</td><td>At most one IOKit power assertion; released on quit</td></tr>
+    <tr><td><code>AgentHookInstaller</code></td><td class="mono">BRBuddyCore/AgentHookInstaller.swift</td><td>Value in <code>AgentMonitor</code></td><td>Main</td><td>Adds/removes our hooks in agents' files, with backups</td></tr>
+    <tr><td><code>AgentTracker</code></td><td class="mono">BRBuddyCore/AgentTracker.swift</td><td>Value in <code>AgentMonitor</code></td><td>Pure</td><td>Sessions, timeouts, summary</td></tr>
+    <tr><td><code>ProximityTracker</code></td><td class="mono">BRBuddyCore/ProximityTracker.swift</td><td>Value in <code>ProximityMonitor</code></td><td>Pure</td><td>Median signal → near or away, with delay and hysteresis</td></tr>
+  </table></div>
+  <p style="margin-top:10px">Pure namespaces with no state: <code>AwayPolicy</code>, <code>IdleMonitor</code>, <code>ScreenLocker</code>, <code>PasswordVerifier</code>, <code>AgentProcessScanner</code>, <code>CompanionCatalog</code>, <code>ANSIParser</code>, <code>TmuxReader</code>. The README's owners table lists every type.</p>
+</section>
+
+<section id="nav" aria-labelledby="nav-h">
+  <h2 id="nav-h">Menus and screens</h2>
+  <p><b>Menu:</b> Keep Mac awake · "Kept awake while your agent works" · BRB now (⌃⌥⌘B) · "BRB starts after N min away" · "Walk-away: …" · agents list (up to six sessions) or "Set up agents…" · Settings… · Quit BRBuddy.</p>
+  <p><b>Away screen phases</b> (<code>AwayController.Phase</code>): resting → any key, click, scroll or mouse move → unlocking → back to resting after 30 s without input. Any phase → locking for real when <code>AwayPolicy</code> says so (3 failures or 60 min by default), which shows the reason for 2 s, calls the real lock, then takes the away screen down behind it.</p>
+</section>
+
+<section id="journeys" aria-labelledby="journeys-h">
+  <h2 id="journeys-h">Journeys through the code</h2>
+  <p>One card per flow page in <code>docs/architecture/flows/</code>. Read the current code before relying on any detail.</p>
+  <div class="journeys">
+    <article class="card" id="j-keep">
+      <span class="status ok">verified</span>
+      <h3>Keep awake</h3>
+      <div class="chain"><b>MenuContent</b> → <b>AppState</b> → <b>KeepAwake</b> → IOKit. Agents: <b>AgentMonitor</b> → <b>AppState</b>.</div>
+      <ul><li>Kept awake when ticked by hand, or while an agent is working or waiting.</li><li>Display held too while BRB auto-start is on, so macOS's screen saver can't beat BRB.</li><li>Quitting or crashing releases the assertion.</li></ul>
+      <div class="files">BRBuddy/MenuContent.swift · BRBuddy/AppState.swift · BRBuddyCore/KeepAwake.swift</div>
+    </article>
+    <article class="card" id="j-brb">
+      <span class="status ok">Touch ID verified</span>
+      <h3>BRB away screen</h3>
+      <div class="chain">menu / shortcut / idle / walk-away → <b>AppState</b> → <b>AwayController</b> → <b>AwayWindow</b> × displays → <b>AwayView</b> → <b>UnlockPanel</b> → <b>PasswordVerifier</b> / Touch ID → <b>ScreenLocker</b></div>
+      <ul><li>Dock, menu bar, app switching, Force Quit, log out and ⌘ shortcuts blocked; focus reclaimed if another app activates.</li><li>Touch ID is embedded in the window; the password is checked off the main thread.</li><li>Power button and fast user switching can't be blocked.</li></ul>
+      <div class="files">BRBuddy/AwayController.swift · BRBuddy/AwayWindow.swift · BRBuddy/AwayView.swift · BRBuddy/UnlockPanel.swift · BRBuddyCore/AwayPolicy.swift · BRBuddyCore/ScreenLocker.swift</div>
+    </article>
+    <article class="card" id="j-agents">
+      <span class="status ok">Claude Code verified</span>
+      <h3>Agents: setup and status</h3>
+      <div class="chain">Agent hook → helper (main.swift) → <b>AgentSocket</b> → <b>AgentEventListener</b> → <b>AgentMonitor</b> → <b>AgentTracker</b> → <b>AppState</b></div>
+      <ul><li>Six agents; per-agent config shapes; our entries found by the helper's name, backups saved once.</li><li>Helper prints nothing, exits 0, gives up within about 2 s.</li><li>Timeouts: working 30 min, waiting 4 h, finished 15 min.</li></ul>
+      <div class="files">BRBuddy/AgentMonitor.swift · BRBuddyCore/AgentKind.swift · BRBuddyCore/AgentEvent.swift · BRBuddyCore/AgentHookInstaller.swift · BRBuddyCore/AgentSocket.swift · BRBuddyCore/AgentProcessScanner.swift</div>
+    </article>
+    <article class="card" id="j-companions">
+      <span class="status ok">rendered</span>
+      <h3>Companions</h3>
+      <div class="chain"><b>AwayView</b> → <b>CompanionMood</b> → <b>CompanionView</b> → <b>CompanionLibrary</b> + <b>CompanionCatalog</b> → <b>CritterView</b> or <b>SpritePackView</b> (<b>CompanionPack</b> frames)</div>
+      <ul><li>Moods: resting, working, waiting, finished, greeting, oops.</li><li>Codex pet rows 0, 3, 4, 5, 6, 7; v1 1536×1872 or v2 1536×2288; 20 MB cap.</li><li>Built-ins are code-drawn originals; third-party pet art is never bundled.</li></ul>
+      <div class="files">BRBuddy/CompanionLibrary.swift · BRBuddy/CompanionView.swift · BRBuddy/CritterView.swift · BRBuddyCore/CompanionMood.swift · BRBuddyCore/CompanionCatalog.swift · BRBuddyCore/CompanionPack.swift</div>
+    </article>
+    <article class="card" id="j-mirror">
+      <span class="status ok">feed + window verified</span>
+      <h3>Terminal mirror</h3>
+      <div class="chain"><b>TerminalMirror</b> → <b>TmuxReader</b> or <b>AccessibilityTerminalReader</b> or <b>AgentActivityLog</b> → <b>ANSIParser</b> → <b>TerminalMirrorView</b></div>
+      <ul><li>Off by default; Settings warns that anyone at the Mac can read it.</li><li>Display-only: tmux is listed and captured, never attached or typed into.</li><li>Feed shows tool details, never prompts.</li></ul>
+      <div class="files">BRBuddy/TerminalMirror.swift · BRBuddy/TerminalMirrorView.swift · BRBuddy/AccessibilityTerminalReader.swift · BRBuddyCore/TmuxReader.swift · BRBuddyCore/TerminalText.swift · BRBuddyCore/AgentActivityLog.swift</div>
+    </article>
+    <article class="card" id="j-walk">
+      <span class="status todo">needs real-device tuning</span>
+      <h3>Walk-away lock</h3>
+      <div class="chain"><b>SettingsView</b> → <b>ProximityMonitor</b> → <b>ProximityTracker</b> → <b>AppState</b> → BRB or <b>ScreenLocker</b></div>
+      <ul><li>Thresholds −62 / −74 / −86 dBm; away after 10 s weak or 60 s silent; back at threshold + 6 dB.</li><li>Bluetooth touched only when on or while picking (no surprise prompt).</li></ul>
+      <div class="files">BRBuddy/ProximityMonitor.swift · BRBuddyCore/ProximityTracker.swift · BRBuddy/SettingsView.swift</div>
+    </article>
+  </div>
+</section>
+
+<section id="data" aria-labelledby="data-h">
+  <h2 id="data-h">Data and threads</h2>
+  <h3>UserDefaults</h3>
+  <div class="tablebox"><table>
+    <tr><th>Keys</th><th>Holds</th></tr>
+    <tr><td class="mono">away.*</td><td>Auto-start, idle minutes (1–120, default 3), failed tries (1–10, default 3), minutes before real lock (0 = never, default 60)</td></tr>
+    <tr><td class="mono">agents.keepAwake</td><td>Keep awake while an agent works (default on)</td></tr>
+    <tr><td class="mono">companion.choice</td><td><code>auto</code>, <code>builtin:&lt;id&gt;</code> or <code>pack:&lt;folder&gt;</code></td></tr>
+    <tr><td class="mono">mirror.mode</td><td>off, automatic, tmux, terminalWindow, activityFeed (default off)</td></tr>
+    <tr><td class="mono">proximity.*</td><td>Enabled, device ID and name, range, action</td></tr>
+  </table></div>
+  <h3>Files</h3>
+  <p><code>~/Library/Application Support/BRBuddy/</code>: <code>agents.sock</code> (0600, recreated at launch), <code>bin/brbuddy-hook</code> (helper copy), <code>Companions/&lt;folder&gt;/</code> (packs). Agent setup edits the agent's own file (<code>~/.claude/settings.json</code>, <code>~/.codex/hooks.json</code> plus <code>config.toml</code>, <code>~/.gemini/settings.json</code>, <code>~/.cursor/hooks.json</code>, <code>~/.gemini/config/hooks.json</code>, <code>~/.grok/hooks/brbuddy.json</code>) after saving <code>&lt;file&gt;.brbuddy-backup</code>. Passwords are never stored; agent sessions live in memory only.</p>
+  <h3>Threads</h3>
+  <p>Swift 6 language mode; app types are main-actor. Off the main thread: password checks, pack frame cutting, process scans, tmux and Accessibility capture, socket reads (own serial queue). Touch ID results are ignored if their <code>LAContext</code> has been replaced.</p>
+  <h3>Debug only</h3>
+  <p><code>BRBUDDY_START_AWAY=&lt;seconds&gt;</code>, <code>BRBUDDY_SNAPSHOT_DIR</code> and <code>BRBUDDY_COMPANION_SHEET</code> in debug builds; compiled out of release.</p>
+</section>
+
+<section id="rules" aria-labelledby="rules-h">
+  <h2 id="rules-h">House rules</h2>
+  <div class="tablebox"><table>
+    <tr><th>Rule</th><th>Enforced or explained in</th></tr>
+    <tr><td>No company logos, mascots or look-alikes, in the name or the art</td><td>CONTRIBUTING, <code>CritterView</code></td></tr>
+    <tr><td>Copy code only from permissive licences, and record the notice</td><td>THIRD_PARTY_NOTICES</td></tr>
+    <tr><td>Logic and system wrappers live in <code>BRBuddyCore</code></td><td>This map; package manifest</td></tr>
+    <tr><td>Unlock UI stays inside the away window (system dialogs open underneath)</td><td><code>UnlockPanel</code>, <code>PasswordVerifier</code></td></tr>
+    <tr><td>Tests never call the real lock or check a password</td><td><code>SystemHookTests</code></td></tr>
+    <tr><td>BRB can't be quit while it's up</td><td><code>AppDelegate</code>, <code>AwayWindow</code></td></tr>
+    <tr><td>Release builds carry the Sparkle public key and a signed appcast; local builds have no updater (setup: docs/releasing.md)</td><td><code>UpdateController</code>, Tools/release.sh</td></tr>
+    <tr><td>The hook helper never prints, never blocks, always exits 0</td><td>helper main.swift, <code>AgentSocketTests</code></td></tr>
+    <tr><td>Agent files change only on Set up / Remove; only our entries; backup first; never rewrite invalid JSON</td><td><code>AgentHookInstaller</code></td></tr>
+    <tr><td>Mirror is display-only and off by default; feed never carries prompts</td><td><code>TmuxReader</code>, <code>TerminalMirrorMode</code>, <code>AgentEvent</code></td></tr>
+    <tr><td>Bluetooth only when walk-away is on or picking; usage text must stay in Info.plist</td><td><code>ProximityMonitor</code></td></tr>
+  </table></div>
+</section>
+
+<section id="support" aria-labelledby="support-h">
+  <h2 id="support-h">Features and support</h2>
+  <p>The full plain-English guide is <code>docs/support-guide.md</code>. The questions that come up most:</p>
+  <dl class="qa">
+    <dt>BRB didn't start on its own.</dt><dd>It only auto-starts while the Mac is kept awake (by hand or for an agent) and after the idle minutes with no input. Mouse jigglers and remote-desktop tools reset the idle clock.</dd>
+    <dt>The menu doesn't show my agent.</dt><dd>Press Set up in Settings → Agents, then start a new agent session. Desktop apps can't report status.</dd>
+    <dt>The terminal panel says "Nothing to show".</dt><dd>It lists why: tmux missing or not running, Accessibility not allowed, or no agent events yet.</dd>
+    <dt>Accessibility was forgotten after an update.</dt><dd>Ad-hoc builds change signature each build; toggle BRBuddy off and on in Privacy &amp; Security → Accessibility. Developer ID builds fix this.</dd>
+    <dt>Walk-away fires too early or late.</dt><dd>Change "Away means" (Near / Room / Far) and test a few times; thresholds aren't tuned on real devices yet.</dd>
+  </dl>
+</section>
+
+<section id="glossary" aria-labelledby="glossary-h">
+  <h2 id="glossary-h">Glossary</h2>
+  <dl class="glossary">
+    <dt>BRB</dt><dd>The away screen (Away mode).</dd>
+    <dt>Assertion</dt><dd>An IOKit power assertion: macOS's switch for "don't sleep".</dd>
+    <dt>Escalation</dt><dd>Handing off from BRB to the real macOS lock screen.</dd>
+    <dt>Hook</dt><dd>A command an agent runs at points in its work (prompt sent, tool used, stopped).</dd>
+    <dt>Helper</dt><dd><code>brbuddy-hook</code>, the command BRBuddy's hooks run.</dd>
+    <dt>Session</dt><dd>One agent conversation, tracked by its ID.</dd>
+    <dt>Pack</dt><dd>A community companion in the Codex pet format.</dd>
+    <dt>Mirror</dt><dd>The read-only terminal panel on the away screen.</dd>
+    <dt>RSSI</dt><dd>Bluetooth signal strength in dBm; closer to 0 is nearer.</dd>
+    <dt>Hysteresis</dt><dd>Needing a clearly stronger signal to count as back than to count as gone.</dd>
+  </dl>
+</section>
+
+<footer>Generated 2026-11-20 from docs/architecture for Phase 5 (branch phase-5-releases). The markdown is the source; regenerate this page after changes.</footer>
+</div>
