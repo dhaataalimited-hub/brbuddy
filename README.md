@@ -6,11 +6,13 @@ BRBuddy is a free, open-source Mac menu bar app for when you step away while an 
 Mac awake, covers the screen with a cute companion (and, if you want, a read-only view of your terminal), and asks
 for Touch ID or your password when someone touches the keyboard.
 
-> **Status: early.** Keep-awake and BRB (Away mode) work. Agent detection, companion packs and the terminal mirror
+> **Status: early.** Keep-awake, BRB (Away mode) and agent status work. Companion packs and the terminal mirror
 > are next. See [ROADMAP.md](ROADMAP.md).
 
 ## Using it
-- Click the 🐾 in the menu bar and turn on **Keep Mac awake** while your agent works.
+- Open **Settings…** and press **Set up** for the agents you use (Claude Code, Codex, Gemini CLI, Cursor,
+  Antigravity, Grok). BRBuddy then keeps your Mac awake by itself while an agent works or needs you, and shows
+  what it's doing in the menu and on the away screen. Or click the 🐾 and turn on **Keep Mac awake** yourself.
 - Walk away. After 3 minutes with no keyboard or mouse, BRB covers the screen. Or start it yourself with
   **BRB now** or **⌃⌥⌘B**.
 - Come back, press any key, and unlock with Touch ID or your password.
@@ -18,8 +20,6 @@ for Touch ID or your password when someone touches the keyboard.
 - Change all of this in **Settings…**.
 
 ## Planned
-- **Knows your agent:** detects Claude Code, Codex, Cursor, Gemini / Antigravity and Grok, and shows whether it's
-  working, waiting for you or finished.
 - **Companions:** original animated characters, one per agent's "vibe", plus community packs anyone can make.
 - **Terminal mirror:** a live, read-only view of the terminal your agent runs in.
 - **Walk-away lock:** starts BRB when your phone or Apple Watch leaves the room.
@@ -54,8 +54,8 @@ in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 |---|---|---|
 | [KeepingYouAwake](https://github.com/newmarcel/KeepingYouAwake) | Keep-awake approach | MIT |
 | [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) | Global BRB shortcut (dependency) | MIT |
-| [AgentPet](https://github.com/ntd4996/agentpet) | Agent hooks and detection (planned) | MIT (code only) |
-| [codelight](https://github.com/henrikekblad/codelight) | Grok and cursor-agent hooks (planned) | MIT |
+| [AgentPet](https://github.com/ntd4996/agentpet) | Agent hook formats, event meanings, Codex config (adapted) | MIT (code only) |
+| [codelight](https://github.com/henrikekblad/codelight) | Reference for agent hook capabilities | MIT |
 | [Hammerspoon](https://github.com/hammerspoon/hammerspoon) | Real lock screen call; idle detection approach | MIT |
 | [LUCE](https://github.com/arinltte/LUCE) | Input blocking while away (planned) | MIT |
 | [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) | Terminal rendering (planned) | MIT |

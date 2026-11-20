@@ -28,6 +28,8 @@ final class AwayController {
 
     /// Called after BRB ends. `true` when it ended by handing off to the real lock screen.
     var onEnded: ((Bool) -> Void)?
+    /// What the agents are doing, shown on the away screen. Set by `AppState`.
+    var agents: AgentMonitor?
 
     private var settings = AwaySettings.defaults
     private var windows: [AwayWindow] = []

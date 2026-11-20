@@ -2,10 +2,12 @@
 
 ## What the user does
 Clicks the paw in the menu bar and ticks "Keep Mac awake". The paw fills in. Unticking it (or quitting BRBuddy) lets
-the Mac sleep normally again.
+the Mac sleep normally again. With an agent hooked up, they don't have to: while the agent is working or waiting for
+them, the paw fills in by itself and the menu says "Kept awake while your agent works".
 
 ## Types involved, in order
-`MenuContent` → `AppState` → `KeepAwake` → IOKit power assertion.
+`MenuContent` → `AppState` → `KeepAwake` → IOKit power assertion. For agents: `AgentMonitor` (summary changed) →
+`AppState` → `KeepAwake`.
 
 ```mermaid
 sequenceDiagram
@@ -19,6 +21,8 @@ sequenceDiagram
 ```
 
 ## States and edge cases
+- Kept awake = ticked by hand, or "keep awake while an agent works" is on and `AgentTracker`'s summary is working
+  or waiting. A finished agent no longer keeps the Mac awake; a "working" session silent for 30 minutes is dropped.
 - Which mode `AppState` holds: while BRB is up, "system and display". Otherwise, with keep-awake on and BRB
   auto-start enabled, also "system and display", so macOS's screen saver or display sleep can't beat BRB to it.
   With auto-start off, "system only": the Mac stays awake but the screen may turn off.
@@ -33,5 +37,5 @@ sequenceDiagram
 ## Code to check
 Function names change: read the current code in these files before relying on any detail above.
 - `MenuContent.swift`, `AppState.swift`, `KeepAwake.swift`
-- Types: `MenuContent`, `AppState`, `KeepAwake`, `AwaySettings`
+- Types: `MenuContent`, `AppState`, `KeepAwake`, `AwaySettings`, `AgentMonitor`, `AgentTracker`
 - Tests: `KeepAwakeTests`

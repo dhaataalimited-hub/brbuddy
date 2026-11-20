@@ -1,0 +1,127 @@
+import AppKit
+import BRBuddyCore
+import Observation
+
+/// Knows what the user's AI agents are doing: receives hook events on the local socket, keeps an `AgentTracker`,
+/// spots running agents and desktop apps, and sets hooks up or removes them on request. Owned by `AppState`.
+@MainActor
+@Observable
+final class AgentMonitor {
+    private(set) var tracker = AgentTracker()
+    private(set) var runningAgents: Set<AgentKind> = []
+    private(set) var runningDesktopApps: [String] = []
+    private(set) var hooksInstalled: Set<AgentKind> = []
+    private(set) var setupErrors: [AgentKind: String] = [:]
+    private(set) var listenerError: String?
+
+    /// Called whenever the overall summary may have changed.
+    var onChange: (() -> Void)?
+
+    private let listener = AgentEventListener()
+    private var timer: Timer?
+    let installer: AgentHookInstaller
+
+    var summary: AgentTracker.Summary { tracker.summary }
+
+    /// Where the hook helper lives for agents to run: a stable path that survives moving the app.
+    static let helperURL = AgentSocket.supportFolder.appending(path: "bin/\(AgentHookInstaller.helperName)")
+
+    init() {
+        installer = AgentHookInstaller(helperPath: Self.helperURL.path)
+        copyHelperIntoPlace()
+        do {
+            try listener.start { [weak self] event in
+                Task { @MainActor in self?.receive(event) }
+            }
+        } catch {
+            listenerError = "BRBuddy couldn't listen for agents: \(error.localizedDescription)"
+        }
+        refresh()
+        timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refresh() }
+        }
+    }
+
+    private func receive(_ event: AgentEvent) {
+        tracker.apply(event)
+        runningAgents.insert(event.agent)
+        onChange?()
+    }
+
+    /// Prunes quiet sessions and rescans processes, apps and hook files.
+    func refresh() {
+        tracker.prune(now: Date())
+        hooksInstalled = Set(AgentKind.allCases.filter(installer.isInstalled))
+        let bundleIDs = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
+        runningDesktopApps = AgentProcessScanner.desktopApps.filter { bundleIDs.contains($0.key) }.map(\.value).sorted()
+        Task.detached(priority: .utility) {
+            let running = AgentProcessScanner.runningAgents()
+            await MainActor.run { [weak self] in self?.runningAgents = running }
+        }
+        onChange?()
+    }
+
+    // MARK: Hook setup
+
+    func setUpHooks(for agent: AgentKind) {
+        do {
+            try installer.install(agent)
+            setupErrors[agent] = nil
+        } catch {
+            setupErrors[agent] = error.localizedDescription
+        }
+        refresh()
+    }
+
+    func removeHooks(for agent: AgentKind) {
+        do {
+            try installer.uninstall(agent)
+            setupErrors[agent] = nil
+        } catch {
+            setupErrors[agent] = error.localizedDescription
+        }
+        refresh()
+    }
+
+    /// Whether this Mac has the agent (its settings folder exists or it's running).
+    func isPresent(_ agent: AgentKind) -> Bool {
+        installer.agentFolderExists(agent) || runningAgents.contains(agent)
+    }
+
+    /// Copies the helper from the app bundle (or next to the executable, for `swift run`) to `helperURL`, so hook
+    /// commands keep working if the app is moved or updated.
+    private func copyHelperIntoPlace() {
+        let candidates = [
+            Bundle.main.bundleURL.appending(path: "Contents/Helpers/\(AgentHookInstaller.helperName)"),
+            Bundle.main.executableURL?.deletingLastPathComponent().appending(path: AgentHookInstaller.helperName),
+        ].compactMap { $0 }
+        let fm = FileManager.default
+        guard let source = candidates.first(where: { fm.isExecutableFile(atPath: $0.path) }) else { return }
+        let target = Self.helperURL
+        if let new = try? Data(contentsOf: source), let old = try? Data(contentsOf: target), new == old { return }
+        do {
+            try fm.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if fm.fileExists(atPath: target.path) { try fm.removeItem(at: target) }
+            try fm.copyItem(at: source, to: target)
+            try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
+        } catch {
+            listenerError = "BRBuddy couldn't install its hook helper: \(error.localizedDescription)"
+        }
+    }
+}
+
+extension AgentTracker.Summary {
+    /// One line for the menu and the away screen, or nil when there's nothing to say.
+    var headline: String? {
+        switch self {
+        case .waiting(let s): "\(s.agent.displayName) needs you\(s.projectName.map { " in \($0)" } ?? "")"
+        case .working(let s): "\(s.agent.displayName) is working\(s.projectName.map { " on \($0)" } ?? "")"
+        case .finished(let s): "\(s.agent.displayName) finished\(s.projectName.map { " \($0)" } ?? "")"
+        case .none: nil
+        }
+    }
+
+    var needsAttention: Bool {
+        if case .waiting = self { true } else { false }
+    }
+}

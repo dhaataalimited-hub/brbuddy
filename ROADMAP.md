@@ -23,11 +23,17 @@ SwiftPM package, menu bar item, keep-awake toggle, bundling script, architecture
 - **Still open:** Mission Control / Spaces gestures and notification banners while BRB is up.
 - Known limits, stated in the app: the power button and fast user switching can't be blocked.
 
-## Phase 2: Knows your agent — ~½–1 day
+## Phase 2: Knows your agent ✅ (2026-11-20, except where noted)
 - Hooks into a local socket for Claude Code, Codex, Cursor, Gemini / Antigravity (borrow from AgentPet, MIT) and
   Grok, cursor-agent (borrow from codelight, MIT). One-click hook setup per tool.
 - Process scan for desktop apps (Claude, ChatGPT, Cursor) and CLIs without hooks; CPU activity as a fallback.
 - States: working, waiting for you, finished.
+- Done: keeps the Mac awake by itself while an agent works or waits (setting, default on); BRB auto-start follows it;
+  away screen and menu show agent status.
+- **Still open:** live test with each real agent (only fake events through the real helper so far; Claude Code and
+  Codex are installed on the dev Mac, the others aren't). ChatGPT/Claude/Cursor desktop apps: detected only, no
+  status (no hooks). CPU-activity fallback for unhooked CLIs not built. "Waiting" could also push a notification
+  to the phone.
 
 ## Phase 3: Companions — ~½ day of code, art open-ended
 - Pack format: Codex pet format (`pet.json` + spritesheet) plus BRBuddy fields for agent states and a required

@@ -11,15 +11,18 @@ extension KeyboardShortcuts.Name {
 
 /// The app's single source of truth for what BRBuddy is doing right now. Created once by `AppDelegate`.
 ///
-/// Owns keep-awake, the away controller and the idle check. While keep-awake is on and auto-start is enabled it
-/// also keeps the display on, so macOS's own screen saver or display sleep can't kick in before BRB does.
+/// Owns keep-awake, the agent monitor, the away controller and the idle check. The Mac is kept awake when the user
+/// turned it on, or by itself while an agent is working or waiting (if that setting is on). While kept awake with
+/// auto-start enabled it also keeps the display on, so macOS's own screen saver or display sleep can't beat BRB.
 @MainActor
 @Observable
 final class AppState {
     private let keepAwake = KeepAwake()
     let away = AwayController()
+    let agents = AgentMonitor()
 
-    private(set) var isKeepingAwake = false
+    /// Keep-awake switched on by hand from the menu.
+    private(set) var manualKeepAwake = false
     private(set) var launchAtLoginError: String?
 
     var settings: AwaySettings {
@@ -33,7 +36,9 @@ final class AppState {
 
     init() {
         settings = AwaySettings.load()
+        away.agents = agents
         away.onEnded = { [weak self] _ in self?.applyKeepAwakeMode() }
+        agents.onChange = { [weak self] in self?.applyKeepAwakeMode() }
         KeyboardShortcuts.onKeyUp(for: .brbNow) { [weak self] in self?.startAway() }
         idleTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkIdle() }
@@ -42,8 +47,13 @@ final class AppState {
 
     // MARK: Keep awake
 
+    /// Whether the Mac is being kept awake right now, by hand or for an agent.
+    var isKeepingAwake: Bool { manualKeepAwake || isKeepingAwakeForAgent }
+
+    var isKeepingAwakeForAgent: Bool { settings.keepAwakeForAgents && agents.summary.isActive }
+
     func setKeepingAwake(_ on: Bool) {
-        isKeepingAwake = on
+        manualKeepAwake = on
         applyKeepAwakeMode()
     }
 
@@ -52,7 +62,10 @@ final class AppState {
             keepAwake.activate(.systemAndDisplay, reason: "BRBuddy is showing the away screen")
         } else if isKeepingAwake {
             let mode: KeepAwake.Mode = settings.autoStartEnabled ? .systemAndDisplay : .systemOnly
-            if !keepAwake.activate(mode) { isKeepingAwake = false }
+            let reason = isKeepingAwakeForAgent && !manualKeepAwake
+                ? "BRBuddy is keeping your Mac awake while an agent works"
+                : "BRBuddy is keeping your Mac awake"
+            if !keepAwake.activate(mode, reason: reason) { manualKeepAwake = false }
         } else {
             keepAwake.release()
         }

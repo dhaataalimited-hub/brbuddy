@@ -36,13 +36,15 @@ sequenceDiagram
 ```
 
 ## States and edge cases
-- Auto-start only while keep-awake is on (stand-in for "an agent is working" until agent detection) and auto-start
+- Auto-start only while the Mac is kept awake (by hand, or because an agent is working or waiting) and auto-start
   is enabled. Idle is checked every 5 seconds against `IdleMonitor`.
 - While keep-awake is on with auto-start enabled, `AppState` holds the display awake too, so macOS's screen saver or
   display sleep can't kick in before BRB.
 - Locked down while up: Dock and menu bar hidden; app switching, Force Quit, log out/restart and hiding disabled;
   every Command shortcut swallowed by `AwayWindow`; `AppDelegate` cancels quitting. If another app activates (an
   agent opening a browser), `AwayController` takes focus back.
+- The away screen shows `AgentMonitor`'s headline under the tagline ("Claude Code is working on brbuddy", orange
+  "… needs you in …" when waiting); the companion opens its eyes while an agent needs the user.
 - Displays plugged in or out: windows are rebuilt. Unlock UI is only on the first screen; others say "Unlock on your
   main display".
 - Unlock prompt goes back to the resting companion after 30 seconds without input.

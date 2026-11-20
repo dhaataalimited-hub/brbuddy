@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "BRBuddy", targets: ["BRBuddy"]),
+        .executable(name: "brbuddy-hook", targets: ["brbuddy-hook"]),
     ],
     dependencies: [
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "3.1.0"),
@@ -15,6 +16,8 @@ let package = Package(
         .target(name: "BRBuddyCore"),
         // The menu bar app.
         .executableTarget(name: "BRBuddy", dependencies: ["BRBuddyCore", "KeyboardShortcuts"]),
+        // Run by agents' hooks: forwards one event to the app and exits. Never prints, always exits 0.
+        .executableTarget(name: "brbuddy-hook", dependencies: ["BRBuddyCore"]),
         .testTarget(name: "BRBuddyTests", dependencies: ["BRBuddyCore"]),
     ]
 )

@@ -31,7 +31,8 @@ struct AwaySettingsTests {
         let store = try #require(UserDefaults(suiteName: "brbuddy.tests.\(UUID().uuidString)"))
         #expect(AwaySettings.load(from: store) == .defaults)
 
-        let custom = AwaySettings(autoStartEnabled: false, idleMinutes: 10, maxFailedAttempts: 5, escalateAfterMinutes: 0)
+        let custom = AwaySettings(autoStartEnabled: false, idleMinutes: 10, maxFailedAttempts: 5, escalateAfterMinutes: 0,
+                                  keepAwakeForAgents: false)
         custom.save(to: store)
         #expect(AwaySettings.load(from: store) == custom)
 

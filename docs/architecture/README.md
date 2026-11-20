@@ -14,6 +14,11 @@ shortcut, or by itself after a few minutes with no input while keep-awake is on,
 screen after failed unlocks or a long time away. Everything runs locally; there is no server. Distributed outside the
 App Store and not sandboxed.
 
+It also knows what the user's AI agents are doing. Claude Code, Codex, Gemini CLI, Cursor, Antigravity and Grok can
+each be hooked up from Settings: BRBuddy adds a hook that runs the `brbuddy-hook` helper, which forwards each event
+over a private local socket. While an agent is working or waiting for the user, BRBuddy keeps the Mac awake by itself
+and BRB can start on its own; the away screen and menu show what the agent is doing.
+
 ## Scenes / surfaces
 ```mermaid
 flowchart LR
@@ -22,6 +27,9 @@ flowchart LR
   State[AppState] --> Away[AwayController]
   Away --> Win[AwayWindow per display: AwayView]
   Win --> Unlock[UnlockPanel, main display only]
+  Agents[AI agent hooks] --> Hook[brbuddy-hook helper process]
+  Hook --> Sock[(agents.sock)] --> Monitor[AgentMonitor]
+  State --> Monitor
 ```
 
 | Surface | What it is | Made by |
@@ -29,6 +37,7 @@ flowchart LR
 | Menu bar item | Paw icon (filled while keeping awake): keep-awake toggle, BRB now, Settings, Quit | `BRBuddyApp` showing `MenuContent` |
 | Settings window | When BRB starts, when it locks for real, shortcut, launch at login | `BRBuddyApp`'s Settings scene showing `SettingsView` |
 | Away windows | One borderless window per display at screen-saver level, on every Space | `AwayController` makes `AwayWindow`s hosting `AwayView` |
+| Hook helper | Command-line tool agents run on each hook; no UI, prints nothing | `brbuddy-hook/main.swift`, copied by `AgentMonitor` to Application Support |
 
 No Dock icon or main window: `LSUIElement` in `Config/Info.plist`, and `BRBuddyApp` sets the accessory activation
 policy for `swift run`.
@@ -46,9 +55,17 @@ flowchart TD
   Core --> Lock[ScreenLocker: private login framework]
   Core --> PW[PasswordVerifier: OpenDirectory]
   Away --> LA[LocalAuthentication embedded Touch ID]
+  State --> Mon[AgentMonitor]
+  Mon --> Core
+  Core --> Agents[AgentKind, AgentEvent, AgentTracker: pure]
+  Core --> Inst[AgentHookInstaller: agents' JSON/TOML config files]
+  Core --> Sock[AgentSocket + AgentEventListener: Unix socket]
+  Core --> Scan[AgentProcessScanner: libproc, sysctl]
+  Helper[brbuddy-hook] --> Sock
 ```
-Two SwiftPM targets. `BRBuddyCore` holds system wrappers and pure logic with no UI, and is what `BRBuddyTests`
-tests. `BRBuddy` is the app: SwiftUI views, `AppState`, `AwayController` and `AwayWindow`. The only package
+Three SwiftPM targets. `BRBuddyCore` holds system wrappers and pure logic with no UI, and is what `BRBuddyTests`
+tests. `BRBuddy` is the app: SwiftUI views, `AppState`, `AgentMonitor`, `AwayController` and `AwayWindow`.
+`brbuddy-hook` is the helper agents run; it uses `BRBuddyCore` for the event and socket code. The only package
 dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB shortcut and its recorder.
 
 ## Who owns what
@@ -56,7 +73,8 @@ dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB
 |---|---|---|---|---|
 | `BRBuddyApp` | `BRBuddy/BRBuddyApp.swift` | System, app lifetime | Main actor | Entry point; menu bar and Settings scenes; reads `AppState` from `AppDelegate` |
 | `AppDelegate` | `BRBuddy/AppDelegate.swift` | SwiftUI delegate adaptor, app lifetime | Main actor | Owns `AppState`; refuses to quit while BRB is up; debug-only launch hooks |
-| `AppState` | `BRBuddy/AppState.swift` | `AppDelegate`, app lifetime | `@MainActor`, `@Observable` | Owns `KeepAwake`, `AwayController`, settings, the 5-second idle check, the global shortcut, launch at login |
+| `AppState` | `BRBuddy/AppState.swift` | `AppDelegate`, app lifetime | `@MainActor`, `@Observable` | Owns `KeepAwake`, `AgentMonitor`, `AwayController`, settings, the 5-second idle check, the global shortcut, launch at login; decides keep-awake (by hand or for an agent) |
+| `AgentMonitor` | `BRBuddy/AgentMonitor.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; socket on its own queue; process scan detached | Runs the listener, holds `AgentTracker`, scans processes and desktop apps every 15 s, sets hooks up or removes them, installs the helper copy |
 | `AwayController` | `BRBuddy/AwayController.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable` | Runs BRB: windows, presentation options, focus guard, unlock, failures, escalation, 1-second ticker |
 | `AwayWindow` | `BRBuddy/AwayWindow.swift` | `AwayController`, one per display while away | Main thread (AppKit) | Borderless key-capable window; reports input; swallows Command shortcuts |
 | `AwayView` | `BRBuddy/AwayView.swift` | `AwayController`, hosted in each `AwayWindow` | Main actor (view) | Companion, tagline, time away, footer per phase |
@@ -70,24 +88,39 @@ dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB
 | `IdleMonitor` | `BRBuddyCore/IdleMonitor.swift` | Static namespace | Any thread | Seconds since last HID input |
 | `ScreenLocker` | `BRBuddyCore/ScreenLocker.swift` | Static namespace | Main actor in practice | Real lock screen via private login framework; display-sleep fallback |
 | `PasswordVerifier` | `BRBuddyCore/PasswordVerifier.swift` | Static namespace | Off the main thread (slow, throttled) | Checks the login password through OpenDirectory |
+| `AgentKind` | `BRBuddyCore/AgentKind.swift` | Enum | Value type | The six agents: names, hook events, event → `AgentActivity` |
+| `AgentEvent` | `BRBuddyCore/AgentEvent.swift` | Value, made by the helper, decoded by the listener | Value type | One hook firing; reads each agent's stdin payload; JSON-line wire format |
+| `AgentTracker` | `BRBuddyCore/AgentTracker.swift` | Value, held by `AgentMonitor` | Value type | Session states, timeouts, overall `Summary` |
+| `AgentHookInstaller` | `BRBuddyCore/AgentHookInstaller.swift` | Value, held by `AgentMonitor` | Main actor in practice | Adds/removes our hooks in each agent's config; backups; Codex feature flag |
+| `AgentSocket`, `AgentEventListener` | `BRBuddyCore/AgentSocket.swift` | Static namespace; listener owned by `AgentMonitor` | Listener reads on a private serial queue | Socket path, sending (helper), listening (app) |
+| `AgentProcessScanner` | `BRBuddyCore/AgentProcessScanner.swift` | Static namespace | Any thread (run detached) | Running agent CLIs by process name or Node script path; desktop app bundle IDs |
 
 `AppState` is passed to views by initializer; `AwayController` is reached through `AppState`. There are no
 singletons. `AwayController` notifies `AppState` that BRB ended through a callback so keep-awake can change mode.
 
 ## Navigation
-Menu: keep-awake toggle, BRB now (shows the global shortcut), a hint line when auto-start is armed, Settings…, Quit.
+Menu: keep-awake toggle (plus "Kept awake while your agent works" when an agent is the reason), BRB now (shows the global shortcut), a hint line when auto-start is armed, the agents list (up to six sessions with state and project, or "Set up agents…"), Settings…, Quit. Settings has an Agents section with a row per agent.
 Away screen phases (`AwayController.Phase`): resting → (any key, click, scroll or mouse move) unlocking → back to
 resting after 30 seconds without input; any phase → locking for real when `AwayPolicy` says so.
 
 ## Data
 `AwaySettings` in UserDefaults under `away.*` keys: auto-start on/off, idle minutes (1–120, default 3), failed tries
 before real lock (1–10, default 3), minutes before real lock (0 = never, default 60). The global shortcut is stored
-by KeyboardShortcuts. Launch at login is held by macOS (`SMAppService`). Passwords are never stored or logged.
+by KeyboardShortcuts; `agents.keepAwake` holds "keep awake while an agent works" (default on). Launch at login is
+held by macOS (`SMAppService`). Passwords are never stored or logged.
+
+Agent files: `~/Library/Application Support/BRBuddy/agents.sock` (the socket, 0600, recreated at launch) and
+`bin/brbuddy-hook` (the helper copy) in the same folder. Setting up an agent edits that agent's own file:
+`~/.claude/settings.json`, `~/.codex/hooks.json` (and `[features] hooks = true` in `~/.codex/config.toml`),
+`~/.gemini/settings.json`, `~/.cursor/hooks.json`, `~/.gemini/config/hooks.json` (Antigravity, under a `brbuddy`
+group) or `~/.grok/hooks/brbuddy.json` (our own file). The first change saves `<file>.brbuddy-backup`. Agent
+sessions are kept in memory only.
 
 ## Concurrency
 Swift 6 language mode. App types are main-actor; timers hop back with `MainActor.assumeIsolated`. The password check
 runs on a detached task and returns to the main actor. Touch ID results arrive on a LocalAuthentication queue and
-are ignored if the `LAContext` they belong to has been replaced.
+are ignored if the `LAContext` they belong to has been replaced. Agent events arrive on `AgentEventListener`'s
+serial queue and hop to the main actor in `AgentMonitor`; the process scan runs detached at utility priority.
 
 ## House rules (don't break these)
 | Rule | Where it's enforced or explained |
@@ -99,6 +132,9 @@ are ignored if the `LAContext` they belong to has been replaced.
 | Unlock UI stays inside the away window (no system dialogs: they'd open underneath) | `UnlockPanel`, `PasswordVerifier` |
 | Never call the real lock or a wrong password from tests | `SystemHookTests` in the test target |
 | BRB can't be quit while it's up | `AppDelegate`, `AwayWindow` |
+| The hook helper never prints, never blocks, always exits 0 | `brbuddy-hook/main.swift`, `AgentSocketTests` |
+| Only touch our own hook entries; back up first; never rewrite invalid JSON | `AgentHookInstaller`, `AgentHookInstallerTests` |
+| Agent config files change only when the user presses Set up or Remove | `AgentMonitor`, `SettingsView` |
 
 ## Debug only
 Debug builds read two environment variables in `AppDelegate`: `BRBUDDY_START_AWAY=1` opens BRB at launch, and
@@ -110,6 +146,7 @@ snapshot code). Both are compiled out of release builds.
 |---|---|
 | `flows/keep-awake.md` | Turning keep-awake on and off; which power mode is held when |
 | `flows/brb-away.md` | Starting BRB, unlocking, and handing off to the real lock screen |
+| `flows/agents.md` | Setting up an agent's hooks and how its events reach the app |
 
 ## File index
 Every source file in `Sources/`. The docs test fails if a file is missing here or a listed one is gone.
@@ -124,7 +161,8 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/UnlockPanel.swift`: embedded Touch ID and password field.
 - `BRBuddy/PlaceholderBuddy.swift`: code-drawn stand-in companion.
 - `BRBuddy/MenuContent.swift`: the menu's items.
-- `BRBuddy/SettingsView.swift`: the Settings window.
+- `BRBuddy/SettingsView.swift`: the Settings window, including the Agents section.
+- `BRBuddy/AgentMonitor.swift`: agent events, sessions, process scan and hook setup for the app.
 
 **BRBuddyCore**
 - `BRBuddyCore/KeepAwake.swift`: IOKit power assertion wrapper (system only, or system and display).
@@ -133,6 +171,15 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/IdleMonitor.swift`: time since last keyboard or mouse input.
 - `BRBuddyCore/ScreenLocker.swift`: shows the real macOS lock screen.
 - `BRBuddyCore/PasswordVerifier.swift`: checks the login password.
+- `BRBuddyCore/AgentKind.swift`: supported agents and what their hook events mean.
+- `BRBuddyCore/AgentEvent.swift`: one hook event, payload parsing and wire format.
+- `BRBuddyCore/AgentTracker.swift`: agent session states and summary.
+- `BRBuddyCore/AgentHookInstaller.swift`: adds and removes hooks in agents' config files.
+- `BRBuddyCore/AgentSocket.swift`: the local socket, sending and listening.
+- `BRBuddyCore/AgentProcessScanner.swift`: finds running agents and desktop apps.
+
+**brbuddy-hook (helper)**
+- `brbuddy-hook/main.swift`: run by agent hooks; forwards one event and exits.
 
 ## Keeping this map current
 - **When you add, move, rename or rewire a type:** update this file (file index, owners table) and the flow page it
