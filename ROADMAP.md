@@ -46,9 +46,15 @@ SwiftPM package, menu bar item, keep-awake toggle, bundling script, architecture
   Codex packs, pixel-art (nearest-neighbour) scaling option.
 - No vendor logos or mascots, ever.
 
-## Phase 4: Terminal mirror — ~1 day
+## Phase 4: Terminal mirror ✅ (2026-11-20, except where noted)
 - Primary: tmux read-only control mode streamed into SwiftTerm (MIT). Works with any terminal app.
 - Fallback without tmux: Accessibility text from Terminal, Ghostty, iTerm2 (plain text, no colour).
+- Built instead of tmux control mode + SwiftTerm: `tmux capture-pane -e` once a second through our own colour
+  parser (no dependency, never attaches a client). Added a third source, the agent activity feed from hook events,
+  which needs no tmux and no permissions. Off by default; Settings has a live preview and a warning.
+- **Still open:** live test with real tmux (not installed on the dev Mac; covered by fixture tests) and with
+  Accessibility (needs the owner to allow it). A `brb run <agent>` wrapper that tees a PTY would cover VS Code and
+  Warp. Pixel-exact fallback via ScreenCaptureKit not built.
 
 ## Phase 5: Release — ~½ day
 - Developer ID signing + notarization + DMG + Sparkle appcast in GitHub Actions (template: exelban/stats, MIT).

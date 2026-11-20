@@ -10,6 +10,8 @@ struct SettingsView: View {
         Form {
             CompanionSection(library: state.companions, agent: state.agents.relevantAgent)
 
+            MirrorSection(mirror: state.mirror)
+
             Section("Agents") {
                 Toggle("Keep the Mac awake while an agent is working or needs you", isOn: $state.settings.keepAwakeForAgents)
                 ForEach(AgentKind.allCases) { agent in
@@ -132,6 +134,54 @@ private struct CompanionSection: View {
             let by = pack.author.map { " by \($0)" } ?? ""
             let license = pack.license.map { " · \($0)" } ?? " · license not stated"
             return "Community pack\(by)\(license)"
+        }
+    }
+}
+
+/// Choosing what the away screen mirrors, with a live preview while Settings is open.
+private struct MirrorSection: View {
+    @Bindable var mirror: TerminalMirror
+    @State private var trusted = AccessibilityTerminalReader.isTrusted
+
+    var body: some View {
+        Section("Terminal on the away screen") {
+            Picker("Show", selection: $mirror.mode) {
+                ForEach(TerminalMirrorMode.allCases) { Text($0.title).tag($0) }
+            }
+            Text(explanation)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if mirror.isEnabled {
+                if let snapshot = mirror.snapshot {
+                    TerminalMirrorView(snapshot: snapshot, fontSize: 10)
+                        .frame(height: 150)
+                } else if let status = mirror.status {
+                    Text(status).font(.caption).foregroundStyle(.orange)
+                }
+                if (mirror.mode == .automatic || mirror.mode == .terminalWindow) && !trusted {
+                    Button("Allow BRBuddy to read terminal windows…") {
+                        AccessibilityTerminalReader.requestTrust()
+                    }
+                }
+                Text("Anyone at your Mac can read what's shown. It's view-only: nothing typed on the away screen reaches the terminal.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .onAppear { mirror.retain() }
+        .onDisappear { mirror.release() }
+        .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in
+            trusted = AccessibilityTerminalReader.isTrusted
+        }
+    }
+
+    private var explanation: String {
+        switch mirror.mode {
+        case .off: "The away screen shows only the companion."
+        case .automatic: "Uses tmux if your agent runs in it, then a Terminal, iTerm2 or Ghostty window, then the agent activity feed."
+        case .tmux: "Shows the tmux pane your agent runs in, in colour.\(mirror.tmuxInstalled ? "" : " tmux isn't installed (brew install tmux).")"
+        case .terminalWindow: "Shows the text of a Terminal, iTerm2 or Ghostty window. Needs Accessibility permission."
+        case .activityFeed: "Shows what your hooked-up agents are doing (tools and commands), with no extra permissions. Never your prompts."
         }
     }
 }

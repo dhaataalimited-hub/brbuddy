@@ -8,6 +8,8 @@ import Observation
 @Observable
 final class AgentMonitor {
     private(set) var tracker = AgentTracker()
+    /// What agents did, for the terminal mirror's activity feed.
+    private(set) var activity = AgentActivityLog()
     private(set) var runningAgents: Set<AgentKind> = []
     private(set) var runningDesktopApps: [String] = []
     private(set) var hooksInstalled: Set<AgentKind> = []
@@ -54,6 +56,7 @@ final class AgentMonitor {
 
     private func receive(_ event: AgentEvent) {
         tracker.apply(event)
+        activity.record(event)
         lastAgent = event.agent
         runningAgents.insert(event.agent)
         onChange?()

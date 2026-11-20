@@ -6,7 +6,8 @@ BRBuddy is a free, open-source Mac menu bar app for when you step away while an 
 Mac awake, covers the screen with a cute companion (and, if you want, a read-only view of your terminal), and asks
 for Touch ID or your password when someone touches the keyboard.
 
-> **Status: early.** Keep-awake, BRB (Away mode), agent status and companions work. The terminal mirror is next. See [ROADMAP.md](ROADMAP.md).
+> **Status: early.** Keep-awake, BRB (Away mode), agent status, companions and the terminal mirror work. Signed
+> releases are next. See [ROADMAP.md](ROADMAP.md).
 
 ## Using it
 - Open **Settings…** and press **Set up** for the agents you use (Claude Code, Codex, Gemini CLI, Cursor,
@@ -18,9 +19,11 @@ for Touch ID or your password when someone touches the keyboard.
 - Three wrong tries, or an hour away, and BRBuddy hands off to the real macOS lock screen. Your agent keeps running.
 - Pick a companion in **Settings…**: six original critters (one per agent's vibe), or add any Codex pet with
   **Add companion pack…**. Change everything else there too.
+- Want to see your agent from across the room? Turn on **Terminal on the away screen**: a read-only view of the
+  tmux pane or Terminal window your agent runs in, or a feed of what it's doing. Off by default, since anyone at
+  your Mac can read it.
 
 ## Planned
-- **Terminal mirror:** a live, read-only view of the terminal your agent runs in.
 - **Walk-away lock:** starts BRB when your phone or Apple Watch leaves the room.
 
 BRBuddy is an independent project. It isn't affiliated with or endorsed by Anthropic, OpenAI, Anysphere, Google or
@@ -57,7 +60,6 @@ in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 | [codelight](https://github.com/henrikekblad/codelight) | Reference for agent hook capabilities | MIT |
 | [Hammerspoon](https://github.com/hammerspoon/hammerspoon) | Real lock screen call; idle detection approach | MIT |
 | [LUCE](https://github.com/arinltte/LUCE) | Input blocking while away (planned) | MIT |
-| [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) | Terminal rendering (planned) | MIT |
 | The Codex pet format, as documented by [awesome-codex-pet](https://github.com/legeling/awesome-codex-pet) | Companion pack format (format only; no art) | MIT (docs/code) |
 
 ## Contributing

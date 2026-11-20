@@ -11,10 +11,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let path = ProcessInfo.processInfo.environment["BRBUDDY_COMPANION_SHEET"] {
             CompanionContactSheet.render(to: URL(fileURLWithPath: path))
         }
-        if ProcessInfo.processInfo.environment["BRBUDDY_START_AWAY"] == "1" {
-            state.startAway()
-            if let folder = ProcessInfo.processInfo.environment["BRBUDDY_SNAPSHOT_DIR"] {
-                Task { await state.away.debugSnapshots(to: URL(fileURLWithPath: folder)) }
+        // BRBUDDY_START_AWAY=<seconds>: open BRB that many seconds after launch (1 = almost straight away).
+        if let delay = ProcessInfo.processInfo.environment["BRBUDDY_START_AWAY"].flatMap(Double.init), delay > 0 {
+            Task {
+                try? await Task.sleep(for: .seconds(delay))
+                state.startAway()
+                if let folder = ProcessInfo.processInfo.environment["BRBUDDY_SNAPSHOT_DIR"] {
+                    await state.away.debugSnapshots(to: URL(fileURLWithPath: folder))
+                }
             }
         }
         #endif
