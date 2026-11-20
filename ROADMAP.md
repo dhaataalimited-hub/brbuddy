@@ -56,10 +56,17 @@ SwiftPM package, menu bar item, keep-awake toggle, bundling script, architecture
   Accessibility (needs the owner to allow it). A `brb run <agent>` wrapper that tees a PTY would cover VS Code and
   Warp. Pixel-exact fallback via ScreenCaptureKit not built.
 
-## Phase 5: Release — ~½ day
+## Phase 5: Release ✅ pipeline built (2026-11-20); first release waiting on one-time setup
 - Developer ID signing + notarization + DMG + Sparkle appcast in GitHub Actions (template: exelban/stats, MIT).
 - Own Homebrew tap first; homebrew/cask once the repo has the stars and is 30+ days old.
 - Before going public: trademark search, register brbuddy.app.
+- Built: Sparkle 2.10.1 updater (release builds only) and Check for Updates; `Tools/build-app.sh` embeds Sparkle,
+  versions from tags, signs inside out (Developer ID + hardened runtime when given); `Tools/release.sh` makes the
+  universal notarized DMG, signed appcast and cask; GitHub Actions `tests.yml` and `release.yml`; `docs/releasing.md`.
+  Dry run passed locally (ad hoc, unnotarized).
+- **Waiting on the owner:** Developer ID Application certificate (only an Apple Development one is on the Mac),
+  App Store Connect API key, Sparkle keys, GitHub secrets, making the repo public, creating the homebrew-tap repo.
+  CI hasn't run yet (first push of this branch).
 
 ## Phase 6: Walk-away lock ✅ (2026-11-20, except where noted)
 - Start BRB when the iPhone or Apple Watch's Bluetooth signal fades. Learn from BLEUnlock (no license: study only),

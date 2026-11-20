@@ -12,7 +12,11 @@ it was used in. Projects we only learned from (no code copied) are credited in t
 
 ## Package dependencies (shipped inside the app)
 - **KeyboardShortcuts** by Sindre Sorhus — MIT — https://github.com/sindresorhus/KeyboardShortcuts
-  (global BRB shortcut and its recorder). Its license text must ship with release builds (Phase 5 pipeline).
+  (global BRB shortcut and its recorder).
+- **Sparkle** by the Sparkle Project contributors — MIT-style (LICENSE in the framework) —
+  https://github.com/sparkle-project/Sparkle (automatic updates). Its licence ships inside `Sparkle.framework`.
+
+This file and `LICENSE` are copied into the app's Resources by `Tools/build-app.sh`.
 
 ## Copied or adapted code
 ### AgentPet (https://github.com/ntd4996/agentpet), commit 1b5c0df

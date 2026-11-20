@@ -93,13 +93,15 @@ flowchart TD
 Three SwiftPM targets. `BRBuddyCore` holds system wrappers and pure logic with no UI, and is what `BRBuddyTests`
 tests. `BRBuddy` is the app: SwiftUI views, `AppState`, `AgentMonitor`, `AwayController` and `AwayWindow`.
 `brbuddy-hook` is the helper agents run; it uses `BRBuddyCore` for the event and socket code. The only package
-dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB shortcut and its recorder.
+dependencies are KeyboardShortcuts (MIT), for the global BRB shortcut and its recorder, and Sparkle (MIT-style), for
+automatic updates; both are used only by the app target.
 
 ## Who owns what
 | Type | File | Created by / lifetime | Isolation / thread | Job |
 |---|---|---|---|---|
 | `BRBuddyApp` | `BRBuddy/BRBuddyApp.swift` | System, app lifetime | Main actor | Entry point; menu bar and Settings scenes; reads `AppState` from `AppDelegate` |
-| `AppDelegate` | `BRBuddy/AppDelegate.swift` | SwiftUI delegate adaptor, app lifetime | Main actor | Owns `AppState`; refuses to quit while BRB is up; debug-only launch hooks |
+| `AppDelegate` | `BRBuddy/AppDelegate.swift` | SwiftUI delegate adaptor, app lifetime | Main actor | Owns `AppState` and `UpdateController`; refuses to quit while BRB is up; debug-only launch hooks |
+| `UpdateController` | `BRBuddy/UpdateController.swift` | `AppDelegate`, app lifetime | Main actor | Sparkle updater; exists only when the build's Info.plist has a feed URL and public key (release builds) |
 | `AppState` | `BRBuddy/AppState.swift` | `AppDelegate`, app lifetime | `@MainActor`, `@Observable` | Owns `KeepAwake`, `AgentMonitor`, `AwayController`, settings, the 5-second idle check, the global shortcut, launch at login; decides keep-awake (by hand or for an agent) |
 | `AgentMonitor` | `BRBuddy/AgentMonitor.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; socket on its own queue; process scan detached | Runs the listener, holds `AgentTracker` and `AgentActivityLog`, scans processes and desktop apps every 15 s, sets hooks up or removes them, installs the helper copy |
 | `AwayController` | `BRBuddy/AwayController.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable` | Runs BRB: windows, presentation options, focus guard, unlock, failures, escalation, 1-second ticker |
@@ -177,6 +179,7 @@ serial queue and hop to the main actor in `AgentMonitor`; the process scan runs 
 | Keep-awake must always be releasable: one assertion at a time, released on quit | `KeepAwake`, `KeepAwakeTests` |
 | Logic and system wrappers go in `BRBuddyCore` so they can be tested | This map; the target split is in the package manifest at the repo root |
 | Unlock UI stays inside the away window (no system dialogs: they'd open underneath) | `UnlockPanel`, `PasswordVerifier` |
+| Release builds must carry the Sparkle public key and a signed appcast; local builds have no updater | `UpdateController`, `Tools/release.sh` |
 | Never call the real lock or a wrong password from tests | `SystemHookTests` in the test target |
 | BRB can't be quit while it's up | `AppDelegate`, `AwayWindow` |
 | The hook helper never prints, never blocks, always exits 0 | `brbuddy-hook/main.swift`, `AgentSocketTests` |
@@ -212,7 +215,8 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 
 **BRBuddy (app)**
 - `BRBuddy/BRBuddyApp.swift`: entry point, menu bar and Settings scenes, accessory activation policy.
-- `BRBuddy/AppDelegate.swift`: owns app state, blocks quitting during BRB, debug launch hooks.
+- `BRBuddy/AppDelegate.swift`: owns app state and updates, blocks quitting during BRB, debug launch hooks.
+- `BRBuddy/UpdateController.swift`: Sparkle automatic updates and "Check for Updates…".
 - `BRBuddy/AppState.swift`: app state; keep-awake mode, idle check, global shortcut, launch at login.
 - `BRBuddy/AwayController.swift`: runs BRB end to end.
 - `BRBuddy/AwayWindow.swift`: the full-screen window used on each display.
@@ -255,10 +259,23 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 **brbuddy-hook (helper)**
 - `brbuddy-hook/main.swift`: run by agent hooks; forwards one event and exits.
 
+## Building and releasing
+- `Tools/build-app.sh` makes `build/BRBuddy.app`: the app, the hook helper in `Contents/Helpers`, Sparkle in
+  `Contents/Frameworks`, licences in `Resources`; version from the latest `v*` tag, build number from the commit
+  count; signs inside out (ad hoc by default, Developer ID with hardened runtime when `SIGN_IDENTITY` is set); adds
+  the update feed only when `SPARKLE_PUBLIC_KEY` is set.
+- `Tools/release.sh <version>` makes the universal, notarized DMG, signed `appcast.xml` and Homebrew cask in
+  `build/release/`. `.github/workflows/release.yml` runs it on a `v*` tag; `tests.yml` runs the tests on pull
+  requests and pushes to main. One-time setup and the checklist: `docs/releasing.md`.
+- Update feed: `https://github.com/dhaataalimited-hub/brbuddy/releases/latest/download/appcast.xml` (needs the
+  repository public). Never publish an unsigned appcast: Sparkle ignores it and users silently stop updating
+  (`Tools/release.sh` refuses).
+
 ## Keeping this map current
 - **When you add, move, rename or rewire a type:** update this file (file index, owners table) and the flow page it
   belongs to. `ArchitectureDocsTests` fails on a file missing from the index, a file name that no longer exists, or a
   type under "Code to check" that's no longer declared.
 - **Then regenerate `map.html`** from these pages and republish the artifact (once it exists, before release).
 - Keep to types and files. If you find yourself writing a function name, write what it does instead.
-- HTML artifact: not published yet.
+- HTML artifact (private to the owner): https://claude.ai/artifact/WDGNXHsAuf5CJ7zDpKNKar. Republish `map.html` to
+  the same URL after changes.

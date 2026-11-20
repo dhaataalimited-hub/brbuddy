@@ -13,7 +13,7 @@ struct BRBuddyApp: App {
 
     var body: some Scene {
         MenuBarExtra("BRBuddy", systemImage: delegate.state.isKeepingAwake ? "pawprint.fill" : "pawprint") {
-            MenuContent(state: delegate.state)
+            MenuContent(state: delegate.state, updates: delegate.updates)
         }
         Settings {
             SettingsView(state: delegate.state)
