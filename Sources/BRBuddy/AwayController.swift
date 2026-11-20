@@ -35,6 +35,8 @@ final class AwayController {
     var agents: AgentMonitor?
     /// Which companion to show. Set by `AppState`.
     var companions: CompanionLibrary?
+    /// The read-only terminal view, refreshed while BRB is up. Set by `AppState`.
+    var mirror: TerminalMirror?
 
     private var settings = AwaySettings.defaults
     private var windows: [AwayWindow] = []
@@ -69,6 +71,7 @@ final class AwayController {
 
         NSApp.activate(ignoringOtherApps: true)
         NSApp.presentationOptions = Self.lockedDownOptions
+        mirror?.retain()
         buildWindows()
 
         let center = NSWorkspace.shared.notificationCenter
@@ -98,6 +101,7 @@ final class AwayController {
         authContext.invalidate()
         windows.forEach { $0.orderOut(nil) }
         windows.removeAll()
+        mirror?.release()
         NSApp.presentationOptions = []
         isAway = false
         phase = .resting

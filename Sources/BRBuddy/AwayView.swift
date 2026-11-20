@@ -13,9 +13,9 @@ struct AwayView: View {
                            startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
 
-            VStack(spacing: 28) {
+            VStack(spacing: showsMirror ? 18 : 28) {
                 companion
-                    .frame(width: 260, height: 240)
+                    .frame(width: showsMirror ? 170 : 260, height: showsMirror ? 156 : 240)
 
                 Text("BRB — my agent's got this.")
                     .font(.system(size: 42, weight: .bold, design: .rounded))
@@ -33,8 +33,13 @@ struct AwayView: View {
                         .foregroundStyle(.white.opacity(0.55))
                 }
 
+                if showsMirror, let snapshot = controller.mirror?.snapshot {
+                    TerminalMirrorView(snapshot: snapshot)
+                        .frame(maxWidth: 980, maxHeight: 420)
+                }
+
                 footer
-                    .frame(minHeight: 180, alignment: .top)
+                    .frame(minHeight: showsMirror ? 150 : 180, alignment: .top)
             }
             .padding(40)
         }
@@ -61,6 +66,8 @@ struct AwayView: View {
     }
 
     private var agentSummary: AgentTracker.Summary { controller.agents?.summary ?? .none }
+
+    private var showsMirror: Bool { controller.mirror?.snapshot != nil }
 
     @ViewBuilder private var companion: some View {
         if let library = controller.companions {

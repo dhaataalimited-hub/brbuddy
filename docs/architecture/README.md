@@ -23,6 +23,10 @@ The away screen's companion is one of six original built-in critters drawn in co
 automatically or by the user) or a community pack in the Codex pet format, and acts out a mood: resting, working,
 waiting, finished, greeting or oops.
 
+Optionally (off by default) the away screen also mirrors a read-only terminal view below the companion: a tmux
+pane (with colours), a Terminal/iTerm2/Ghostty window read through Accessibility, or an agent activity feed built
+from hook events (no permissions needed).
+
 ## Scenes / surfaces
 ```mermaid
 flowchart LR
@@ -32,6 +36,7 @@ flowchart LR
   Away --> Win[AwayWindow per display: AwayView]
   Win --> Unlock[UnlockPanel, main display only]
   Win --> Comp[CompanionView: CritterView or SpritePackView]
+  Win --> Mirror[TerminalMirrorView, when enabled]
   Agents[AI agent hooks] --> Hook[brbuddy-hook helper process]
   Hook --> Sock[(agents.sock)] --> Monitor[AgentMonitor]
   State --> Monitor
@@ -43,6 +48,7 @@ flowchart LR
 | Settings window | When BRB starts, when it locks for real, shortcut, launch at login | `BRBuddyApp`'s Settings scene showing `SettingsView` |
 | Away windows | One borderless window per display at screen-saver level, on every Space | `AwayController` makes `AwayWindow`s hosting `AwayView` |
 | Companion | Animated character on the away screen and in Settings' preview | `CompanionView` (built-in `CritterView` or pack `SpritePackView`) |
+| Terminal mirror | Read-only panel on the away screen and in Settings' preview | `TerminalMirrorView` showing `TerminalMirror`'s snapshot |
 | Hook helper | Command-line tool agents run on each hook; no UI, prints nothing | `brbuddy-hook/main.swift`, copied by `AgentMonitor` to Application Support |
 
 No Dock icon or main window: `LSUIElement` in `Config/Info.plist`, and `BRBuddyApp` sets the accessory activation
@@ -71,6 +77,12 @@ flowchart TD
   Lib --> Core
   Core --> Comp[CompanionMood, CompanionCatalog: pure]
   Core --> Pack[CompanionPack, CompanionPackLibrary: ImageIO, Companions folder]
+  State --> Mir[TerminalMirror]
+  Mir --> AX[AccessibilityTerminalReader: ApplicationServices AX]
+  Mir --> Core
+  Core --> TText[ANSIParser, TerminalText: pure]
+  Core --> Tmux[TmuxReader: tmux list-panes, capture-pane]
+  Core --> Feed[AgentActivityLog: pure]
   Helper[brbuddy-hook] --> Sock
 ```
 Three SwiftPM targets. `BRBuddyCore` holds system wrappers and pure logic with no UI, and is what `BRBuddyTests`
@@ -84,7 +96,7 @@ dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB
 | `BRBuddyApp` | `BRBuddy/BRBuddyApp.swift` | System, app lifetime | Main actor | Entry point; menu bar and Settings scenes; reads `AppState` from `AppDelegate` |
 | `AppDelegate` | `BRBuddy/AppDelegate.swift` | SwiftUI delegate adaptor, app lifetime | Main actor | Owns `AppState`; refuses to quit while BRB is up; debug-only launch hooks |
 | `AppState` | `BRBuddy/AppState.swift` | `AppDelegate`, app lifetime | `@MainActor`, `@Observable` | Owns `KeepAwake`, `AgentMonitor`, `AwayController`, settings, the 5-second idle check, the global shortcut, launch at login; decides keep-awake (by hand or for an agent) |
-| `AgentMonitor` | `BRBuddy/AgentMonitor.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; socket on its own queue; process scan detached | Runs the listener, holds `AgentTracker`, scans processes and desktop apps every 15 s, sets hooks up or removes them, installs the helper copy |
+| `AgentMonitor` | `BRBuddy/AgentMonitor.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; socket on its own queue; process scan detached | Runs the listener, holds `AgentTracker` and `AgentActivityLog`, scans processes and desktop apps every 15 s, sets hooks up or removes them, installs the helper copy |
 | `AwayController` | `BRBuddy/AwayController.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable` | Runs BRB: windows, presentation options, focus guard, unlock, failures, escalation, 1-second ticker |
 | `AwayWindow` | `BRBuddy/AwayWindow.swift` | `AwayController`, one per display while away | Main thread (AppKit) | Borderless key-capable window; reports input; swallows Command shortcuts |
 | `AwayView` | `BRBuddy/AwayView.swift` | `AwayController`, hosted in each `AwayWindow` | Main actor (view) | Companion, tagline, time away, footer per phase |
@@ -93,6 +105,9 @@ dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB
 | `CompanionView`, `SpritePackView` | `BRBuddy/CompanionView.swift` | `AwayView`, Settings | Main actor (views) | Shows the resolved companion; plays a pack's frames at 8 fps |
 | `CritterView`, `CritterDesign` | `BRBuddy/CritterView.swift` | `CompanionView`, contact sheet | Main actor (views) | Draws and animates the six built-in critters per mood |
 | `CompanionContactSheet` | `BRBuddy/CompanionContactSheet.swift` | `AppDelegate` (debug only) | Main actor | Renders every built-in in every mood to a PNG |
+| `TerminalMirror` | `BRBuddy/TerminalMirror.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; capture on a detached task | Picks a source per `TerminalMirrorMode`, refreshes every second while retained (BRB up or Settings open) |
+| `TerminalMirrorView` | `BRBuddy/TerminalMirrorView.swift` | `AwayView`, Settings | Main actor (view) | Draws styled lines, latest that fit; no input path |
+| `AccessibilityTerminalReader` | `BRBuddy/AccessibilityTerminalReader.swift` | Static namespace | Running apps on main; AX reads off main | Text of a Terminal/iTerm2/Ghostty window; Accessibility permission prompt |
 | `MenuContent` | `BRBuddy/MenuContent.swift` | `BRBuddyApp`'s menu scene | Main actor (view) | Menu items |
 | `SettingsView` | `BRBuddy/SettingsView.swift` | `BRBuddyApp`'s Settings scene | Main actor (view) | Edits `AwaySettings` through `AppState` |
 | `KeepAwake` | `BRBuddyCore/KeepAwake.swift` | `AppState`, app lifetime | Used from the main actor | Holds at most one IOKit power assertion; released on `deinit` |
@@ -102,7 +117,7 @@ dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB
 | `ScreenLocker` | `BRBuddyCore/ScreenLocker.swift` | Static namespace | Main actor in practice | Real lock screen via private login framework; display-sleep fallback |
 | `PasswordVerifier` | `BRBuddyCore/PasswordVerifier.swift` | Static namespace | Off the main thread (slow, throttled) | Checks the login password through OpenDirectory |
 | `AgentKind` | `BRBuddyCore/AgentKind.swift` | Enum | Value type | The six agents: names, hook events, event → `AgentActivity` |
-| `AgentEvent` | `BRBuddyCore/AgentEvent.swift` | Value, made by the helper, decoded by the listener | Value type | One hook firing; reads each agent's stdin payload; JSON-line wire format |
+| `AgentEvent` | `BRBuddyCore/AgentEvent.swift` | Value, made by the helper, decoded by the listener | Value type | One hook firing; reads each agent's stdin payload (session, folder, tool detail; never the prompt); JSON-line wire format |
 | `AgentTracker` | `BRBuddyCore/AgentTracker.swift` | Value, held by `AgentMonitor` | Value type | Session states, timeouts, overall `Summary` |
 | `AgentHookInstaller` | `BRBuddyCore/AgentHookInstaller.swift` | Value, held by `AgentMonitor` | Main actor in practice | Adds/removes our hooks in each agent's config; backups; Codex feature flag |
 | `AgentSocket`, `AgentEventListener` | `BRBuddyCore/AgentSocket.swift` | Static namespace; listener owned by `AgentMonitor` | Listener reads on a private serial queue | Socket path, sending (helper), listening (app) |
@@ -110,6 +125,10 @@ dependency is KeyboardShortcuts (MIT), used by the app target for the global BRB
 | `CompanionMood` | `BRBuddyCore/CompanionMood.swift` | Enum | Value type | Which mood to show, and its Codex spritesheet row |
 | `CompanionCatalog` | `BRBuddyCore/CompanionCatalog.swift` | Static namespace | Pure | Built-in list and agent matches; stored `Choice`; resolving a choice to a companion |
 | `CompanionPack`, `CompanionPackLibrary` | `BRBuddyCore/CompanionPack.swift` | Values / static namespace | Load anywhere; cut frames off the main thread | Validates a Codex pet folder, cuts frames per mood, scans and imports packs |
+| `ANSIParser`, `TerminalColor`, `TerminalStyle`, `TerminalRun` | `BRBuddyCore/TerminalText.swift` | Static namespace / values | Pure | Colour-coded text → styled lines; drops every non-colour escape; xterm palette |
+| `TmuxReader` | `BRBuddyCore/TmuxReader.swift` | Static namespace | Off the main thread (runs tmux, 2 s limit) | Finds tmux, lists panes, picks the agent's pane, captures it read-only |
+| `AgentActivityLog` | `BRBuddyCore/AgentActivityLog.swift` | Value, held by `AgentMonitor` | Value type | Rolling feed (80 entries) of agent events as styled lines |
+| `TerminalMirrorMode` | `BRBuddyCore/TerminalMirrorMode.swift` | Enum | Value type | Off / automatic / tmux / terminal window / activity feed; stored in UserDefaults |
 
 `AppState` is passed to views by initializer; `AwayController` is reached through `AppState`. There are no
 singletons. `AwayController` notifies `AppState` that BRB ended through a callback so keep-awake can change mode.
@@ -123,7 +142,8 @@ resting after 30 seconds without input; any phase → locking for real when `Awa
 `AwaySettings` in UserDefaults under `away.*` keys: auto-start on/off, idle minutes (1–120, default 3), failed tries
 before real lock (1–10, default 3), minutes before real lock (0 = never, default 60). The global shortcut is stored
 by KeyboardShortcuts; `agents.keepAwake` holds "keep awake while an agent works" (default on); `companion.choice` holds
-the companion (`auto`, `builtin:<id>` or `pack:<folder>`). Launch at login is
+the companion (`auto`, `builtin:<id>` or `pack:<folder>`); `mirror.mode` holds the terminal mirror mode (default
+`off`). Launch at login is
 held by macOS (`SMAppService`). Passwords are never stored or logged.
 
 Agent files: `~/Library/Application Support/BRBuddy/agents.sock` (the socket, 0600, recreated at launch) and
@@ -157,9 +177,13 @@ serial queue and hop to the main actor in `AgentMonitor`; the process scan runs 
 | Agent config files change only when the user presses Set up or Remove | `AgentMonitor`, `SettingsView` |
 | Built-in companions are original and code-drawn; never bundle third-party pet art | `CritterView`, `CONTRIBUTING.md` |
 | A pack's spritesheet must stay inside its own folder | `CompanionPack`, `CompanionPackTests` |
+| The mirror is display-only: never send keys, attach a tmux client or forward input | `TmuxReader`, `TerminalMirrorView` |
+| The mirror is off by default and Settings warns that anyone at the Mac can read it | `TerminalMirrorMode`, `SettingsView` |
+| Hook events carry tool details, never the user's prompt text | `AgentEvent`, `ActivityFeedTests` |
 
 ## Debug only
-Debug builds read three environment variables in `AppDelegate`: `BRBUDDY_START_AWAY=1` opens BRB at launch,
+Debug builds read three environment variables in `AppDelegate`: `BRBUDDY_START_AWAY=<seconds>` opens BRB that many
+seconds after launch,
 `BRBUDDY_SNAPSHOT_DIR` then saves PNGs of the main away window resting and unlocking (`AwayController`'s debug
 snapshot code), and `BRBUDDY_COMPANION_SHEET=<file.png>` renders every built-in companion in every mood
 (`CompanionContactSheet`). All are compiled out of release builds.
@@ -171,6 +195,7 @@ snapshot code), and `BRBUDDY_COMPANION_SHEET=<file.png>` renders every built-in 
 | `flows/brb-away.md` | Starting BRB, unlocking, and handing off to the real lock screen |
 | `flows/agents.md` | Setting up an agent's hooks and how its events reach the app |
 | `flows/companions.md` | Choosing a companion, adding a pack, and how moods are picked |
+| `flows/terminal-mirror.md` | Turning on the terminal mirror and where its text comes from |
 
 ## File index
 Every source file in `Sources/`. The docs test fails if a file is missing here or a listed one is gone.
@@ -187,6 +212,9 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/CompanionView.swift`: shows the chosen companion; sprite pack player.
 - `BRBuddy/CritterView.swift`: the six built-in critters and their shapes.
 - `BRBuddy/CompanionContactSheet.swift`: debug-only render of every critter and mood.
+- `BRBuddy/TerminalMirror.swift`: picks and refreshes the terminal mirror's source.
+- `BRBuddy/TerminalMirrorView.swift`: draws the read-only terminal panel.
+- `BRBuddy/AccessibilityTerminalReader.swift`: reads terminal window text via Accessibility.
 - `BRBuddy/MenuContent.swift`: the menu's items.
 - `BRBuddy/SettingsView.swift`: the Settings window, including the Agents section.
 - `BRBuddy/AgentMonitor.swift`: agent events, sessions, process scan and hook setup for the app.
@@ -207,6 +235,10 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/CompanionMood.swift`: companion moods and their spritesheet rows.
 - `BRBuddyCore/CompanionCatalog.swift`: built-in companions and resolving the user's choice.
 - `BRBuddyCore/CompanionPack.swift`: loading, checking and importing Codex-format packs.
+- `BRBuddyCore/TerminalText.swift`: colour-code parser and styled terminal text.
+- `BRBuddyCore/TmuxReader.swift`: read-only tmux pane listing and capture.
+- `BRBuddyCore/AgentActivityLog.swift`: the agent activity feed.
+- `BRBuddyCore/TerminalMirrorMode.swift`: the mirror setting.
 
 **brbuddy-hook (helper)**
 - `brbuddy-hook/main.swift`: run by agent hooks; forwards one event and exits.

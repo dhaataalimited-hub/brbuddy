@@ -44,7 +44,8 @@ sequenceDiagram
   every Command shortcut swallowed by `AwayWindow`; `AppDelegate` cancels quitting. If another app activates (an
   agent opening a browser), `AwayController` takes focus back.
 - The away screen shows `AgentMonitor`'s headline under the tagline ("Claude Code is working on brbuddy", orange
-  "… needs you in …" when waiting); the companion's mood follows `CompanionMood` (see `flows/companions.md`).
+  "… needs you in …" when waiting); the companion's mood follows `CompanionMood` (see `flows/companions.md`). With the terminal mirror on, the
+companion shrinks and `TerminalMirrorView` sits below the text (see `flows/terminal-mirror.md`).
 - Displays plugged in or out: windows are rebuilt. Unlock UI is only on the first screen; others say "Unlock on your
   main display".
 - Unlock prompt goes back to the resting companion after 30 seconds without input.
