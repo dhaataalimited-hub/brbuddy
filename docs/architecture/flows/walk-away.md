@@ -58,7 +58,8 @@ won't let an app start pairing with an iPhone: every protected iPhone characteri
 Continuity) just answers "insufficient authentication" with no prompt (checked 2026-11-21). Instead
 `AddressFollower` (driven by `ProximityMonitor`) switches to a successor: once the watched identifier has been quiet
 for 4 s, a phone/watch-type Apple device first seen after the old address last advertised, heard 3+ times, within
-10 dB of the phone's last level, becomes the watched device (settings' ID and the name's short ID update; the
+10 dB of the phone's last level, becomes the watched device, but only if that last level was at or above the range's
+"near" threshold (a phone fading out is leaving; a stranger's equally weak phone mustn't be taken for it) (settings' ID and the name's short ID update; the
 tracker's readings carry on). A saved identifier that's stale from launch is replaced only by one held close
 (≥ −50 dBm). Scanning stays on while watching so new addresses are seen. If no successor appears, the tracker's
 silence rule reports away as before. Each switch is logged (subsystem `com.dhaataalimited.brbuddy`, category

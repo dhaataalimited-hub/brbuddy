@@ -188,3 +188,19 @@ extension AddressFollowerTests {
         #expect(adopted == new)
     }
 }
+
+extension AddressFollowerTests {
+    @Test func doesNotFollowWhileThePhoneWasFadingAway() {
+        var follower = AddressFollower()
+        let stranger = UUID()
+        var adopted: UUID?
+        // Our phone was last heard at -82 (leaving the room, below the Room threshold of -74); a new phone appears
+        // at a similar weak level.
+        for second in 15...30 {
+            adopted = follower.heard(stranger, rssi: -80, at: start.addingTimeInterval(Double(second)),
+                                     watchedLastHeard: start.addingTimeInterval(10), watchedLevel: -82, nearLevel: -74,
+                                     watchingSince: start) ?? adopted
+        }
+        #expect(adopted == nil)
+    }
+}

@@ -236,9 +236,13 @@ public struct AddressFollower: Sendable {
     ///   - watchedLastAdvertised: last advertisement from it. While connected the phone can switch its advertising
     ///     address and keep the link, so "new" means new since the old address last advertised.
     ///   - watchedLevel: the watched device's smoothed signal at that time.
+    ///   - nearLevel: the range's "near" threshold. A phone changes address wherever it is, but only a change while
+    ///     it was near is followed: a phone fading out is leaving, and a stranger's phone at a similarly weak signal
+    ///     mustn't be mistaken for it.
     ///   - watchingSince: when watching began.
     public mutating func heard(_ id: UUID, rssi: Double, at now: Date, watchedLastHeard: Date?,
-                               watchedLastAdvertised: Date? = nil, watchedLevel: Double?, watchingSince: Date) -> UUID? {
+                               watchedLastAdvertised: Date? = nil, watchedLevel: Double?, nearLevel: Double = -74,
+                               watchingSince: Date) -> UUID? {
         firstSeen[id] = firstSeen[id] ?? now
         let previous = candidates[id]
         let level = previous.map { $0.level * 0.6 + rssi * 0.4 } ?? rssi
@@ -251,7 +255,7 @@ public struct AddressFollower: Sendable {
         guard let first = firstSeen[id], first >= advertisedUntil.addingTimeInterval(-2) else { return nil }
         guard let candidate = candidates[id], candidate.count >= readingsNeeded else { return nil }
         if let watchedLevel {
-            guard abs(candidate.level - watchedLevel) <= tolerance else { return nil }
+            guard watchedLevel >= nearLevel, abs(candidate.level - watchedLevel) <= tolerance else { return nil }
         } else {
             guard candidate.level >= closeLevel else { return nil }
         }

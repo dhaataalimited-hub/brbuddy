@@ -267,7 +267,8 @@ extension ProximityMonitor: CBCentralManagerDelegate, CBPeripheralDelegate {
                 if watched == nil || watched?.state == .disconnected { startWatching() }
             } else if personal, isWatching, let since = watchingSince,
                       follower.heard(id, rssi: Double(rssi), at: Date(), watchedLastHeard: watchedLastHeard,
-                                     watchedLastAdvertised: watchedLastAdvertised, watchedLevel: watchedLevel, watchingSince: since) != nil {
+                                     watchedLastAdvertised: watchedLastAdvertised, watchedLevel: watchedLevel,
+                                     nearLevel: settings.range.threshold, watchingSince: since) != nil {
                 follow(to: peripheral)
             }
             guard pickerOpen, personal, rssi > -90, rssi < 0 else { return }
