@@ -255,6 +255,12 @@ struct CritterView: View {
                 .font(.system(size: 26))
                 .foregroundStyle(Color(red: 1, green: 0.3, blue: 0.5))
                 .scaleEffect(1 + 0.12 * sin(t * 14))
+        case .signature:
+            Image(systemName: "star.fill")
+                .font(.system(size: 26))
+                .foregroundStyle(Color(red: 1, green: 0.85, blue: 0.3))
+                .shadow(color: .yellow.opacity(0.8), radius: 6)
+                .rotationEffect(.degrees(t * 180 * (left ? 1 : -1)))
         case .grumpy:
             ZStack {
                 Capsule().fill(design.ink).frame(width: 18, height: 6).offset(y: 4)
@@ -301,7 +307,7 @@ struct CritterView: View {
             switch boop {
             case .squish:
                 Ellipse().fill(design.ink).frame(width: 10, height: 10)
-            case .giggle:
+            case .giggle, .signature:
                 // A big open laugh: a filled half circle with a tongue.
                 ZStack {
                     HalfDisc().fill(design.ink)

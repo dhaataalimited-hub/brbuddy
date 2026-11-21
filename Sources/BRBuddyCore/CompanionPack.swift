@@ -8,7 +8,8 @@ import ImageIO
 /// v1 = 1536 × 1872 (9 rows), v2 = 1536 × 2288 (11 rows, `"spriteVersionNumber": 2`). Rows 0–8 are idle,
 /// running-right, running-left, waving, jumping, failed, waiting, running, review. BRBuddy reads rows 0–8 and adds
 /// optional `license`, `author`, `agents` (e.g. `["claude", "codex"]`) and `stillSpritesheetPath` (a second sheet of
-/// the same size where the body holds still and only the face moves, shown on battery) to `pet.json`; other apps
+/// the same size where the body holds still and only the face moves, shown on battery), `boopSignature` (a
+/// `BoopSignature` name for its own boop sound) and `boopBubble` (what it says then) to `pet.json`; other apps
 /// ignore them.
 public struct CompanionPack: Sendable, Identifiable {
     public enum LoadError: LocalizedError, Equatable {
@@ -48,6 +49,10 @@ public struct CompanionPack: Sendable, Identifiable {
     public let spritesheetURL: URL
     /// The optional still sheet; `nil` if absent or not valid (wrong size, outside the folder).
     public let stillSpritesheetURL: URL?
+    /// Its signature boop sound; `nil` if unset or unknown.
+    public let boopSignature: BoopSignature?
+    /// What it says on its signature boop.
+    public let boopBubble: String?
 
     struct Manifest: Decodable {
         var id: String?
@@ -59,6 +64,8 @@ public struct CompanionPack: Sendable, Identifiable {
         var author: String?
         var agents: [String]?
         var stillSpritesheetPath: String?
+        var boopSignature: String?
+        var boopBubble: String?
     }
 
     /// Reads and checks a pack folder without decoding the whole image.
@@ -77,7 +84,9 @@ public struct CompanionPack: Sendable, Identifiable {
             description: manifest.description, license: manifest.license, author: manifest.author,
             agents: (manifest.agents ?? []).compactMap(AgentKind.init(rawValue:)),
             spriteVersion: version, spritesheetURL: sheetURL,
-            stillSpritesheetURL: still?.version == version ? still?.url : nil)
+            stillSpritesheetURL: still?.version == version ? still?.url : nil,
+            boopSignature: manifest.boopSignature.flatMap(BoopSignature.init(rawValue:)),
+            boopBubble: manifest.boopBubble.map { String($0.prefix(24)) })
     }
 
     /// Checks one spritesheet: inside the folder, not too big, a size we know. Returns its URL and sprite version.

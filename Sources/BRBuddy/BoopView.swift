@@ -5,12 +5,14 @@ import SwiftUI
 /// Plays the boop sounds, synthesised once per reaction by `BoopSound`.
 @MainActor
 enum BoopPlayer {
-    private static var sounds: [Boop: Data] = [:]
+    private static var sounds: [String: Data] = [:]
     private static var playing: AVAudioPlayer?
 
-    static func play(_ boop: Boop) {
-        let data = sounds[boop] ?? BoopSound.wav(for: boop)
-        sounds[boop] = data
+    /// `signature` is the companion's own sound, played for `Boop.signature`.
+    static func play(_ boop: Boop, signature: BoopSignature) {
+        let key = boop == .signature ? "signature." + signature.rawValue : boop.rawValue
+        let data = sounds[key] ?? BoopSound.wav(for: boop, signature: signature)
+        sounds[key] = data
         playing?.stop()
         playing = try? AVAudioPlayer(data: data)
         playing?.play()
@@ -25,16 +27,19 @@ extension View {
         let rotation: Double = switch boop {
         case .giggle: 9 * fade * sin(p * 42)
         case .spin: 360 * (p < 0.6 ? (1 - cos(p / 0.6 * .pi)) / 2 : 1)
+        case .signature: 10 * fade * sin(p * 24)
         default: 0
         }
         let hop: Double = switch boop {
         case .spin: -34 * sin(min(p / 0.6, 1) * .pi)
         case .love: -10 * sin(p * .pi)
+        case .signature: -40 * max(0, sin(p * 2 * .pi))
         default: 0
         }
         let swell: Double = switch boop {
         case .love: 1 + 0.08 * sin(p * .pi)
         case .grumpy: 1 + 0.07 * fade
+        case .signature: 1 + 0.1 * sin(p * .pi)
         default: 1
         }
         let shake = boop == .grumpy ? 7 * fade * sin(p * 70) : 0
@@ -46,10 +51,13 @@ extension View {
 }
 
 /// The boop's speech bubble and effects over either kind of companion: impact sparkles, music notes, orbiting stars,
-/// floating hearts or steam puffs. Laid out in the critter's 300 × 260 design space and scaled to fit.
+/// floating hearts, steam puffs, or the signature's rainbow burst. Laid out in the critter's 300 × 260 design space
+/// and scaled to fit.
 struct BoopFlair: View {
     let boop: Boop
     let progress: Double
+    /// What the companion says on its signature boop.
+    var signatureBubble: String?
 
     private static let canvas = CGSize(width: 300, height: 260)
 
@@ -105,6 +113,17 @@ struct BoopFlair: View {
                         .opacity(rise > 0 ? 1 - rise * 0.9 : 0)
                         .offset(x: -70 + Double(i) * 35 + 10 * sin(rise * 6 + Double(i)), y: -40 - 110 * rise)
                 }
+            case .signature:
+                ForEach(0..<12, id: \.self) { i in
+                    let angle = Double(i) / 12 * 2 * .pi
+                    let burst = min(1, p * 2)
+                    Image(systemName: i % 3 == 0 ? "star.fill" : "sparkle")
+                        .font(.system(size: 14 + Double(i % 3) * 4, weight: .bold))
+                        .foregroundStyle(Color(hue: Double(i) / 12, saturation: 0.7, brightness: 1))
+                        .opacity(1 - p)
+                        .rotationEffect(.degrees(p * 180))
+                        .offset(x: cos(angle) * (40 + 110 * burst), y: 10 + sin(angle) * (30 + 90 * burst))
+                }
             case .grumpy:
                 ForEach(0..<2, id: \.self) { i in
                     Image(systemName: "cloud.fill")
@@ -113,7 +132,7 @@ struct BoopFlair: View {
                         .offset(x: i == 0 ? -96 - 20 * p : 96 + 20 * p, y: -70 - 30 * p)
                 }
             }
-            BubbleLabel(text: boop.bubble, tint: boop == .grumpy ? .orange : boop == .love ? Color(red: 1, green: 0.7, blue: 0.8) : .white)
+            BubbleLabel(text: boop == .signature ? signatureBubble ?? boop.bubble : boop.bubble, tint: boop == .grumpy ? .orange : boop == .love ? Color(red: 1, green: 0.7, blue: 0.8) : .white)
                 .scaleEffect(min(1, p * 6))
                 .offset(x: 100, y: -78)
         }

@@ -22,7 +22,7 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 | Agent status | Settings → Agents → Set up | One button per agent; the menu and away screen then show "working", "needs you" or "done" |
 | Jump to an agent | Click the agent in the menu | Opens the terminal window it's running in; in Terminal and iTerm2, the exact tab. macOS asks once to let BRBuddy control Terminal/iTerm2 |
 | Companions | Settings → Companion | Six built-in characters (Ember, Pebble, Prism, Comet, Drift, Gremlin), or "Match my agent" |
-| Boop your companion | Click it on the away screen or in Settings → Companion | Five reactions with sounds (squish, giggle, spin, heart eyes, and grumpy if you click too fast). Turn the sounds off in Settings → Companion → Boops |
+| Boop your companion | Click it on the away screen or in Settings → Companion | Six reactions with sounds: squish, giggle, spin, heart eyes, grumpy (if you click too fast) and one that's each companion's own. Turn the sounds off in Settings → Companion → Boops |
 | Companion packs | Settings → Companion → Add companion pack… | Any pet made for Codex works (a folder with pet.json and a spritesheet) |
 | Battery on the away screen | Settings → Away Screen → Battery | On by default on MacBooks. Shows charge and time left; the companion cheers when you plug in, sweats when the battery's low and moves in slow motion in Low Power Mode. On battery its body holds still to save power and only its face moves |
 | Terminal on the away screen | Settings → Away Screen | Off by default. Shows a tmux pane, a Terminal/iTerm2/Ghostty window, or a feed of what your agent is doing. View-only |

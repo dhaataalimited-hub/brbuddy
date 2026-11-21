@@ -54,9 +54,12 @@ sequenceDiagram
 - Clicking the companion on the away screen or in Settings' preview plays a reaction: `CompanionView` asks
   `BoopPicker` for the next `Boop`, plays its sound through `BoopPlayer` (unless `AwaySettings` turns boop sounds
   off) and shows it for about a second.
-- Five reactions: squish ("boop!"), giggle ("hehe"), spin ("wheee"), love (heart eyes) and grumpy ("hey!"). The four
-  friendly ones come in a shuffled order, each once before any repeats and never twice in a row; five clicks within
-  three seconds makes it grumpy.
+- Six reactions: five every companion shares, squish ("boop!"), giggle ("hehe"), spin ("wheee"), love (heart eyes)
+  and grumpy ("hey!"), plus a signature one (star eyes, a jump, a rainbow burst) with the companion's own sound and
+  line (`BoopSignature`). Each built-in has its own (Ember "fwoosh!", Pebble "plink", Prism a shimmer, Comet "zoom!",
+  Drift "whooo", Gremlin "nyehehe"); a pack names one in `pet.json` (`boopSignature`, `boopBubble`), else it gets
+  `sparkle`. The five friendly ones (signature included) come in a shuffled order, each once before any repeats and
+  never twice in a row; five clicks within three seconds makes it grumpy.
 - Built-in critters show the reaction's own face (`CritterView`); packs play a matching mood row instead. Both get
   the motion and `BoopFlair`'s effects and bubble. A boop moves the body even on battery.
 - Sounds are synthesised in code by `BoopSound` (no sound files). On the away screen, the click also brings up the
@@ -76,7 +79,7 @@ Function names change: read the current code in these files before relying on an
 - Battery reactions (plugging in, low battery, Low Power Mode) add props and can briefly change the mood: see
   `flows/battery.md`.
 - Boops: `Boop.swift`, `BoopView.swift`; types `Boop`, `BoopPicker`, `BoopEvent`, `BoopSound`, `BoopPlayer`,
-  `BoopFlair`; tests `BoopTests`.
+  `BoopFlair`, `BoopSignature`; tests `BoopTests`.
 - Types: `CompanionLibrary`, `CompanionView`, `SpritePackView`, `CritterView`, `CritterDesign`, `CompanionMood`,
   `CompanionCatalog`, `CompanionPack`, `CompanionPackLibrary`, `AwayController`, `AgentMonitor`
 - Tests: `CompanionMoodTests`, `CompanionCatalogTests`, `CompanionPackTests`

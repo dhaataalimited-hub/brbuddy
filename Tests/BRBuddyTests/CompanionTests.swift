@@ -89,6 +89,16 @@ struct CompanionPackTests {
         #expect(try CompanionPack.load(from: missing).stillSpritesheetURL == nil)  // a bad still sheet is ignored
     }
 
+    @Test func readsASignatureBoop() throws {
+        let folder = try makePack(manifest: #"{"spritesheetPath":"spritesheet.png","boopSignature":"clickWheel","boopBubble":"click click"}"#)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let pack = try CompanionPack.load(from: folder)
+        #expect(pack.boopSignature == .clickWheel && pack.boopBubble == "click click")
+        let unknown = try makePack(manifest: #"{"spritesheetPath":"spritesheet.png","boopSignature":"kazoo"}"#)
+        defer { try? FileManager.default.removeItem(at: unknown) }
+        #expect(try CompanionPack.load(from: unknown).boopSignature == nil)
+    }
+
     @Test func rejectsBadPacks() throws {
         let wrongSize = try makePack(width: 800, height: 600)
         defer { try? FileManager.default.removeItem(at: wrongSize) }
@@ -191,9 +201,10 @@ struct BoopTests {
         var picker = BoopPicker()
         var generator = Seeded(state: 42)
         var picks: [Boop] = []
-        for i in 0..<12 { picks.append(picker.next(now: start + Double(i) * 10, using: &generator)) }
-        #expect(Set(picks.prefix(4)) == Set(BoopPicker.friendly))
-        #expect(Set(picks[4..<8]) == Set(BoopPicker.friendly))
+        for i in 0..<15 { picks.append(picker.next(now: start + Double(i) * 10, using: &generator)) }
+        #expect(BoopPicker.friendly.count == 5 && BoopPicker.friendly.contains(.signature))
+        #expect(Set(picks.prefix(5)) == Set(BoopPicker.friendly))
+        #expect(Set(picks[5..<10]) == Set(BoopPicker.friendly))
         #expect(!zip(picks, picks.dropFirst()).contains { $0 == $1 })
         #expect(!picks.contains(.grumpy))
     }
@@ -215,11 +226,20 @@ struct BoopTests {
     }
 
     @Test func everySoundIsAShortValidWAV() {
-        for boop in Boop.allCases {
-            let wav = BoopSound.wav(for: boop)
+        let sounds = Boop.allCases.map { BoopSound.wav(for: $0) }
+            + BoopSignature.allCases.map { BoopSound.wav(for: .signature, signature: $0) }
+        for wav in sounds {
             #expect(wav.prefix(4) == Data("RIFF".utf8))
             #expect(wav.count > 44 + 2_000)  // header plus some audio
-            #expect(wav.count < 44 + 44_100 * 2)  // under a second
+            #expect(wav.count < 44 + 44_100 * 2 * 2)  // under two seconds
         }
+    }
+
+    @Test func everyBuiltInHasItsOwnSignature() {
+        let signatures = CompanionCatalog.builtIns.map { BoopSignature.builtIn($0.id).signature }
+        #expect(Set(signatures).count == CompanionCatalog.builtIns.count)
+        #expect(!signatures.contains(.sparkle))
+        let sounds = Set(BoopSignature.allCases.map { BoopSound.wav(for: .signature, signature: $0) })
+        #expect(sounds.count == BoopSignature.allCases.count)  // all different
     }
 }

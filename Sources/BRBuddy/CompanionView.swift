@@ -27,7 +27,7 @@ struct CompanionView: View {
                     BatteryFlair(reaction: battery, talks: batteryTalks && boop == nil)
                 }
                 if let boop, let progress {
-                    BoopFlair(boop: boop.boop, progress: progress)
+                    BoopFlair(boop: boop.boop, progress: progress, signatureBubble: signature.bubble)
                 }
             }
         }
@@ -50,10 +50,22 @@ struct CompanionView: View {
         battery.bubble != nil && mood != .waiting && mood != .greeting
     }
 
+    /// This companion's own boop sound and line: built-ins have one each; packs name theirs in `pet.json`.
+    private var signature: (sound: BoopSignature, bubble: String) {
+        switch library.resolved(for: agent) {
+        case .builtIn(let builtIn):
+            let own = BoopSignature.builtIn(builtIn.id)
+            return (own.signature, own.bubble)
+        case .pack(let id):
+            let pack = library.pack(id: id)
+            return (pack?.boopSignature ?? .sparkle, pack?.boopBubble ?? Boop.signature.bubble)
+        }
+    }
+
     private func boopNow() {
         let event = BoopEvent(picker.next(), at: Date())
         boop = event
-        if boopSounds { BoopPlayer.play(event.boop) }
+        if boopSounds { BoopPlayer.play(event.boop, signature: signature.sound) }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(event.boop.duration))
             if boop == event { boop = nil }

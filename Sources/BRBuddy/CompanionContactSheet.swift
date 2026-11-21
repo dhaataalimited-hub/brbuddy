@@ -89,6 +89,10 @@ enum CompanionContactSheet {
         for boop in Boop.allCases {
             try? BoopSound.wav(for: boop).write(to: url.deletingLastPathComponent().appending(path: "boop-\(boop.rawValue).wav"))
         }
+        for signature in BoopSignature.allCases {
+            try? BoopSound.wav(for: .signature, signature: signature)
+                .write(to: url.deletingLastPathComponent().appending(path: "signature-\(signature.rawValue).wav"))
+        }
     }
 
     private static func save(_ view: some View, to url: URL) {
