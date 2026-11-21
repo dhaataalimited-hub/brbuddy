@@ -68,6 +68,29 @@ enum CompanionContactSheet {
         save(sheet, to: url)
     }
 
+    /// Every boop mid-reaction on Ember, plus each sound as a WAV beside the PNG. `BRBUDDY_BOOP_SHEET=<file.png>`.
+    static func renderBoops(to url: URL) {
+        let sheet = HStack(spacing: 16) {
+            ForEach(Boop.allCases, id: \.self) { boop in
+                VStack(spacing: 8) {
+                    Text(boop.rawValue).font(.system(size: 14, weight: .semibold, design: .rounded)).foregroundStyle(.white)
+                    ZStack {
+                        CritterView(design: .design(for: "ember"), mood: .greeting, quiet: true, boop: boop)
+                            .boopMotion(boop, progress: boop == .spin ? 0.75 : 0.35)
+                        BoopFlair(boop: boop, progress: 0.35)
+                    }
+                    .frame(width: 240, height: 210)
+                }
+            }
+        }
+        .padding(24)
+        .background(Color(red: 0.09, green: 0.07, blue: 0.13))
+        save(sheet, to: url)
+        for boop in Boop.allCases {
+            try? BoopSound.wav(for: boop).write(to: url.deletingLastPathComponent().appending(path: "boop-\(boop.rawValue).wav"))
+        }
+    }
+
     private static func save(_ view: some View, to url: URL) {
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2

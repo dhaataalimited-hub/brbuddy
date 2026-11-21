@@ -116,7 +116,8 @@ automatic updates; both are used only by the app target.
 | `AwayView` | `BRBuddy/AwayView.swift` | `AwayController`, hosted in each `AwayWindow` | Main actor (view) | Companion, tagline, time away, footer per phase |
 | `UnlockPanel` | `BRBuddy/UnlockPanel.swift` | `AwayView` on the main display while unlocking | Main actor (view); password check on a detached task | Embedded Touch ID view and password field |
 | `CompanionLibrary` | `BRBuddy/CompanionLibrary.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; frames cut on a detached task | The user's companion choice; community packs and their frames; import |
-| `CompanionView`, `SpritePackView` | `BRBuddy/CompanionView.swift` | `AwayView`, Settings | Main actor (views) | Shows the resolved companion with its battery props; plays a pack's frames at 8 fps |
+| `CompanionView`, `SpritePackView` | `BRBuddy/CompanionView.swift` | `AwayView`, Settings | Main actor (views) | Shows the resolved companion with its battery props; plays boops when clicked; plays a pack's frames at 8 fps |
+| `BoopPlayer`, `BoopFlair` | `BRBuddy/BoopView.swift` | Static namespace; `CompanionView` | Main actor | Plays boop sounds; the boop's motion, effects and speech bubble |
 | `BatteryMonitor` | `BRBuddy/BatteryMonitor.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; 1-second timer while retained | Reads the battery while BRB is up (retained by `AwayController`); holds `BatteryWatch` and the current reaction |
 | `BatteryBadge`, `BatteryFlair` | `BRBuddy/BatteryView.swift` | `AwayView`; `CompanionView` | Main actor (views) | The away screen's battery pill (liquid fill, bubbles, glow, sparks); the companion's battery props and speech bubble |
 | `CritterView`, `CritterDesign` | `BRBuddy/CritterView.swift` | `CompanionView`, contact sheet | Main actor (views) | Draws and animates the six built-in critters per mood |
@@ -143,6 +144,7 @@ automatic updates; both are used only by the app target.
 | `AgentProcessScanner` | `BRBuddyCore/AgentProcessScanner.swift` | Static namespace | Any thread (run detached) | Running agent CLIs by process name or Node script path; desktop app bundle IDs |
 | `TerminalLocation` | `BRBuddyCore/TerminalLocation.swift` | Value, made by the helper, carried on `AgentEvent` and `AgentTracker.Session` | Value type | App bundles among the hook's ancestors and its controlling tty, read from the kernel |
 | `CompanionMood` | `BRBuddyCore/CompanionMood.swift` | Enum | Value type | Which mood to show, and its Codex spritesheet row |
+| `Boop`, `BoopEvent`, `BoopPicker`, `BoopSound` | `BRBuddyCore/Boop.swift` | Values, `BoopPicker` held by `CompanionView` | Pure | The five click reactions; which comes next; their synthesised WAV sounds |
 | `BatteryStatus`, `BatteryReaction`, `BatteryWatch` | `BRBuddyCore/Battery.swift` | Values, held by `BatteryMonitor` | Value types; `read` on the main actor | The internal battery from IOKit power sources; which reaction to show; noticing plug and unplug |
 | `CompanionCatalog` | `BRBuddyCore/CompanionCatalog.swift` | Static namespace | Pure | Built-in list and agent matches; stored `Choice`; resolving a choice to a companion |
 | `CompanionPack`, `CompanionPackLibrary` | `BRBuddyCore/CompanionPack.swift` | Values / static namespace | Load anywhere; cut frames off the main thread | Validates a Codex pet folder, cuts frames per mood (and from an optional still sheet, shown on battery), scans and imports packs |
@@ -166,7 +168,7 @@ resting after 30 seconds without input; any phase → locking for real when `Awa
 before real lock (1–10, default 3), minutes before real lock (0 = never, default 60). The global shortcut is stored
 by KeyboardShortcuts; `agents.keepAwake` holds "keep awake while an agent works" (default on); `companion.choice` holds
 the companion (`auto`, `builtin:<id>` or `pack:<folder>`); `mirror.mode` holds the terminal mirror mode (default
-`off`); `away.showBattery` holds the battery badge (default on); `proximity.*` holds walk-away (enabled, device ID and name, range, action). Launch at login is
+`off`); `away.showBattery` holds the battery badge (default on); `companion.boopSounds` holds boop sounds (default on); `proximity.*` holds walk-away (enabled, device ID and name, range, action). Launch at login is
 held by macOS (`SMAppService`). Passwords are never stored or logged.
 
 Agent files: `~/Library/Application Support/BRBuddy/agents.sock` (the socket, 0600, recreated at launch) and
@@ -240,6 +242,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/AwayView.swift`: what the away windows show.
 - `BRBuddy/UnlockPanel.swift`: embedded Touch ID and password field.
 - `BRBuddy/CompanionLibrary.swift`: companion choice, community packs and their frames.
+- `BRBuddy/BoopView.swift`: boop sounds, motion and effects.
 - `BRBuddy/BatteryMonitor.swift`: reads the battery while BRB is up; notices plug and unplug.
 - `BRBuddy/BatteryView.swift`: the away screen's battery badge and the companion's battery props.
 - `BRBuddy/CompanionView.swift`: shows the chosen companion; sprite pack player.
@@ -269,6 +272,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/AgentSocket.swift`: the local socket, sending and listening.
 - `BRBuddyCore/AgentProcessScanner.swift`: finds running agents and desktop apps.
 - `BRBuddyCore/TerminalLocation.swift`: which app and terminal tab a hook ran from.
+- `BRBuddyCore/Boop.swift`: click reactions, the picker and their synthesised sounds.
 - `BRBuddyCore/Battery.swift`: battery status from IOKit, battery reactions, plug/unplug watch.
 - `BRBuddyCore/CompanionMood.swift`: companion moods and their spritesheet rows.
 - `BRBuddyCore/CompanionCatalog.swift`: built-in companions and resolving the user's choice.

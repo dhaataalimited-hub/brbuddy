@@ -174,3 +174,52 @@ struct BatteryTests {
                                       battery: .low) == .resting)
     }
 }
+
+struct BoopTests {
+    /// A repeatable generator so shuffles are the same every run.
+    struct Seeded: RandomNumberGenerator {
+        var state: UInt64
+        mutating func next() -> UInt64 {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            return state
+        }
+    }
+
+    let start = Date(timeIntervalSinceReferenceDate: 0)
+
+    @Test func everyFriendlyBoopComesUpBeforeRepeatsAndNeverTwiceInARow() {
+        var picker = BoopPicker()
+        var generator = Seeded(state: 42)
+        var picks: [Boop] = []
+        for i in 0..<12 { picks.append(picker.next(now: start + Double(i) * 10, using: &generator)) }
+        #expect(Set(picks.prefix(4)) == Set(BoopPicker.friendly))
+        #expect(Set(picks[4..<8]) == Set(BoopPicker.friendly))
+        #expect(!zip(picks, picks.dropFirst()).contains { $0 == $1 })
+        #expect(!picks.contains(.grumpy))
+    }
+
+    @Test func boopingTooFastMakesItGrumpy() {
+        var picker = BoopPicker()
+        var generator = Seeded(state: 7)
+        let fast = (0..<6).map { picker.next(now: start + Double($0) * 0.4, using: &generator) }
+        #expect(!fast.prefix(4).contains(.grumpy))
+        #expect(fast[4] == .grumpy && fast[5] == .grumpy)
+        #expect(picker.next(now: start + 30, using: &generator) != .grumpy)  // calms down after a rest
+    }
+
+    @Test func progressRunsZeroToOneThenEnds() {
+        let event = BoopEvent(.squish, at: start)
+        #expect(event.progress(at: start) == 0)
+        #expect(event.progress(at: start + Boop.squish.duration / 2) == 0.5)
+        #expect(event.progress(at: start + 5) == nil)
+    }
+
+    @Test func everySoundIsAShortValidWAV() {
+        for boop in Boop.allCases {
+            let wav = BoopSound.wav(for: boop)
+            #expect(wav.prefix(4) == Data("RIFF".utf8))
+            #expect(wav.count > 44 + 2_000)  // header plus some audio
+            #expect(wav.count < 44 + 44_100 * 2)  // under a second
+        }
+    }
+}

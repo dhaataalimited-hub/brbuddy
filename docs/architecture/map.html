@@ -204,6 +204,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><td><code>AgentMonitor</code></td><td class="mono">BRBuddy/AgentMonitor.swift</td><td><code>AppState</code> · app</td><td>Main; socket on own queue</td><td>Listener, <code>AgentTracker</code>, activity feed, process scan every 15 s, hook setup</td></tr>
     <tr><td><code>CompanionLibrary</code></td><td class="mono">BRBuddy/CompanionLibrary.swift</td><td><code>AppState</code> · app</td><td>Main; frames cut detached</td><td>Companion choice, packs and their frames, import</td></tr>
     <tr><td><code>TerminalMirror</code></td><td class="mono">BRBuddy/TerminalMirror.swift</td><td><code>AppState</code> · app</td><td>Main; capture detached</td><td>Picks a source, refreshes once a second while retained</td></tr>
+    <tr><td><code>Boop</code>, <code>BoopPicker</code>, <code>BoopSound</code></td><td class="mono">BRBuddyCore/Boop.swift</td><td>Values in <code>CompanionView</code></td><td>Pure</td><td>Five click reactions; which comes next (grumpy if clicked too fast); synthesised sounds</td></tr>
+    <tr><td><code>BoopPlayer</code>, <code>BoopFlair</code></td><td class="mono">BRBuddy/BoopView.swift</td><td><code>CompanionView</code></td><td>Main</td><td>Plays boop sounds; boop motion, effects and bubble</td></tr>
     <tr><td><code>BatteryMonitor</code></td><td class="mono">BRBuddy/BatteryMonitor.swift</td><td><code>AppState</code> · app</td><td>Main; 1 s timer while BRB is up</td><td>Reads the battery while retained by <code>AwayController</code>; notices plug and unplug (<code>BatteryWatch</code>)</td></tr>
     <tr><td><code>BatteryBadge</code>, <code>BatteryFlair</code></td><td class="mono">BRBuddy/BatteryView.swift</td><td><code>AwayView</code>, <code>CompanionView</code></td><td>Main (views)</td><td>The away screen's battery pill; the companion's battery props and speech bubble</td></tr>
     <tr><td><code>BatteryStatus</code>, <code>BatteryReaction</code></td><td class="mono">BRBuddyCore/Battery.swift</td><td>Values in <code>BatteryMonitor</code></td><td>Pure (+ IOKit read)</td><td>Battery from IOKit power sources; which reaction to show</td></tr>
@@ -252,8 +254,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
       <span class="status ok">rendered</span>
       <h3>Companions</h3>
       <div class="chain"><b>AwayView</b> → <b>CompanionMood</b> → <b>CompanionView</b> → <b>CompanionLibrary</b> + <b>CompanionCatalog</b> → <b>CritterView</b> or <b>SpritePackView</b> (<b>CompanionPack</b> frames)</div>
-      <ul><li>Moods: resting, working, waiting, finished, greeting, oops.</li><li>Codex pet rows 0, 3, 4, 5, 6, 7; v1 1536×1872 or v2 1536×2288; 20 MB cap.</li><li>Built-ins are code-drawn originals; third-party pet art is never bundled.</li></ul>
-      <div class="files">BRBuddy/CompanionLibrary.swift · BRBuddy/CompanionView.swift · BRBuddy/CritterView.swift · BRBuddyCore/CompanionMood.swift · BRBuddyCore/CompanionCatalog.swift · BRBuddyCore/CompanionPack.swift</div>
+      <ul><li>Moods: resting, working, waiting, finished, greeting, oops.</li><li>Codex pet rows 0, 3, 4, 5, 6, 7; v1 1536×1872 or v2 1536×2288; 20 MB cap.</li><li>Built-ins are code-drawn originals; third-party pet art is never bundled.</li><li>Click to boop: <b>BoopPicker</b> picks squish, giggle, spin or love (grumpy if clicked 5× in 3 s); <b>BoopSound</b> synthesises the sound; critters get the boop's own face.</li></ul>
+      <div class="files">BRBuddy/CompanionLibrary.swift · BRBuddy/CompanionView.swift · BRBuddy/CritterView.swift · BRBuddy/BoopView.swift · BRBuddyCore/Boop.swift · BRBuddyCore/CompanionMood.swift · BRBuddyCore/CompanionCatalog.swift · BRBuddyCore/CompanionPack.swift</div>
     </article>
     <article class="card" id="j-mirror">
       <span class="status ok">feed + window verified</span>
@@ -285,6 +287,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><th>Keys</th><th>Holds</th></tr>
     <tr><td class="mono">away.*</td><td>Auto-start, idle minutes (1–120, default 3), failed tries (1–10, default 3), minutes before real lock (0 = never, default 60)</td></tr>
     <tr><td class="mono">away.showBattery</td><td>Battery badge on the away screen (default on)</td></tr>
+    <tr><td class="mono">companion.boopSounds</td><td>Sound when the companion is clicked (default on)</td></tr>
     <tr><td class="mono">agents.keepAwake</td><td>Keep awake while an agent works (default on)</td></tr>
     <tr><td class="mono">companion.choice</td><td><code>auto</code>, <code>builtin:&lt;id&gt;</code> or <code>pack:&lt;folder&gt;</code></td></tr>
     <tr><td class="mono">mirror.mode</td><td>off, automatic, tmux, terminalWindow, activityFeed (default off)</td></tr>
@@ -295,7 +298,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   <h3>Threads</h3>
   <p>Swift 6 language mode; app types are main-actor. Off the main thread: password checks, pack frame cutting, process scans, tmux and Accessibility capture, socket reads (own serial queue). Touch ID results are ignored if their <code>LAContext</code> has been replaced.</p>
   <h3>Debug only</h3>
-  <p><code>BRBUDDY_START_AWAY=&lt;seconds&gt;</code>, <code>BRBUDDY_SNAPSHOT_DIR</code> and <code>BRBUDDY_COMPANION_SHEET</code>, <code>BRBUDDY_BATTERY_SHEET</code> and <code>BRBUDDY_FAKE_BATTERY</code> in debug builds; compiled out of release.</p>
+  <p><code>BRBUDDY_START_AWAY=&lt;seconds&gt;</code>, <code>BRBUDDY_SNAPSHOT_DIR</code> and <code>BRBUDDY_COMPANION_SHEET</code>, <code>BRBUDDY_BATTERY_SHEET</code>, <code>BRBUDDY_BOOP_SHEET</code> and <code>BRBUDDY_FAKE_BATTERY</code> in debug builds; compiled out of release.</p>
 </section>
 
 <section id="rules" aria-labelledby="rules-h">
@@ -346,5 +349,5 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   </dl>
 </section>
 
-<footer>Generated 2026-11-21 from docs/architecture after the companion holds still on battery (branch still-on-battery). The markdown is the source; regenerate this page after changes.</footer>
+<footer>Generated 2026-11-21 from docs/architecture after adding boops (branch boop). The markdown is the source; regenerate this page after changes.</footer>
 </div>

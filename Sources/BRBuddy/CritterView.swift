@@ -60,6 +60,8 @@ struct CritterView: View {
     var quiet = false
     /// On battery: the body holds still to save power, and only the face moves (glancing, blinking).
     var still = false
+    /// Clicked: shows that reaction's face instead of the mood's (the motion and effects come from `CompanionView`).
+    var boop: Boop?
 
     /// Everything is drawn in this design space, then scaled to fit whatever frame the view is given.
     private static let canvas = CGSize(width: 300, height: 260)
@@ -213,8 +215,8 @@ struct CritterView: View {
     private func face(_ t: Double) -> some View {
         VStack(spacing: 10) {
             HStack(spacing: 40) {
-                eye(t, scale: design.lopsided ? 1.3 : 1)
-                eye(t, scale: 1)
+                eye(t, scale: design.lopsided ? 1.3 : 1, left: true)
+                eye(t, scale: 1, left: false)
             }
             if design.blush {
                 HStack(spacing: 96) {
@@ -227,7 +229,43 @@ struct CritterView: View {
         }
     }
 
-    @ViewBuilder private func eye(_ t: Double, scale: Double) -> some View {
+    @ViewBuilder private func eye(_ t: Double, scale: Double, left: Bool) -> some View {
+        if let boop {
+            boopEye(boop, t, left: left).scaleEffect(scale).frame(width: 30, height: 30)
+        } else {
+            moodEye(t, scale: scale)
+        }
+    }
+
+    /// Squeezed shut (> <), laughing, dizzy spirals, hearts, or cross with eyebrows.
+    @ViewBuilder private func boopEye(_ boop: Boop, _ t: Double, left: Bool) -> some View {
+        let line = StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round)
+        switch boop {
+        case .squish:
+            Chevron(pointsRight: left).stroke(design.ink, style: line).frame(width: 16, height: 20)
+        case .giggle:
+            Arc(up: true).stroke(design.ink, style: line).frame(width: 22, height: 12)
+        case .spin:
+            Circle().trim(from: 0, to: 0.75).stroke(design.ink, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                .frame(width: 20, height: 20)
+                .overlay(Circle().trim(from: 0, to: 0.7).stroke(design.ink, style: StrokeStyle(lineWidth: 3, lineCap: .round)).frame(width: 9, height: 9))
+                .rotationEffect(.degrees(t * 720 * (left ? 1 : -1)))
+        case .love:
+            Image(systemName: "heart.fill")
+                .font(.system(size: 26))
+                .foregroundStyle(Color(red: 1, green: 0.3, blue: 0.5))
+                .scaleEffect(1 + 0.12 * sin(t * 14))
+        case .grumpy:
+            ZStack {
+                Capsule().fill(design.ink).frame(width: 18, height: 6).offset(y: 4)
+                Capsule().fill(design.ink).frame(width: 22, height: 4)
+                    .rotationEffect(.degrees(left ? 22 : -22))
+                    .offset(y: -8)
+            }
+        }
+    }
+
+    @ViewBuilder private func moodEye(_ t: Double, scale: Double) -> some View {
         let blink = mood != .resting && (t.truncatingRemainder(dividingBy: still ? 3 : 4) < 0.12)
         Group {
             switch mood {
@@ -254,6 +292,35 @@ struct CritterView: View {
     }
 
     @ViewBuilder private func mouth(_ t: Double) -> some View {
+        if let boop { boopMouth(boop, t) } else { moodMouth(t) }
+    }
+
+    @ViewBuilder private func boopMouth(_ boop: Boop, _ t: Double) -> some View {
+        let line = StrokeStyle(lineWidth: 4, lineCap: .round)
+        Group {
+            switch boop {
+            case .squish:
+                Ellipse().fill(design.ink).frame(width: 10, height: 10)
+            case .giggle:
+                // A big open laugh: a filled half circle with a tongue.
+                ZStack {
+                    HalfDisc().fill(design.ink)
+                    Ellipse().fill(Color(red: 0.95, green: 0.45, blue: 0.5)).frame(width: 14, height: 8).offset(y: 5)
+                }
+                .frame(width: 28, height: 15)
+                .clipShape(HalfDisc())
+            case .spin:
+                Wave().stroke(design.ink, style: line).frame(width: 24, height: 8)
+            case .love:
+                Arc(up: false).stroke(design.ink, style: line).frame(width: 26, height: 12)
+            case .grumpy:
+                Arc(up: true).stroke(design.ink, style: line).frame(width: 22, height: 8)
+            }
+        }
+        .frame(height: 16)
+    }
+
+    @ViewBuilder private func moodMouth(_ t: Double) -> some View {
         ZStack {
             switch mood {
             case .resting, .working:
@@ -361,6 +428,31 @@ struct CloudShape: Shape {
                                        width: w * 2 * r, height: w * 2 * r))
         }
         return path
+    }
+}
+
+/// A laughing mouth: flat on top, round underneath.
+struct HalfDisc: Shape {
+    func path(in rect: CGRect) -> Path {
+        Path { p in
+            p.move(to: CGPoint(x: rect.minX, y: rect.minY))
+            p.addArc(center: CGPoint(x: rect.midX, y: rect.minY), radius: rect.width / 2,
+                     startAngle: .degrees(0), endAngle: .degrees(180), clockwise: false)
+            p.closeSubpath()
+        }
+    }
+}
+
+/// One squeezed-shut eye: ">" (pointsRight) or "<".
+struct Chevron: Shape {
+    var pointsRight: Bool
+    func path(in rect: CGRect) -> Path {
+        Path { p in
+            let tip = pointsRight ? rect.maxX : rect.minX, back = pointsRight ? rect.minX : rect.maxX
+            p.move(to: CGPoint(x: back, y: rect.minY))
+            p.addLine(to: CGPoint(x: tip, y: rect.midY))
+            p.addLine(to: CGPoint(x: back, y: rect.maxY))
+        }
     }
 }
 

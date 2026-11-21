@@ -15,7 +15,15 @@ struct SettingsView: View {
                 .tabItem { Label("General", systemImage: "gearshape") }
             tab { agentsSection }
                 .tabItem { Label("Agents", systemImage: "terminal") }
-            tab { CompanionSection(library: state.companions, agent: state.agents.relevantAgent) }
+            tab {
+                CompanionSection(library: state.companions, agent: state.agents.relevantAgent, boopSounds: state.settings.boopSounds)
+                Section("Boops") {
+                    Toggle("Play a sound when the companion is clicked", isOn: $state.settings.boopSounds)
+                    Text("Click your companion on the away screen (or in the preview above) for one of five reactions. Click too fast and it gets grumpy.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
                 .tabItem { Label("Companion", systemImage: "pawprint") }
             tab {
                 Section("Battery") {
@@ -113,11 +121,12 @@ struct SettingsView: View {
 private struct CompanionSection: View {
     @Bindable var library: CompanionLibrary
     let agent: AgentKind?
+    let boopSounds: Bool
 
     var body: some View {
         Section("Companion") {
             HStack(alignment: .top, spacing: 16) {
-                CompanionView(library: library, mood: .greeting, agent: agent)
+                CompanionView(library: library, mood: .greeting, agent: agent, canBoop: true, boopSounds: boopSounds)
                     .frame(width: 96, height: 88)
                     .padding(6)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Color(red: 0.1, green: 0.08, blue: 0.14)))

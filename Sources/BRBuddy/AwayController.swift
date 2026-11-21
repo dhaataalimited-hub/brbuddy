@@ -41,6 +41,8 @@ final class AwayController {
     var battery: BatteryMonitor?
     /// Whether the away screen shows the battery, from the settings BRB started with.
     var showsBattery: Bool { settings.showBattery }
+    /// Whether clicking the companion makes a sound, from the settings BRB started with.
+    var boopSounds: Bool { settings.boopSounds }
 
     private var settings = AwaySettings.defaults
     private var windows: [AwayWindow] = []

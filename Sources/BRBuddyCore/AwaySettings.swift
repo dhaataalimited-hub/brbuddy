@@ -13,14 +13,17 @@ public struct AwaySettings: Equatable, Sendable {
     public var keepAwakeForAgents: Bool
     /// Show the battery (and let the companion react to it) on the away screen. Ignored on Macs without one.
     public var showBattery: Bool
+    /// Play a sound when someone clicks (boops) the companion.
+    public var boopSounds: Bool
 
     public static let defaults = AwaySettings(
         autoStartEnabled: true, idleMinutes: 3, maxFailedAttempts: 3, escalateAfterMinutes: 60,
-        keepAwakeForAgents: true, showBattery: true)
+        keepAwakeForAgents: true, showBattery: true, boopSounds: true)
 
     public init(autoStartEnabled: Bool, idleMinutes: Int, maxFailedAttempts: Int, escalateAfterMinutes: Int,
-                keepAwakeForAgents: Bool = true, showBattery: Bool = true) {
+                keepAwakeForAgents: Bool = true, showBattery: Bool = true, boopSounds: Bool = true) {
         self.showBattery = showBattery
+        self.boopSounds = boopSounds
         self.autoStartEnabled = autoStartEnabled
         self.idleMinutes = idleMinutes
         self.maxFailedAttempts = maxFailedAttempts
@@ -35,6 +38,7 @@ public struct AwaySettings: Equatable, Sendable {
         static let escalate = "away.escalateAfterMinutes"
         static let agents = "agents.keepAwake"
         static let battery = "away.showBattery"
+        static let boopSounds = "companion.boopSounds"
     }
 
     /// Reads settings, falling back to `defaults` for anything unset and clamping values to sane ranges.
@@ -50,7 +54,8 @@ public struct AwaySettings: Equatable, Sendable {
             maxFailedAttempts: int(Key.attempts, d.maxFailedAttempts, 1...10),
             escalateAfterMinutes: int(Key.escalate, d.escalateAfterMinutes, 0...24 * 60),
             keepAwakeForAgents: store.object(forKey: Key.agents) == nil ? d.keepAwakeForAgents : store.bool(forKey: Key.agents),
-            showBattery: store.object(forKey: Key.battery) == nil ? d.showBattery : store.bool(forKey: Key.battery))
+            showBattery: store.object(forKey: Key.battery) == nil ? d.showBattery : store.bool(forKey: Key.battery),
+            boopSounds: store.object(forKey: Key.boopSounds) == nil ? d.boopSounds : store.bool(forKey: Key.boopSounds))
     }
 
     public func save(to store: UserDefaults = .standard) {
@@ -60,5 +65,6 @@ public struct AwaySettings: Equatable, Sendable {
         store.set(escalateAfterMinutes, forKey: Key.escalate)
         store.set(keepAwakeForAgents, forKey: Key.agents)
         store.set(showBattery, forKey: Key.battery)
+        store.set(boopSounds, forKey: Key.boopSounds)
     }
 }
