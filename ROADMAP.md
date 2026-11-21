@@ -42,8 +42,11 @@ SwiftPM package, menu bar item, keep-awake toggle, bundling script, architecture
   vibe, each with six moods. "Match my agent" picks automatically.
 - Community packs: any Codex pet (v1/v2) works; `license`, `author`, `agents` are optional BRBuddy fields. Checked
   against all 385 pets in the awesome-codex-pet catalogue (loaded locally, none bundled).
-- **Still open:** a gallery/download of packs, a "make your own" guide with a template sheet, exporting built-ins as
-  Codex packs, pixel-art (nearest-neighbour) scaling option.
+- Added 2026-11-21/22: the away screen shows the battery and companions react to it (cheer on plug-in, sweat when
+  low, slow motion in Low Power Mode); on battery the body holds still and only the face moves (packs can ship a
+  still sheet); clicking a companion "boops" it: five shared reactions plus a signature one with its own
+  synthesised sound and line (packs name theirs in `pet.json`).
+- **Still open:** pixel-art (nearest-neighbour) scaling option. Making and sharing packs moved to Phase 7.
 - No vendor logos or mascots, ever.
 
 ## Phase 4: Terminal mirror ✅ (2026-11-20, except where noted)
@@ -76,3 +79,24 @@ SwiftPM package, menu bar item, keep-awake toggle, bundling script, architecture
 - **Still open:** hands-on tuning with a real iPhone and Watch (needs the owner at the Mac to allow Bluetooth and
   walk around). Whether a locked iPhone keeps the connection reliably varies by iOS version. A "returned" action
   (e.g. show the unlock prompt) isn't built.
+
+## Phase 7: Make and share companions (planned 2026-11-22)
+Three steps, smallest first. No server and no money: sharing goes through GitHub, reviewed by hand.
+
+1. **"Make one with any AI" guide** ✅ `docs/making-a-companion.md`: a copy-paste prompt with the full pack spec
+   (grid, rows, still sheet, `pet.json`, signature sounds) and troubleshooting. Linked from the README and
+   CONTRIBUTING.
+2. **Companion Studio, a creator inside Settings.** Build a critter from the parts `CritterDesign` already has
+   (body shape, colours, ears, accent, blush, lopsided eyes, floating), pick a signature sound and line, and watch
+   it react in the live preview, boops included. **Save as pack** renders both spritesheets with the same drawing
+   code the built-ins use and writes a normal Codex-format folder that works in other pet apps too. Original by
+   construction: no AI or drawing skills needed.
+   - Open questions: more parts (tails, hats, patterns) and whether a saved design stays editable (keep the
+     design as JSON beside the pack).
+3. **Community gallery.** A public `brbuddy-companions` repo where people submit packs by pull request; each is
+   checked for license, originality and the no-logos rule before it's merged. BRBuddy gets **Browse packs…**: it
+   lists the gallery's index and downloads a chosen pack into the Companions folder, through the same checks as
+   **Add companion pack…**.
+   - Before building: who reviews submissions, a takedown process, and pinning downloads to reviewed commits.
+   - Not planned: a paid marketplace (needs a server, payments, moderation at scale). Revisit if the gallery takes
+     off.

@@ -18,7 +18,8 @@ for Touch ID or your password when someone touches the keyboard.
 - Come back, press any key, and unlock with Touch ID or your password.
 - Three wrong tries, or an hour away, and BRBuddy hands off to the real macOS lock screen. Your agent keeps running.
 - Pick a companion in **Settings…**: six original critters (one per agent's vibe), or add any Codex pet with
-  **Add companion pack…**. Change everything else there too.
+  **Add companion pack…** (or make your own with any AI: [docs/making-a-companion.md](docs/making-a-companion.md)).
+  Change everything else there too.
 - Want to see your agent from across the room? Turn on **Terminal on the away screen**: a read-only view of the
   tmux pane or Terminal window your agent runs in, or a feed of what it's doing. Off by default, since anyone at
   your Mac can read it.

@@ -9,6 +9,9 @@ Thanks for helping. Issues, fixes and companion packs are all welcome.
 - Copying code from another project? Only from permissive licenses, and add its notice to `THIRD_PARTY_NOTICES.md`.
 
 ## Companion packs
+The quickest way to make one is [docs/making-a-companion.md](docs/making-a-companion.md): a prompt you paste into
+any AI that builds the whole pack. The details:
+
 Packs use the Codex pet format, so they work in other pet apps too: a folder with `pet.json` and an 8-column
 spritesheet of 192×208 cells, 1536×1872 (v1, 9 rows) or 1536×2288 (v2, 11 rows, `"spriteVersionNumber": 2`). Rows:
 0 idle, 1 running-right, 2 running-left, 3 waving, 4 jumping, 5 failed, 6 waiting, 7 running, 8 review (v2 adds
@@ -21,9 +24,16 @@ fields to `pet.json`:
   "spritesheetPath": "spritesheet.webp",
   "license": "CC-BY-4.0",
   "author": "Your Name",
-  "agents": ["claude", "codex"]
+  "agents": ["claude", "codex"],
+  "stillSpritesheetPath": "spritesheet-still.png",
+  "boopSignature": "plink",
+  "boopBubble": "hi there!"
 }
 ```
+
+`stillSpritesheetPath` is a second sheet of the same size where the body holds still and only the face moves; it's
+shown on battery. `boopSignature` picks the pack's own boop sound (names listed in the guide) and `boopBubble` what
+it says then.
 
 `agents` makes "Match my agent" pick your pack for those agents (`claude`, `codex`, `gemini`, `cursor`,
 `antigravity`, `grok`). Packs submitted to this repo must:
