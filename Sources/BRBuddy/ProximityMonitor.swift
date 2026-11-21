@@ -1,7 +1,6 @@
 import BRBuddyCore
 @preconcurrency import CoreBluetooth
 import Observation
-import os
 
 /// Watches the user's chosen iPhone or Apple Watch over Bluetooth and reports when it leaves. Also lists nearby Apple
 /// devices for Settings' picker. Owned by `AppState`.
@@ -33,8 +32,7 @@ final class ProximityMonitor: NSObject {
     var settings: ProximitySettings {
         didSet {
             settings.save()
-            let deviceChanged = settings.deviceID != oldValue.deviceID && !followingAddress
-            if deviceChanged || settings.range != oldValue.range { tracker = ProximityTracker(range: settings.range) }
+            if settings.deviceID != oldValue.deviceID || settings.range != oldValue.range { tracker = ProximityTracker(range: settings.range) }
             update()
         }
     }
@@ -58,15 +56,25 @@ final class ProximityMonitor: NSObject {
     /// The watched device's name, if it shared one after connecting.
     var connectedName: String? { isConnected ? watched?.name : nil }
 
-    /// Follows the phone when it switches to a new Bluetooth address.
-    private var follower = AddressFollower()
-    private var watchingSince: Date?
-    private var watchedLastHeard: Date?
-    private var watchedLastAdvertised: Date?
-    private var watchedLevel: Double?
-    /// Set while switching to a successor address, so the settings change keeps the tracker's readings.
-    private var followingAddress = false
-    nonisolated private static let log = Logger(subsystem: "com.dhaataalimited.brbuddy", category: "walk-away")
+
+    /// Names of phones paired with this Mac (System Settings → Bluetooth). Walk-away only uses a paired phone.
+    private(set) var pairedNames: Set<String> = []
+
+    /// Rereads macOS's paired list (after the user pairs in System Settings, or when the picker opens).
+    func refreshPairing() {
+        guard Self.isAvailable else { return }
+        pairedNames = PairedDevices.phoneNames()
+    }
+
+    func pairing(of device: Device) -> WalkAwayPairing {
+        WalkAwayPairing.status(name: device.name, pairedNames: pairedNames)
+    }
+
+    /// Whether the saved device is a paired phone, so walk-away may act on it.
+    var chosenPairing: WalkAwayPairing {
+        guard let title = settings.deviceName, settings.deviceID != nil else { return .notPaired }
+        return WalkAwayPairing.status(name: WalkAwayPairing.baseName(ofTitle: title), pairedNames: pairedNames)
+    }
 
     /// Watching the chosen device: walk-away is on, or a test is running.
     private var isWatching: Bool { settings.isActive || (test != nil && settings.deviceID != nil) }
@@ -89,6 +97,8 @@ final class ProximityMonitor: NSObject {
         settings = loaded
         tracker = ProximityTracker(range: loaded.range)
         super.init()
+        // Only read Bluetooth when walk-away is on (no surprise permission prompt otherwise).
+        if loaded.isActive { refreshPairing() }
         update()
     }
 
@@ -102,7 +112,9 @@ final class ProximityMonitor: NSObject {
         case .unsupported: return "This Mac doesn't support Bluetooth LE."
         default: break
         }
-        guard settings.isActive else { return settings.deviceID == nil ? "Pick your iPhone or Apple Watch below." : "Off." }
+        guard settings.deviceID != nil else { return "Pair your iPhone with this Mac, then choose it here." }
+        guard chosenPairing == .paired else { return "This device isn't paired with this Mac, so walk-away is off." }
+        guard settings.isActive else { return "Off." }
         let name = settings.deviceName ?? "Your device"
         switch tracker.state {
         case .near: return "\(name) is nearby\(tracker.smoothed.map { String(format: " (signal %.0f)", $0) } ?? "")."
@@ -116,6 +128,7 @@ final class ProximityMonitor: NSObject {
     /// Settings' device list is showing: scan for nearby Apple devices.
     func setPickerOpen(_ open: Bool) {
         pickerOpen = open
+        if open { refreshPairing() }
         if !open {
             for peripheral in probes.values { central?.cancelPeripheralConnection(peripheral) }
             probes = [:]
@@ -165,8 +178,7 @@ final class ProximityMonitor: NSObject {
             return
         }
         guard central.state == .poweredOn else { return }
-        // Keep scanning while watching, even when connected: that's how a new address of the phone is spotted.
-        if pickerOpen || isWatching {
+        if pickerOpen || (isWatching && !isConnected) {
             if !central.isScanning { central.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]) }
         } else if central.isScanning {
             central.stopScan()
@@ -181,13 +193,9 @@ final class ProximityMonitor: NSObject {
     private func startWatching() {
         guard let central, let id = settings.deviceID.flatMap(UUID.init(uuidString:)) else { return }
         if watched?.identifier != id {
+            refreshPairing()
             stopWatching()
             watched = central.retrievePeripherals(withIdentifiers: [id]).first
-            watchingSince = Date()
-            watchedLastHeard = nil
-            watchedLastAdvertised = nil
-            watchedLevel = nil
-            follower.reset()
         }
         if let watched, watched.state == .disconnected { central.connect(watched) }
         if tickTimer == nil {
@@ -210,37 +218,13 @@ final class ProximityMonitor: NSObject {
         tracker.reset()
     }
 
-    /// Switches to the phone's new address, keeping its readings so near/away carries on.
-    private func follow(to peripheral: CBPeripheral) {
-        guard let central else { return }
-        Self.log.info("following \(self.settings.deviceID ?? "-", privacy: .public) -> \(peripheral.identifier.uuidString, privacy: .public)")
-        if let old = watched, old.state != .disconnected { central.cancelPeripheralConnection(old) }
-        rssiTimer?.invalidate(); rssiTimer = nil
-        isConnected = false
-        watched = peripheral
-        watchedLastHeard = Date()
-        watchedLastAdvertised = Date()
-        follower.reset()
-        followingAddress = true
-        var s = settings
-        s.deviceID = peripheral.identifier.uuidString
-        if let name = s.deviceName, let dot = name.range(of: " · ") {
-            s.deviceName = String(name[..<dot.lowerBound]) + " · " + peripheral.identifier.uuidString.prefix(4)
-        }
-        settings = s
-        followingAddress = false
-        central.connect(peripheral)
-    }
-
     private func record(rssi: Int) {
-        watchedLastHeard = Date()
         if let change = tracker.add(rssi: Double(rssi), at: Date()) { handle(change) }
         test?.observe(smoothed: tracker.smoothed, state: tracker.state)
-        watchedLevel = tracker.smoothed ?? watchedLevel
     }
 
     private func handle(_ state: ProximityTracker.State) {
-        if state == .away, settings.isActive, test == nil { onLeft?() }
+        if state == .away, settings.isActive, test == nil, chosenPairing == .paired { onLeft?() }
     }
 }
 
@@ -262,14 +246,8 @@ extension ProximityMonitor: CBCentralManagerDelegate, CBPeripheralDelegate {
         let rssi = RSSI.intValue
         MainActor.assumeIsolated {
             if id.uuidString == settings.deviceID {
-                watchedLastAdvertised = Date()
                 record(rssi: rssi)
                 if watched == nil || watched?.state == .disconnected { startWatching() }
-            } else if personal, isWatching, let since = watchingSince,
-                      follower.heard(id, rssi: Double(rssi), at: Date(), watchedLastHeard: watchedLastHeard,
-                                     watchedLastAdvertised: watchedLastAdvertised, watchedLevel: watchedLevel,
-                                     nearLevel: settings.range.threshold, watchingSince: since) != nil {
-                follow(to: peripheral)
             }
             guard pickerOpen, personal, rssi > -90, rssi < 0 else { return }
             var device = allDevices[id] ?? Device(id: id, name: nil, kind: nil, rssi: Double(rssi), lastSeen: Date())

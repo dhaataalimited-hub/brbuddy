@@ -83,7 +83,8 @@ flowchart TD
   State --> Mir[TerminalMirror]
   Mir --> AX[AccessibilityTerminalReader: ApplicationServices AX]
   State --> Prox[ProximityMonitor: CoreBluetooth]
-  Prox --> PT[ProximityTracker, ProximitySettings, WalkAwayTest, AddressFollower, AppleDeviceInfo: pure]
+  Prox --> PT[ProximityTracker, ProximitySettings, WalkAwayTest, AppleDeviceInfo, WalkAwayPairing: pure]
+  Prox --> PD[PairedDevices: IOBluetooth]
   Mir --> Core
   Core --> TText[ANSIParser, TerminalText: pure]
   Core --> Tmux[TmuxReader: tmux list-panes, capture-pane]
@@ -115,6 +116,7 @@ automatic updates; both are used only by the app target.
 | `TerminalMirror` | `BRBuddy/TerminalMirror.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; capture on a detached task | Picks a source per `TerminalMirrorMode`, refreshes every second while retained (BRB up or Settings open) |
 | `TerminalMirrorView` | `BRBuddy/TerminalMirrorView.swift` | `AwayView`, Settings | Main actor (view) | Draws styled lines, latest that fit; no input path |
 | `ProximityMonitor` | `BRBuddy/ProximityMonitor.swift` | `AppState`, app lifetime; Bluetooth manager created only when walk-away is on or the picker is open | `@MainActor`, `@Observable`; CoreBluetooth on the main queue | Lists nearby iPhones and Watches (filters accessories by Continuity type, briefly connects to read each model, hides Macs/iPads, marks the closest); connects to the chosen one, reads RSSI every 2 s, reconnects; tells `AppState` when it leaves |
+| `PairedDevices` | `BRBuddy/PairedDevices.swift` | Static namespace | Main actor in practice | Names of phones paired in System Settings → Bluetooth (IOBluetooth); the Bluetooth settings link |
 | `AccessibilityTerminalReader` | `BRBuddy/AccessibilityTerminalReader.swift` | Static namespace | Running apps on main; AX reads off main | Text of a Terminal/iTerm2/Ghostty window; Accessibility permission prompt |
 | `MenuContent` | `BRBuddy/MenuContent.swift` | `BRBuddyApp`'s menu scene | Main actor (view) | Menu items; agent rows jump to their terminal |
 | `TerminalFocuser` | `BRBuddy/TerminalFocuser.swift` | Static namespace | Main actor; `osascript` on a detached task | Finds the running app hosting a session; selects its Terminal/iTerm2 tab by tty, else activates the app and raises the window for its folder (Accessibility) |
@@ -139,8 +141,8 @@ automatic updates; both are used only by the app target.
 | `TmuxReader` | `BRBuddyCore/TmuxReader.swift` | Static namespace | Off the main thread (runs tmux, 2 s limit) | Finds tmux, lists panes, picks the agent's pane, captures it read-only |
 | `AgentActivityLog` | `BRBuddyCore/AgentActivityLog.swift` | Value, held by `AgentMonitor` | Value type | Rolling feed (80 entries) of agent events as styled lines |
 | `TerminalMirrorMode` | `BRBuddyCore/TerminalMirrorMode.swift` | Enum | Value type | Off / automatic / tmux / terminal window / activity feed; stored in UserDefaults |
-| `AppleDeviceInfo` | `BRBuddyCore/AppleDeviceInfo.swift` | Static namespace | Pure | Continuity message types in Apple advertisements; model number → iPhone / Watch / iPad / Mac |
-| `ProximityTracker`, `ProximitySettings`, `WalkAwayTest`, `AddressFollower` | `BRBuddyCore/ProximityTracker.swift` | Values, held by `ProximityMonitor` | Value types | Median-smoothed RSSI → near / away with delay and hysteresis; walk-away preferences; the Settings dry run's three steps; following the phone to its new Bluetooth address |
+| `AppleDeviceInfo`, `WalkAwayPairing` | `BRBuddyCore/AppleDeviceInfo.swift` | Static namespaces | Pure | Whether a device is a paired phone with its own name (walk-away needs it);  Continuity message types in Apple advertisements; model number → iPhone / Watch / iPad / Mac |
+| `ProximityTracker`, `ProximitySettings`, `WalkAwayTest` | `BRBuddyCore/ProximityTracker.swift` | Values, held by `ProximityMonitor` | Value types | Median-smoothed RSSI → near / away with delay and hysteresis; walk-away preferences; the Settings dry run's three steps |
 
 `AppState` is passed to views by initializer; `AwayController` is reached through `AppState`. There are no
 singletons. `AwayController` notifies `AppState` that BRB ended through a callback so keep-awake can change mode.
@@ -194,6 +196,7 @@ serial queue and hop to the main actor in `AgentMonitor`; the process scan runs 
 | The mirror is off by default and Settings warns that anyone at the Mac can read it | `TerminalMirrorMode`, `SettingsView` |
 | Hook events carry tool details, never the user's prompt text | `AgentEvent`, `ActivityFeedTests` |
 | Touch Bluetooth only when walk-away is on or the picker is open (no surprise permission prompt) | `ProximityMonitor` |
+| Walk-away only uses an iPhone paired with this Mac: unpaired iPhones change address every ~15 min and get lost or confused with strangers' phones | `WalkAwayPairing`, `ProximityMonitor`, `WalkAwayPairingTests` |
 | The Bluetooth usage text must stay in the bundle's Info.plist, or macOS kills the app on first use | `Config/Info.plist`, `ProximityMonitor` |
 | Signed builds keep the Apple-events entitlement and usage text, or jumping to a Terminal/iTerm2 tab silently fails | `Config/BRBuddy.entitlements`, `Config/Info.plist`, `Tools/build-app.sh` |
 
@@ -234,6 +237,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/TerminalMirrorView.swift`: draws the read-only terminal panel.
 - `BRBuddy/AccessibilityTerminalReader.swift`: reads terminal window text via Accessibility.
 - `BRBuddy/ProximityMonitor.swift`: Bluetooth device picker and walk-away watching.
+- `BRBuddy/PairedDevices.swift`: phones paired with this Mac, from macOS's paired-device list.
 - `BRBuddy/MenuContent.swift`: the menu's items.
 - `BRBuddy/TerminalFocuser.swift`: jumps from a menu row to the agent's terminal tab or window.
 - `BRBuddy/SettingsView.swift`: the Settings window and its five tabs.
@@ -260,8 +264,8 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/TmuxReader.swift`: read-only tmux pane listing and capture.
 - `BRBuddyCore/AgentActivityLog.swift`: the agent activity feed.
 - `BRBuddyCore/TerminalMirrorMode.swift`: the mirror setting.
-- `BRBuddyCore/ProximityTracker.swift`: near/away decisions from signal strength; walk-away settings; the walk-away test; following address changes.
-- `BRBuddyCore/AppleDeviceInfo.swift`: tells phones and watches from other Apple devices for the picker.
+- `BRBuddyCore/ProximityTracker.swift`: near/away decisions from signal strength; walk-away settings; the walk-away test.
+- `BRBuddyCore/AppleDeviceInfo.swift`: tells phones and watches from other Apple devices; pairing status for walk-away.
 
 **brbuddy-hook (helper)**
 - `brbuddy-hook/main.swift`: run by agent hooks; forwards one event and exits.

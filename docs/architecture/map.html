@@ -204,7 +204,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><td><code>AgentMonitor</code></td><td class="mono">BRBuddy/AgentMonitor.swift</td><td><code>AppState</code> · app</td><td>Main; socket on own queue</td><td>Listener, <code>AgentTracker</code>, activity feed, process scan every 15 s, hook setup</td></tr>
     <tr><td><code>CompanionLibrary</code></td><td class="mono">BRBuddy/CompanionLibrary.swift</td><td><code>AppState</code> · app</td><td>Main; frames cut detached</td><td>Companion choice, packs and their frames, import</td></tr>
     <tr><td><code>TerminalMirror</code></td><td class="mono">BRBuddy/TerminalMirror.swift</td><td><code>AppState</code> · app</td><td>Main; capture detached</td><td>Picks a source, refreshes once a second while retained</td></tr>
-    <tr><td><code>ProximityMonitor</code></td><td class="mono">BRBuddy/ProximityMonitor.swift</td><td><code>AppState</code> · app</td><td>Main (CoreBluetooth queue)</td><td>Device picker (accessories filtered, models read, closest marked); test mode (live signal, no BRB); follows the phone to its new address (<code>AddressFollower</code>); connects, reads signal every 2 s, reports departure</td></tr>
+    <tr><td><code>ProximityMonitor</code></td><td class="mono">BRBuddy/ProximityMonitor.swift</td><td><code>AppState</code> · app</td><td>Main (CoreBluetooth queue)</td><td>Device picker (accessories filtered, models read, closest marked); test mode (live signal, no BRB); only paired iPhones (<code>WalkAwayPairing</code>, <code>PairedDevices</code>); connects, reads signal every 2 s, reports departure</td></tr>
     <tr><td><code>AppleDeviceInfo</code></td><td class="mono">BRBuddyCore/AppleDeviceInfo.swift</td><td>Static</td><td>Pure</td><td>Continuity message types; model number → iPhone / Watch / iPad / Mac</td></tr>
     <tr><td><code>KeepAwake</code></td><td class="mono">BRBuddyCore/KeepAwake.swift</td><td><code>AppState</code> · app</td><td>Main</td><td>At most one IOKit power assertion; released on quit</td></tr>
     <tr><td><code>AgentHookInstaller</code></td><td class="mono">BRBuddyCore/AgentHookInstaller.swift</td><td>Value in <code>AgentMonitor</code></td><td>Main</td><td>Adds/removes our hooks in agents' files, with backups</td></tr>
@@ -264,7 +264,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
       <h3>Walk-away lock</h3>
       <div class="chain"><b>SettingsView</b> → <b>ProximityMonitor</b> → <b>ProximityTracker</b> → <b>AppState</b> → BRB or <b>ScreenLocker</b></div>
       <ul><li>Thresholds −62 / −74 / −86 dBm; away after 10 s weak or 60 s silent; back at threshold + 6 dB.</li><li>Bluetooth touched only when on or while picking (no surprise prompt).</li></ul>
-      <div class="files">BRBuddy/ProximityMonitor.swift · BRBuddyCore/ProximityTracker.swift · BRBuddyCore/AppleDeviceInfo.swift · BRBuddy/SettingsView.swift</div>
+      <div class="files">BRBuddy/ProximityMonitor.swift · BRBuddyCore/ProximityTracker.swift · BRBuddyCore/AppleDeviceInfo.swift · BRBuddy/PairedDevices.swift · BRBuddy/SettingsView.swift</div>
     </article>
   </div>
 </section>
@@ -335,5 +335,5 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   </dl>
 </section>
 
-<footer>Generated 2026-11-21 from docs/architecture after the walk-away test (branch feature/walk-away-test). The markdown is the source; regenerate this page after changes.</footer>
+<footer>Generated 2026-11-21 from docs/architecture after walk-away requires a paired iPhone (branch feature/require-pairing). The markdown is the source; regenerate this page after changes.</footer>
 </div>

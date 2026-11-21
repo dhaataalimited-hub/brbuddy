@@ -24,7 +24,7 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 | Companions | Settings → Companion | Six built-in characters (Ember, Pebble, Prism, Comet, Drift, Gremlin), or "Match my agent" |
 | Companion packs | Settings → Companion → Add companion pack… | Any pet made for Codex works (a folder with pet.json and a spritesheet) |
 | Terminal on the away screen | Settings → Away Screen | Off by default. Shows a tmux pane, a Terminal/iTerm2/Ghostty window, or a feed of what your agent is doing. View-only |
-| Walk-away lock | Settings → Walk-away | Pick your iPhone or Apple Watch; when it moves away, BRBuddy starts BRB or locks the Mac |
+| Walk-away lock | Settings → Walk-away | Pair your iPhone with the Mac, then pick it; when it moves away, BRBuddy starts BRB or locks the Mac |
 | Open at login | Settings → General | |
 | Updates | Menu → Check for Updates… | Downloaded releases check once a day and offer new versions; builds made from source don't update themselves |
 
@@ -111,10 +111,20 @@ iPhones and watches don't broadcast their names, so press Choose device… and h
 the Mac. Within a few seconds it moves to the top of the list and is marked Closest; press Use next to it. Rows say
 iPhone or Apple Watch once BRBuddy has asked the device its model.
 
-**Why does the list say "iPhone" instead of my phone's name, and what's the code after it?**
-iPhones keep their name private over Bluetooth, so every one shows as "iPhone". The four characters after it are this
-Mac's short ID for that phone (not its Bluetooth address). iPhones change that ID about every 15 minutes for
-privacy; BRBuddy follows the change by itself, so the code in Settings may change now and then.
+**Walk-away says my iPhone isn't paired. How do I pair it?**
+Walk-away only works with an iPhone paired with your Mac: unpaired iPhones change their Bluetooth identity about every
+15 minutes, so BRBuddy would lose track of yours. On the iPhone, open Settings → Bluetooth and leave it open. On the
+Mac, open System Settings → Bluetooth, find your iPhone under Nearby Devices and click Connect; accept the code on both.
+It may then say Not Connected; that's fine, it stays paired. Back in BRBuddy, press Check again and choose your phone:
+it now shows its own name. (To undo: System Settings → Bluetooth → ⓘ next to the iPhone → Forget This Device.)
+
+**Why do other phones in the list say "iPhone" and "Not paired"?**
+iPhones keep their name private unless they're paired with your Mac, so strangers' phones all show as "iPhone". The
+four characters after a name are this Mac's short ID for it, not its Bluetooth address.
+
+**My paired iPhone shows "Needs a name".**
+It's called just "iPhone", the same as every unpaired phone. Rename it on the iPhone (Settings → General → About →
+Name), then choose it again.
 
 **How do I check walk-away is watching the right phone?**
 Settings → Walk-away → Test…. Hold the phone next to the Mac (the signal number jumps up), walk away with it until

@@ -221,7 +221,7 @@ private struct WalkAwaySection: View {
                     .font(.caption).foregroundStyle(.secondary)
             } else {
                 Toggle("When my iPhone walks away", isOn: $monitor.settings.enabled)
-                    .disabled(monitor.settings.deviceID == nil)
+                    .disabled(monitor.chosenPairing != .paired)
                 Picker("Then", selection: $monitor.settings.action) {
                     ForEach(ProximitySettings.Action.allCases) { Text($0.title).tag($0) }
                 }
@@ -242,6 +242,7 @@ private struct WalkAwaySection: View {
                         monitor.setPickerOpen(picking)
                     }
                 }
+                if !picking, monitor.settings.deviceID == nil || monitor.chosenPairing != .paired { pairingHelp }
                 if picking { devicePicker }
                 if let test = monitor.test { testPanel(test) }
                 Text(monitor.statusText)
@@ -311,8 +312,30 @@ private struct WalkAwaySection: View {
         }
     }
 
+    /// How to pair, shown until a paired iPhone is chosen. Walk-away refuses unpaired phones: they change Bluetooth
+    /// address about every 15 minutes, so BRBuddy would lose them (or follow a stranger's phone).
+    @ViewBuilder private var pairingHelp: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if monitor.chosenPairing == .genericName {
+                Text("Your iPhone is paired but called just \"iPhone\", like everyone else's. Give it its own name on the iPhone (Settings → General → About → Name), then choose it again.")
+                    .foregroundStyle(.orange)
+            } else {
+                Text(monitor.settings.deviceID == nil ? "First, pair your iPhone with this Mac" : "This device isn't paired with this Mac, so walk-away is off. Pair your iPhone:")
+                    .font(.body.weight(.semibold))
+                Text("1. On the iPhone, open Settings → Bluetooth and leave that screen open.")
+                Text("2. On this Mac, open Bluetooth settings, find your iPhone under Nearby Devices and click Connect. Accept the code on both.")
+                Text("3. It may then say Not Connected: that's fine, it stays paired. Choose it here; it shows its own name.")
+            }
+            HStack {
+                Button("Open Bluetooth Settings") { NSWorkspace.shared.open(PairedDevices.settingsURL) }
+                Button("Check again") { monitor.refreshPairing() }
+            }
+        }
+        .font(.caption)
+    }
+
     @ViewBuilder private var devicePicker: some View {
-        Text("Hold your iPhone or Apple Watch right next to the Mac, unlocked: yours moves to the top and is marked Closest.")
+        Text("Only iPhones paired with this Mac can be used; they show their own name. Hold yours next to the Mac: it's marked Closest.")
             .font(.caption)
             .foregroundStyle(.secondary)
         if monitor.nearbyDevices.isEmpty {
@@ -322,7 +345,12 @@ private struct WalkAwaySection: View {
                     .font(.caption)
             }
         } else {
-            ForEach(monitor.nearbyDevices.prefix(6)) { device in
+            // Paired phones first, each group strongest first.
+            let nearby = Array(monitor.nearbyDevices.prefix(8))
+            let rows = nearby.filter { monitor.pairing(of: $0) == .paired } + nearby.filter { monitor.pairing(of: $0) != .paired }
+            if !rows.contains(where: { monitor.pairing(of: $0) == .paired }) { pairingHelp }
+            ForEach(rows) { device in
+                let pairing = monitor.pairing(of: device)
                 HStack {
                     Image(systemName: icon(device.kind))
                         .frame(width: 18)
@@ -338,10 +366,17 @@ private struct WalkAwaySection: View {
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
                     SignalBars(rssi: Int(device.rssi))
-                    Button("Use") {
-                        monitor.choose(device)
-                        picking = false
-                        monitor.setPickerOpen(false)
+                    if pairing == .paired {
+                        Button("Use") {
+                            monitor.choose(device)
+                            picking = false
+                            monitor.setPickerOpen(false)
+                        }
+                    } else {
+                        Text(pairing == .genericName ? "Needs a name" : "Not paired")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 64)
                     }
                 }
             }

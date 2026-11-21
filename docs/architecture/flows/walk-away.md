@@ -1,7 +1,8 @@
 # Walk-away lock
 
 ## What the user does
-In Settings → Walk-away they press **Choose device…**. BRBuddy lists nearby iPhones and Apple Watches,
+First they pair their iPhone with the Mac in System Settings → Bluetooth (the tab shows the steps and won't accept
+an unpaired phone). Then in Settings → Walk-away they press **Choose device…**. BRBuddy lists nearby iPhones and Apple Watches,
 strongest signal first, with dBm and bars. Apple devices advertise anonymously, so to find theirs they hold it next to
 the Mac: it rises to the top and is marked **Closest** (8 dB ahead of the next). They press **Use** next to it, which also turns the feature on. They
 choose what "away" means (Near: walk away from the desk; Room; Far) and what happens (Start BRB, or Lock the Mac).
@@ -51,22 +52,22 @@ sequenceDiagram
 - Not live-tested on 2026-11-20 (needs the owner to allow Bluetooth and walk around). Logic covered by
   `ProximityTrackerTests`; the app launches without touching Bluetooth.
 
-## Following the phone's address changes
+## Pairing is required
 iPhones switch to a new random Bluetooth address about every 15 minutes, and macOS gives each address its own
-identifier, so the saved device "goes quiet" while still on the desk. Pairing would make macOS follow it, but macOS
-won't let an app start pairing with an iPhone: every protected iPhone characteristic (Battery, Current Time,
-Continuity) just answers "insufficient authentication" with no prompt (checked 2026-11-21). Instead
-`AddressFollower` (driven by `ProximityMonitor`) switches to a successor: once the watched identifier has been quiet
-for 4 s, a phone/watch-type Apple device first seen after the old address last advertised, heard 3+ times, within
-10 dB of the phone's last level, becomes the watched device, but only if that last level was at or above the range's
-"near" threshold (a phone fading out is leaving; a stranger's equally weak phone mustn't be taken for it) (settings' ID and the name's short ID update; the
-tracker's readings carry on). A saved identifier that's stale from launch is replaced only by one held close
-(≥ −50 dBm). Scanning stays on while watching so new addresses are seen. If no successor appears, the tracker's
-silence rule reports away as before. Each switch is logged (subsystem `com.dhaataalimited.brbuddy`, category
-`walk-away`, identifiers only).
+identifier, so an unpaired phone "goes quiet" while still on the desk. An app can't start pairing (every protected
+iPhone characteristic answers "insufficient authentication" with no prompt; checked 2026-11-21), and guessing the
+successor address from signal strength picked strangers' phones in a flat (tried and removed the same day). So walk-away
+only accepts a phone the user has paired in System Settings → Bluetooth (iPhone's Bluetooth screen open, Connect,
+accept the codes; it then says Not Connected and stays paired). Once paired, macOS keeps the same identifier for it,
+and apps see its own name instead of "iPhone".
 
-iPhones don't share their user-set name over Bluetooth LE (they answer "iPhone"), so rows show the generic name and
-the first four characters of the Mac's identifier, which is not the Bluetooth address.
+`PairedDevices` reads macOS's paired list (IOBluetooth, phones only); `WalkAwayPairing` matches a picker row by that
+name. A row is `.paired` only if its name is in the list and isn't generic ("iPhone": then `.genericName`, and the
+user is asked to rename the phone). Unpaired rows show "Not paired" with no Use button; paired rows come first. Until
+a paired phone is chosen the tab shows the pairing steps with Open Bluetooth Settings and Check again, the walk-away
+switch is disabled, and `ProximityMonitor` won't start BRB or lock even if an older unpaired choice is still saved.
+The paired list is reread at launch (only when walk-away is on), when the picker opens and when watching starts.
+Verified 2026-11-21 on the owner's Mac: paired iPhone kept one identifier and walk-away started BRB on leaving the flat.
 
 ## Testing the chosen device
 With a device chosen, **Test…** starts a dry run (`ProximityMonitor` test mode, `WalkAwayTest`): BRBuddy connects
@@ -85,7 +86,7 @@ doesn't follow the phone means the wrong device was picked.
 
 ## Code to check
 Function names change: read the current code in these files before relying on any detail above.
-- `ProximityMonitor.swift`, `SettingsView.swift`, `AppState.swift`, `MenuContent.swift`, `ProximityTracker.swift`,
+- `ProximityMonitor.swift`, `PairedDevices.swift`, `SettingsView.swift`, `AppState.swift`, `MenuContent.swift`, `ProximityTracker.swift`,
   `AppleDeviceInfo.swift`
-- Types: `ProximityMonitor`, `ProximityTracker`, `ProximitySettings`, `WalkAwayTest`, `AddressFollower`, `AppleDeviceInfo`, `AppState`, `ScreenLocker`
-- Tests: `ProximityTrackerTests`, `AppleDeviceInfoTests`, `WalkAwayTestTests`, `AddressFollowerTests`
+- Types: `ProximityMonitor`, `ProximityTracker`, `ProximitySettings`, `WalkAwayTest`, `WalkAwayPairing`, `PairedDevices`, `AppleDeviceInfo`, `AppState`, `ScreenLocker`
+- Tests: `ProximityTrackerTests`, `AppleDeviceInfoTests`, `WalkAwayTestTests`, `WalkAwayPairingTests`

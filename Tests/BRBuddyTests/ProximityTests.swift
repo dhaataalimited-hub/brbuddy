@@ -113,94 +113,20 @@ struct WalkAwayTestTests {
 }
 
 
-struct AddressFollowerTests {
-    let start = Date(timeIntervalSince1970: 1000)
-
-    @Test func followsANewAddressAtTheSameStrengthAfterTheOldOneGoesQuiet() {
-        var follower = AddressFollower()
-        let old = start.addingTimeInterval(10), new = UUID()
-        var adopted: UUID?
-        for second in 11...16 {
-            adopted = follower.heard(new, rssi: -45, at: start.addingTimeInterval(Double(second)),
-                                     watchedLastHeard: old, watchedLevel: -44, watchingSince: start) ?? adopted
-        }
-        #expect(adopted == new)
+struct WalkAwayPairingTests {
+    @Test func onlyAPairedPhoneWithItsOwnNameCounts() {
+        let paired: Set<String> = ["...:::iPhone:::...", "iPhone"]
+        #expect(WalkAwayPairing.status(name: "...:::iPhone:::...", pairedNames: paired) == .paired)
+        #expect(WalkAwayPairing.status(name: "Sam's iPhone", pairedNames: paired) == .notPaired)
+        #expect(WalkAwayPairing.status(name: nil, pairedNames: paired) == .notPaired)
+        // Paired but named "iPhone": strangers' unpaired iPhones report the same name.
+        #expect(WalkAwayPairing.status(name: "iPhone", pairedNames: paired) == .genericName)
+        #expect(WalkAwayPairing.status(name: "iPhone", pairedNames: []) == .notPaired)
     }
 
-    @Test func ignoresDevicesThatWereAlreadyAroundOrTooDifferent() {
-        var follower = AddressFollower()
-        let neighbour = UUID(), stranger = UUID()
-        // The neighbour's phone was advertising before ours went quiet.
-        _ = follower.heard(neighbour, rssi: -45, at: start.addingTimeInterval(1), watchedLastHeard: start.addingTimeInterval(1),
-                           watchedLevel: -44, watchingSince: start)
-        var adopted: UUID?
-        for second in 20...30 {
-            let now = start.addingTimeInterval(Double(second))
-            for (id, rssi) in [(neighbour, -45.0), (stranger, -80.0)] {
-                adopted = follower.heard(id, rssi: rssi, at: now, watchedLastHeard: start.addingTimeInterval(10),
-                                         watchedLevel: -44, watchingSince: start) ?? adopted
-            }
-        }
-        #expect(adopted == nil)
-    }
-
-    @Test func waitsUntilTheWatchedDeviceIsQuiet() {
-        var follower = AddressFollower()
-        let new = UUID()
-        var adopted: UUID?
-        for second in 1...5 {
-            let now = start.addingTimeInterval(Double(second))
-            adopted = follower.heard(new, rssi: -45, at: now, watchedLastHeard: now, watchedLevel: -45, watchingSince: start) ?? adopted
-        }
-        #expect(adopted == nil)
-    }
-
-    @Test func aStaleSavedDeviceIsReplacedOnlyByOneHeldClose() {
-        var follower = AddressFollower()
-        let far = UUID(), close = UUID()
-        var adopted: UUID?
-        for second in 5...10 {
-            let now = start.addingTimeInterval(Double(second))
-            adopted = follower.heard(far, rssi: -70, at: now, watchedLastHeard: nil, watchedLevel: nil, watchingSince: start) ?? adopted
-            adopted = follower.heard(close, rssi: -38, at: now, watchedLastHeard: nil, watchedLevel: nil, watchingSince: start) ?? adopted
-        }
-        #expect(adopted == close)
-    }
-}
-
-extension AddressFollowerTests {
-    @Test func followsAnAddressChangeThatHappenedWhileConnected() {
-        var follower = AddressFollower()
-        let new = UUID()
-        let advertisedUntil = start.addingTimeInterval(5)  // old address stopped advertising at 5 s
-        var adopted: UUID?
-        // The new address appears at 6 s while the link still gives readings until 30 s, then the link drops.
-        for second in 6...40 {
-            let now = start.addingTimeInterval(Double(second))
-            let lastHeard = start.addingTimeInterval(Double(min(second, 30)))
-            adopted = follower.heard(new, rssi: -46, at: now, watchedLastHeard: lastHeard,
-                                     watchedLastAdvertised: advertisedUntil, watchedLevel: -45, watchingSince: start) ?? adopted
-            if adopted != nil {
-                #expect(second >= 34)  // only once the link has been quiet for 4 s
-                break
-            }
-        }
-        #expect(adopted == new)
-    }
-}
-
-extension AddressFollowerTests {
-    @Test func doesNotFollowWhileThePhoneWasFadingAway() {
-        var follower = AddressFollower()
-        let stranger = UUID()
-        var adopted: UUID?
-        // Our phone was last heard at -82 (leaving the room, below the Room threshold of -74); a new phone appears
-        // at a similar weak level.
-        for second in 15...30 {
-            adopted = follower.heard(stranger, rssi: -80, at: start.addingTimeInterval(Double(second)),
-                                     watchedLastHeard: start.addingTimeInterval(10), watchedLevel: -82, nearLevel: -74,
-                                     watchingSince: start) ?? adopted
-        }
-        #expect(adopted == nil)
+    @Test func readsTheNameBackFromASavedTitle() {
+        #expect(WalkAwayPairing.baseName(ofTitle: "...:::iPhone:::... · 2EDA") == "...:::iPhone:::...")
+        #expect(WalkAwayPairing.baseName(ofTitle: "Andy · Work iPhone · 2EDA") == "Andy · Work iPhone")
+        #expect(WalkAwayPairing.baseName(ofTitle: "iPhone") == "iPhone")
     }
 }

@@ -58,3 +58,33 @@ public enum AppleDeviceInfo {
         return .other
     }
 }
+
+/// Whether a device chosen for walk-away is paired with this Mac. Walk-away needs pairing: an unpaired iPhone switches
+/// to a new Bluetooth address about every 15 minutes and macOS gives each its own identifier, so BRBuddy would lose
+/// it. Pairing (System Settings → Bluetooth) lets macOS follow it, and as a side effect apps then see the phone's own
+/// name instead of "iPhone", which is how a picker row is matched to the paired list.
+public enum WalkAwayPairing: Equatable, Sendable {
+    case paired
+    case notPaired
+    /// Paired, but called just "iPhone", so it can't be told apart from strangers' unpaired iPhones.
+    case genericName
+
+    /// Names iPhones give unpaired Macs, and default device names.
+    static let genericNames: Set<String> = ["iphone", "apple watch", "ipad"]
+
+    /// - Parameters:
+    ///   - name: the device's name as Bluetooth LE reports it (nil if none).
+    ///   - pairedNames: names of the phones paired with this Mac.
+    public static func status(name: String?, pairedNames: Set<String>) -> WalkAwayPairing {
+        guard let name, !name.isEmpty else { return .notPaired }
+        let isGeneric = genericNames.contains(name.lowercased())
+        guard pairedNames.contains(name) else { return .notPaired }
+        return isGeneric ? .genericName : .paired
+    }
+
+    /// The device's own name from a saved display title ("Andy's iPhone · 2EDA" → "Andy's iPhone").
+    public static func baseName(ofTitle title: String) -> String {
+        guard let range = title.range(of: " · ", options: .backwards) else { return title }
+        return String(title[..<range.lowerBound])
+    }
+}
