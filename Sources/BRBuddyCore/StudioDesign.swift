@@ -64,6 +64,21 @@ public struct StudioDesign: Codable, Equatable, Sendable {
     public enum Body: String, Codable, CaseIterable, Sendable { case round, pebble, hex, cloud, spiky }
     public enum Ears: String, Codable, CaseIterable, Sendable { case none, round, pointy }
     public enum Accent: String, Codable, CaseIterable, Sendable { case none, sprout, starFreckles, wisps, snaggleTooth }
+    /// The mouth's style; each still changes with the mood.
+    public enum Mouth: String, Codable, CaseIterable, Sendable {
+        /// A line, an O or a smile, as the built-ins have.
+        case standard
+        /// A cat-like "ω".
+        case cat
+        /// A wide open grin.
+        case grin
+        /// Tongue poking out.
+        case blep
+        /// Two little fangs.
+        case fangs
+        /// A bird's beak.
+        case beak
+    }
 
     public var name: String
     public var body: Body
@@ -80,6 +95,9 @@ public struct StudioDesign: Codable, Equatable, Sendable {
     public var lopsided: Bool
     /// Hovers off the ground.
     public var floats: Bool
+    public var mouth: Mouth
+    /// How big the mouth is drawn, 0.6–1.5 (1 is normal).
+    public var mouthSize: Double
     public var signature: BoopSignature
     /// What it says on its signature boop.
     public var bubble: String
@@ -92,7 +110,9 @@ public struct StudioDesign: Codable, Equatable, Sendable {
 
     public init(name: String, body: Body, top: StudioColor, bottom: StudioColor, ears: Ears, earColor: StudioColor,
                 accent: Accent, accentColor: StudioColor, lightInk: Bool, blush: Bool, lopsided: Bool, floats: Bool,
-                signature: BoopSignature, bubble: String) {
+                signature: BoopSignature, bubble: String, mouth: Mouth = .standard, mouthSize: Double = 1) {
+        self.mouth = mouth
+        self.mouthSize = mouthSize
         self.name = name
         self.body = body
         self.top = top
@@ -109,6 +129,29 @@ public struct StudioDesign: Codable, Equatable, Sendable {
         self.bubble = bubble
     }
 
+    public static let mouthSizes: ClosedRange<Double> = 0.6...1.5
+
+    private enum CodingKeys: String, CodingKey {
+        case name, body, top, bottom, ears, earColor, accent, accentColor, lightInk, blush, lopsided, floats, signature,
+             bubble, mouth, mouthSize
+    }
+
+    /// Designs saved before mouths could be chosen have no mouth fields; they get the standard mouth.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(name: try c.decode(String.self, forKey: .name), body: try c.decode(Body.self, forKey: .body),
+                  top: try c.decode(StudioColor.self, forKey: .top), bottom: try c.decode(StudioColor.self, forKey: .bottom),
+                  ears: try c.decode(Ears.self, forKey: .ears), earColor: try c.decode(StudioColor.self, forKey: .earColor),
+                  accent: try c.decode(Accent.self, forKey: .accent),
+                  accentColor: try c.decode(StudioColor.self, forKey: .accentColor),
+                  lightInk: try c.decode(Bool.self, forKey: .lightInk), blush: try c.decode(Bool.self, forKey: .blush),
+                  lopsided: try c.decode(Bool.self, forKey: .lopsided), floats: try c.decode(Bool.self, forKey: .floats),
+                  signature: try c.decode(BoopSignature.self, forKey: .signature),
+                  bubble: try c.decode(String.self, forKey: .bubble),
+                  mouth: try c.decodeIfPresent(Mouth.self, forKey: .mouth) ?? .standard,
+                  mouthSize: try c.decodeIfPresent(Double.self, forKey: .mouthSize) ?? 1)
+    }
+
     public static let maxNameLength = 30
     public static let maxBubbleLength = 24
 
@@ -118,6 +161,7 @@ public struct StudioDesign: Codable, Equatable, Sendable {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         copy.name = name.isEmpty ? "Buddy" : String(name.prefix(Self.maxNameLength))
         copy.bubble = String(bubble.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.maxBubbleLength))
+        copy.mouthSize = min(max(mouthSize.isFinite ? mouthSize : 1, Self.mouthSizes.lowerBound), Self.mouthSizes.upperBound)
         return copy
     }
 
@@ -138,7 +182,9 @@ public struct StudioDesign: Codable, Equatable, Sendable {
             blush: Bool.random(using: &generator), lopsided: Double.random(in: 0..<1, using: &generator) < 0.2,
             floats: Double.random(in: 0..<1, using: &generator) < 0.2,
             signature: BoopSignature.allCases.randomElement(using: &generator)!,
-            bubble: bubbles.randomElement(using: &generator)!)
+            bubble: bubbles.randomElement(using: &generator)!,
+            mouth: Double.random(in: 0..<1, using: &generator) < 0.4 ? .standard : Mouth.allCases.randomElement(using: &generator)!,
+            mouthSize: (Double.random(in: 0.85...1.2, using: &generator) * 20).rounded() / 20)
     }
 
     /// A folder name from the design's name: lowercase letters, digits and dashes, never empty.

@@ -12,6 +12,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let path = ProcessInfo.processInfo.environment["BRBUDDY_COMPANION_SHEET"] {
             CompanionContactSheet.render(to: URL(fileURLWithPath: path))
         }
+        if let path = ProcessInfo.processInfo.environment["BRBUDDY_MOUTH_SHEET"] {
+            CompanionContactSheet.renderMouths(to: URL(fileURLWithPath: path))
+        }
         if let path = ProcessInfo.processInfo.environment["BRBUDDY_STUDIO_SNAPSHOT"] {
             Task { await CompanionContactSheet.renderStudio(library: state.companions, to: URL(fileURLWithPath: path)) }
         }

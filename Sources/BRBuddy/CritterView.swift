@@ -6,6 +6,7 @@ struct CritterDesign {
     enum Body { case round, pebble, hex, cloud, spiky }
     enum Ears { case none, round, pointy }
     enum Accent { case none, sprout, starFreckles, wisps, snaggleTooth }
+    enum Mouth { case standard, cat, grin, blep, fangs, beak }
 
     var body: Body
     var top: Color
@@ -20,6 +21,9 @@ struct CritterDesign {
     var lopsided = false
     /// Drift hovers higher off the ground.
     var floats = false
+    var mouth: Mouth = .standard
+    /// How big the mouth is drawn (1 is normal).
+    var mouthScale: Double = 1
 
     static func design(for id: String) -> CritterDesign {
         switch id {
@@ -72,10 +76,19 @@ extension CritterDesign {
         case .wisps: .wisps
         case .snaggleTooth: .snaggleTooth
         }
+        let mouth: Mouth = switch studio.mouth {
+        case .standard: .standard
+        case .cat: .cat
+        case .grin: .grin
+        case .blep: .blep
+        case .fangs: .fangs
+        case .beak: .beak
+        }
         self.init(body: body, top: color(studio.top), bottom: color(studio.bottom), ears: ears,
                   earColor: color(studio.earColor), accent: accent, accentColor: color(studio.accentColor),
                   ink: studio.lightInk ? Color(white: 0.98) : Color(red: 0.14, green: 0.09, blue: 0.13),
-                  blush: studio.blush, lopsided: studio.lopsided, floats: studio.floats)
+                  blush: studio.blush, lopsided: studio.lopsided, floats: studio.floats, mouth: mouth,
+                  mouthScale: studio.mouthSize)
     }
 }
 
@@ -330,7 +343,10 @@ struct CritterView: View {
     }
 
     @ViewBuilder private func mouth(_ t: Double) -> some View {
-        if let boop { boopMouth(boop, t) } else { moodMouth(t) }
+        Group {
+            if let boop { boopMouth(boop, t) } else { moodMouth(t) }
+        }
+        .scaleEffect(design.mouthScale)
     }
 
     @ViewBuilder private func boopMouth(_ boop: Boop, _ t: Double) -> some View {
@@ -360,6 +376,107 @@ struct CritterView: View {
 
     @ViewBuilder private func moodMouth(_ t: Double) -> some View {
         ZStack {
+            switch design.mouth {
+            case .standard: standardMouth(t)
+            case .cat: catMouth
+            case .grin: grinMouth
+            case .blep:
+                standardMouth(t)
+                if mood != .waiting && mood != .oops { tongue.offset(x: 3, y: mood == .resting ? 6 : 8) }
+            case .fangs:
+                standardMouth(t)
+                if mood != .oops { fangs }
+            case .beak: beak
+            }
+            if design.accent == .snaggleTooth && mood != .resting {
+                Triangle().fill(design.accentColor).frame(width: 8, height: 9).rotationEffect(.degrees(180)).offset(x: 6, y: 7)
+            }
+        }
+        .frame(height: 16)
+    }
+
+    private var line: StrokeStyle { StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round) }
+
+    /// A cat-like "ω": two little smiles side by side.
+    @ViewBuilder private var catMouth: some View {
+        switch mood {
+        case .waiting:
+            Ellipse().fill(design.ink).frame(width: 10, height: 12)
+        case .oops:
+            Wave().stroke(design.ink, style: line).frame(width: 26, height: 8)
+        default:
+            let big = mood == .greeting || mood == .finished
+            HStack(spacing: -2) {
+                Arc(up: false).stroke(design.ink, style: line).frame(width: big ? 16 : 13, height: big ? 9 : 7)
+                Arc(up: false).stroke(design.ink, style: line).frame(width: big ? 14 : 10, height: big ? 8 : 5)
+            }
+        }
+    }
+
+    /// A wide, open grin: a half circle with a tongue when happy.
+    @ViewBuilder private var grinMouth: some View {
+        switch mood {
+        case .resting:
+            Capsule().fill(design.ink).frame(width: 14, height: 4)
+        case .waiting:
+            Ellipse().fill(design.ink).frame(width: 15, height: 18)
+        case .oops:
+            Wave().stroke(design.ink, style: line).frame(width: 32, height: 9)
+        default:
+            let big = mood == .greeting || mood == .finished
+            ZStack {
+                HalfDisc().fill(design.ink)
+                Ellipse().fill(Color(red: 0.95, green: 0.45, blue: 0.5)).frame(width: big ? 16 : 10, height: big ? 9 : 6).offset(y: big ? 6 : 4)
+            }
+            .frame(width: big ? 34 : 22, height: big ? 17 : 11)
+            .clipShape(HalfDisc())
+            .offset(y: 2)
+        }
+    }
+
+    /// A little pink tongue poking out under the mouth.
+    private var tongue: some View {
+        Capsule().fill(Color(red: 0.98, green: 0.5, blue: 0.58))
+            .overlay(Capsule().stroke(design.ink.opacity(0.6), lineWidth: 1.5))
+            .frame(width: 10, height: 12)
+    }
+
+    /// Two small fangs under the mouth line.
+    private var fangs: some View {
+        HStack(spacing: 8) {
+            ForEach(0..<2, id: \.self) { _ in
+                Triangle().fill(Color.white)
+                    .overlay(Triangle().stroke(design.ink.opacity(0.7), lineWidth: 1))
+                    .frame(width: 8, height: 10)
+                    .rotationEffect(.degrees(180))
+            }
+        }
+        .offset(y: mood == .waiting ? 9 : 6)
+    }
+
+    /// A bird's beak: closed when calm, open when it has something to say, tilted when things go wrong.
+    @ViewBuilder private var beak: some View {
+        let orange = Color(red: 0.98, green: 0.66, blue: 0.22)
+        let shade = Color(red: 0.85, green: 0.5, blue: 0.15)
+        switch mood {
+        case .resting, .working:
+            Triangle().fill(orange).overlay(Triangle().stroke(shade, lineWidth: 1.5))
+                .frame(width: 26, height: 17).rotationEffect(.degrees(180))
+        case .oops:
+            Triangle().fill(orange).overlay(Triangle().stroke(shade, lineWidth: 1.5))
+                .frame(width: 26, height: 17).rotationEffect(.degrees(195))
+        default:
+            VStack(spacing: 2) {
+                Triangle().fill(orange).overlay(Triangle().stroke(shade, lineWidth: 1.5))
+                    .frame(width: 28, height: 14).rotationEffect(.degrees(180))
+                Triangle().fill(shade).frame(width: 20, height: mood == .waiting ? 13 : 9)
+            }
+            .offset(y: 3)
+        }
+    }
+
+    @ViewBuilder private func standardMouth(_ t: Double) -> some View {
+        Group {
             switch mood {
             case .resting, .working:
                 // Holding still, a resting critter's mouth breathes instead of its body.
@@ -372,11 +489,7 @@ struct CritterView: View {
             case .oops:
                 Wave().stroke(design.ink, style: StrokeStyle(lineWidth: 4, lineCap: .round)).frame(width: 28, height: 8)
             }
-            if design.accent == .snaggleTooth && mood != .resting {
-                Triangle().fill(design.accentColor).frame(width: 8, height: 9).rotationEffect(.degrees(180)).offset(x: 6, y: 7)
-            }
         }
-        .frame(height: 16)
     }
 
     // MARK: Speech bubble and sparkles

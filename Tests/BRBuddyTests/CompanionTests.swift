@@ -259,6 +259,24 @@ struct StudioDesignTests {
         #expect(try JSONDecoder().decode(StudioDesign.self, from: data) == .starter)
     }
 
+    @Test func mouthsRoundTripAndOldDesignsGetTheStandardOne() throws {
+        var design = StudioDesign.starter
+        design.mouth = .beak
+        design.mouthSize = 1.3
+        let data = try JSONEncoder().encode(design)
+        #expect(try JSONDecoder().decode(StudioDesign.self, from: data) == design)
+
+        // A design saved before mouths existed.
+        var old = try JSONSerialization.jsonObject(with: JSONEncoder().encode(StudioDesign.starter)) as! [String: Any]
+        old["mouth"] = nil
+        old["mouthSize"] = nil
+        let loaded = try JSONDecoder().decode(StudioDesign.self, from: JSONSerialization.data(withJSONObject: old))
+        #expect(loaded.mouth == .standard && loaded.mouthSize == 1)
+
+        design.mouthSize = 9
+        #expect(design.tidied.mouthSize == StudioDesign.mouthSizes.upperBound)
+    }
+
     @Test func randomDesignsVaryAndAreTidy() {
         var generator = BoopTests.Seeded(state: 3)
         let designs = (0..<8).map { _ in StudioDesign.random(using: &generator) }

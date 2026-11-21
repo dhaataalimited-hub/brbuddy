@@ -75,6 +75,24 @@ struct CompanionStudioView: View {
                         .disabled(design.accent == .none)
                 }
                 Section("Face") {
+                    Picker("Mouth", selection: $design.mouth) {
+                        Text("Standard").tag(StudioDesign.Mouth.standard)
+                        Text("Cat (ω)").tag(StudioDesign.Mouth.cat)
+                        Text("Big grin").tag(StudioDesign.Mouth.grin)
+                        Text("Tongue out").tag(StudioDesign.Mouth.blep)
+                        Text("Fangs").tag(StudioDesign.Mouth.fangs)
+                        Text("Beak").tag(StudioDesign.Mouth.beak)
+                    }
+                    LabeledContent("Mouth size") {
+                        Slider(value: $design.mouthSize, in: StudioDesign.mouthSizes) {
+                            EmptyView()
+                        } minimumValueLabel: {
+                            Image(systemName: "minus").font(.caption)
+                        } maximumValueLabel: {
+                            Image(systemName: "plus").font(.caption)
+                        }
+                        .frame(width: 170)
+                    }
                     Toggle("Light eyes (for dark bodies)", isOn: $design.lightInk)
                     Toggle("Blush", isOn: $design.blush)
                     Toggle("One eye bigger", isOn: $design.lopsided)

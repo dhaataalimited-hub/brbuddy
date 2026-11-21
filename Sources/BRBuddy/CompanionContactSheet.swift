@@ -118,6 +118,37 @@ enum CompanionContactSheet {
         }
     }
 
+    /// Every Studio mouth style in every mood, on the starter design. `BRBUDDY_MOUTH_SHEET=<file.png>`.
+    static func renderMouths(to url: URL) {
+        let sheet = Grid(horizontalSpacing: 4, verticalSpacing: 4) {
+            GridRow {
+                Text("")
+                ForEach(CompanionMood.allCases, id: \.self) { mood in
+                    Text(mood.rawValue).font(.system(size: 13, weight: .semibold, design: .rounded)).foregroundStyle(.white)
+                }
+            }
+            ForEach(StudioDesign.Mouth.allCases, id: \.self) { mouth in
+                GridRow {
+                    Text(mouth.rawValue).font(.system(size: 14, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                        .frame(width: 80, alignment: .leading)
+                    ForEach(CompanionMood.allCases, id: \.self) { mood in
+                        CritterView(design: CritterDesign(studio: starter(mouth: mouth)), mood: mood, quiet: true, fixedTime: 41)
+                            .frame(width: 150, height: 130)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(Color(red: 0.09, green: 0.07, blue: 0.13))
+        save(sheet, to: url)
+    }
+
+    private static func starter(mouth: StudioDesign.Mouth) -> StudioDesign {
+        var design = StudioDesign.starter
+        design.mouth = mouth
+        return design
+    }
+
     /// A repeatable random generator for debug renders.
     struct SeededGenerator: RandomNumberGenerator {
         var state: UInt64
