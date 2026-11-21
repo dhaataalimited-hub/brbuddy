@@ -26,7 +26,7 @@ final class CompanionLibrary {
         let scan = CompanionPackLibrary.scan()
         packs = scan.packs
         problems = scan.problems
-        frames = frames.filter { id, _ in packs.contains { $0.id == id } }
+        frames = frames.filter { key, _ in packs.contains { $0.id == key || $0.id + Self.stillSuffix == key } }
     }
 
     func resolved(for agent: AgentKind?) -> CompanionCatalog.Resolved {
@@ -37,23 +37,30 @@ final class CompanionLibrary {
     func pack(id: String) -> CompanionPack? { packs.first { $0.id == id } }
 
     /// A pack's frames for a mood, falling back to its idle row. Empty until loaded; loading starts on first ask.
-    func frames(pack id: String, mood: CompanionMood) -> [CGImage] {
-        guard let all = frames[id] else {
-            load(id)
-            return []
+    /// `still` asks for the pack's still sheet (body held, face moving), used on battery; packs without one give
+    /// their normal frames.
+    func frames(pack id: String, mood: CompanionMood, still: Bool = false) -> [CGImage] {
+        let useStill = still && pack(id: id)?.stillSpritesheetURL != nil
+        let key = useStill ? id + Self.stillSuffix : id
+        guard let all = frames[key] else {
+            load(id, still: useStill)
+            return useStill ? frames(pack: id, mood: mood) : []
         }
         if let moodFrames = all[mood], !moodFrames.isEmpty { return moodFrames }
         return all[.resting] ?? []
     }
 
-    private func load(_ id: String) {
-        guard !loading.contains(id), let pack = pack(id: id) else { return }
-        loading.insert(id)
+    private static let stillSuffix = "#still"
+
+    private func load(_ id: String, still: Bool) {
+        let key = still ? id + Self.stillSuffix : id
+        guard !loading.contains(key), let pack = pack(id: id) else { return }
+        loading.insert(key)
         Task.detached(priority: .userInitiated) {
-            let cut = pack.frames()
+            let cut = pack.frames(still: still)
             await MainActor.run { [weak self] in
-                self?.frames[id] = cut
-                self?.loading.remove(id)
+                self?.frames[key] = cut
+                self?.loading.remove(key)
             }
         }
     }

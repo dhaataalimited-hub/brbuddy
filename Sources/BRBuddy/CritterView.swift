@@ -58,6 +58,8 @@ struct CritterView: View {
     var battery: BatteryReaction = .none
     /// Hide its own speech bubble (while the battery has something to say).
     var quiet = false
+    /// On battery: the body holds still to save power, and only the face moves (glancing, blinking).
+    var still = false
 
     /// Everything is drawn in this design space, then scaled to fit whatever frame the view is given.
     private static let canvas = CGSize(width: 300, height: 260)
@@ -71,8 +73,8 @@ struct CritterView: View {
                     critter(t)
                         .scaleEffect(x: 1 / droop, y: droop, anchor: .bottom)
                         .shadow(color: .yellow.opacity(glow(t)), radius: 22)
-                        .offset(x: motionX(t), y: motionY(t))
-                        .rotationEffect(.degrees(mood == .greeting ? 6 * sin(t * 2.5) : lean(t)), anchor: .bottom)
+                        .offset(x: still ? 0 : motionX(t), y: still ? liftOnly : motionY(t))
+                        .rotationEffect(.degrees(still ? 0 : mood == .greeting ? 6 * sin(t * 2.5) : lean(t)), anchor: .bottom)
                     if !quiet { bubble(t) }
                 }
                 .frame(width: Self.canvas.width, height: Self.canvas.height)
@@ -127,7 +129,13 @@ struct CritterView: View {
 
     private func motionX(_ t: Double) -> Double { mood == .oops ? 6 * sin(t * 30) * max(0, sin(t * 2)) : 0 }
 
-    private func breath(_ t: Double) -> Double { 1 + (mood == .resting ? 0.035 : 0.015) * sin(t * 1.6) }
+    private func breath(_ t: Double) -> Double { still ? 1 : 1 + (mood == .resting ? 0.035 : 0.015) * sin(t * 1.6) }
+
+    /// Drift still hovers when holding still, just without bobbing.
+    private var liftOnly: Double { design.floats ? -10 : 0 }
+
+    /// Where the eyes look while holding still: a slow glance left and right, so the face stays alive.
+    private func glance(_ t: Double) -> Double { still ? 5 * sin(t * 0.9) : 0 }
 
     // MARK: Body
 
@@ -215,12 +223,12 @@ struct CritterView: View {
                 }
                 .padding(.top, -8)
             }
-            mouth
+            mouth(t)
         }
     }
 
     @ViewBuilder private func eye(_ t: Double, scale: Double) -> some View {
-        let blink = mood != .resting && (t.truncatingRemainder(dividingBy: 4) < 0.12)
+        let blink = mood != .resting && (t.truncatingRemainder(dividingBy: still ? 3 : 4) < 0.12)
         Group {
             switch mood {
             case .resting:
@@ -241,14 +249,17 @@ struct CritterView: View {
             }
         }
         .scaleEffect(scale)
+        .offset(x: [.waiting, .working, .greeting].contains(mood) ? glance(t) : 0)
         .frame(width: 30, height: 30)
     }
 
-    @ViewBuilder private var mouth: some View {
+    @ViewBuilder private func mouth(_ t: Double) -> some View {
         ZStack {
             switch mood {
             case .resting, .working:
-                Capsule().fill(design.ink).frame(width: mood == .working ? 14 : 10, height: 4)
+                // Holding still, a resting critter's mouth breathes instead of its body.
+                Capsule().fill(design.ink)
+                    .frame(width: mood == .working ? 14 : 10 + (still ? 4 * max(0, sin(t * 1.6)) : 0), height: 4)
             case .waiting:
                 Ellipse().fill(design.ink).frame(width: 12, height: 14)
             case .finished, .greeting:

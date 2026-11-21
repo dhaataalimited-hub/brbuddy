@@ -28,6 +28,10 @@ flowchart LR
 ## States and edge cases
 - Reaction order: a plug or unplug in the last 6 seconds, then critical (≤10% on battery), low (≤20%), Low Power
   Mode, full (plugged in at 100%, or holding at 95%+), charging, nothing.
+- On battery (any charge) the companion's body holds still to save power and only its face moves: `CritterView`
+  stops bobbing, breathing and tilting but keeps blinking and glancing; a pack shows its optional still sheet
+  (`stillSpritesheetPath` in `pet.json`, loaded by `CompanionPack` and `CompanionLibrary`), or its normal frames if
+  it has none. Plugging in starts the body moving again.
 - The first reading after BRB starts never counts as a plug or unplug.
 - Only the two flourishes change the companion's mood (finished for plugged in, oops for unplugged), and only when
   nobody is unlocking and no unlock just failed. Other reactions keep the agent's mood and add props.
@@ -44,7 +48,9 @@ flowchart LR
 ## Code to check
 Function names change: read the current code in these files before relying on any detail above.
 - `Battery.swift`, `BatteryMonitor.swift`, `BatteryView.swift`, `CritterView.swift`, `CompanionView.swift`,
+  `CompanionPack.swift`, `CompanionLibrary.swift`,
   `AwayView.swift`, `AwayController.swift`, `CompanionMood.swift`, `AwaySettings.swift`, `SettingsView.swift`
 - Types: `BatteryStatus`, `BatteryReaction`, `BatteryWatch`, `BatteryMonitor`, `BatteryBadge`, `BatteryFlair`,
+  `CompanionPack`, `CompanionLibrary`,
   `CritterView`, `CompanionView`, `CompanionMood`, `AwaySettings`
-- Tests: `BatteryTests`, `CompanionMoodTests`
+- Tests: `BatteryTests`, `CompanionMoodTests`, `CompanionPackTests`

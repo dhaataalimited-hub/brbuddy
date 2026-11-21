@@ -272,7 +272,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <article class="card" id="j-battery">
       <h3>Battery on the away screen</h3>
       <div class="chain"><b>AwayController</b> → <b>BatteryMonitor</b> → <b>BatteryWatch</b> → <b>BatteryReaction</b> → <b>BatteryBadge</b> + <b>CompanionView</b> (<b>CritterView</b>, <b>BatteryFlair</b>)</div>
-      <ul><li>Read once a second, only while BRB is up; desktop Macs show nothing.</li><li>Plug-in cheers and unplug surprise last 6 s and change the mood; low (≤20%) sweats, critical (≤10%) wobbles, Low Power Mode plays in slow motion.</li><li>Agent waiting or someone unlocking keeps the speech bubble.</li></ul>
+      <ul><li>Read once a second, only while BRB is up; desktop Macs show nothing.</li><li>Plug-in cheers and unplug surprise last 6 s and change the mood; low (≤20%) sweats, critical (≤10%) wobbles, Low Power Mode plays in slow motion.</li><li>Agent waiting or someone unlocking keeps the speech bubble.</li><li>On battery the body holds still and only the face moves; packs can ship a still sheet (<code>stillSpritesheetPath</code>).</li></ul>
       <div class="files">BRBuddyCore/Battery.swift · BRBuddy/BatteryMonitor.swift · BRBuddy/BatteryView.swift · BRBuddy/CritterView.swift · BRBuddy/CompanionView.swift · BRBuddy/AwayView.swift</div>
     </article>
   </div>
@@ -346,5 +346,5 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   </dl>
 </section>
 
-<footer>Generated 2026-11-21 from docs/architecture after adding the battery to the away screen (branch battery-on-away-screen). The markdown is the source; regenerate this page after changes.</footer>
+<footer>Generated 2026-11-21 from docs/architecture after the companion holds still on battery (branch still-on-battery). The markdown is the source; regenerate this page after changes.</footer>
 </div>

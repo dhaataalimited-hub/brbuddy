@@ -7,7 +7,9 @@ import ImageIO
 /// The Codex pet format (as documented by the awesome-codex-pet catalogue): an 8-column atlas of 192 × 208 cells,
 /// v1 = 1536 × 1872 (9 rows), v2 = 1536 × 2288 (11 rows, `"spriteVersionNumber": 2`). Rows 0–8 are idle,
 /// running-right, running-left, waving, jumping, failed, waiting, running, review. BRBuddy reads rows 0–8 and adds
-/// optional `license`, `author` and `agents` (e.g. `["claude", "codex"]`) to `pet.json`; other apps ignore them.
+/// optional `license`, `author`, `agents` (e.g. `["claude", "codex"]`) and `stillSpritesheetPath` (a second sheet of
+/// the same size where the body holds still and only the face moves, shown on battery) to `pet.json`; other apps
+/// ignore them.
 public struct CompanionPack: Sendable, Identifiable {
     public enum LoadError: LocalizedError, Equatable {
         case missingManifest
@@ -44,6 +46,8 @@ public struct CompanionPack: Sendable, Identifiable {
     public let agents: [AgentKind]
     public let spriteVersion: Int
     public let spritesheetURL: URL
+    /// The optional still sheet; `nil` if absent or not valid (wrong size, outside the folder).
+    public let stillSpritesheetURL: URL?
 
     struct Manifest: Decodable {
         var id: String?
@@ -54,6 +58,7 @@ public struct CompanionPack: Sendable, Identifiable {
         var license: String?
         var author: String?
         var agents: [String]?
+        var stillSpritesheetPath: String?
     }
 
     /// Reads and checks a pack folder without decoding the whole image.
@@ -63,9 +68,23 @@ public struct CompanionPack: Sendable, Identifiable {
         guard let manifest = try? JSONDecoder().decode(Manifest.self, from: data) else { throw LoadError.unreadableManifest }
 
         let sheetName = manifest.spritesheetPath ?? "spritesheet.webp"
-        let sheetURL = folder.appending(path: sheetName).standardizedFileURL
+        let (sheetURL, version) = try checkSheet(sheetName, in: folder)
+        let still = manifest.stillSpritesheetPath.flatMap { try? checkSheet($0, in: folder) }
+
+        return CompanionPack(
+            id: folder.lastPathComponent, folder: folder,
+            displayName: manifest.displayName ?? manifest.id ?? folder.lastPathComponent,
+            description: manifest.description, license: manifest.license, author: manifest.author,
+            agents: (manifest.agents ?? []).compactMap(AgentKind.init(rawValue:)),
+            spriteVersion: version, spritesheetURL: sheetURL,
+            stillSpritesheetURL: still?.version == version ? still?.url : nil)
+    }
+
+    /// Checks one spritesheet: inside the folder, not too big, a size we know. Returns its URL and sprite version.
+    static func checkSheet(_ name: String, in folder: URL) throws -> (url: URL, version: Int) {
+        let sheetURL = folder.appending(path: name).standardizedFileURL
         guard sheetURL.path.hasPrefix(folder.standardizedFileURL.path),  // no "../" escapes
-              FileManager.default.fileExists(atPath: sheetURL.path) else { throw LoadError.missingSpritesheet(sheetName) }
+              FileManager.default.fileExists(atPath: sheetURL.path) else { throw LoadError.missingSpritesheet(name) }
         let bytes = (try? FileManager.default.attributesOfItem(atPath: sheetURL.path)[.size] as? Int) ?? 0
         guard bytes <= maxBytes else { throw LoadError.tooLarge }
 
@@ -73,25 +92,18 @@ public struct CompanionPack: Sendable, Identifiable {
               let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
               let width = properties[kCGImagePropertyPixelWidth] as? Int,
               let height = properties[kCGImagePropertyPixelHeight] as? Int else { throw LoadError.unreadableImage }
-        let version: Int
         switch (width, height) {
-        case (1536, 1872): version = 1
-        case (1536, 2288): version = 2
+        case (1536, 1872): return (sheetURL, 1)
+        case (1536, 2288): return (sheetURL, 2)
         default: throw LoadError.wrongSize(width: width, height: height)
         }
-
-        return CompanionPack(
-            id: folder.lastPathComponent, folder: folder,
-            displayName: manifest.displayName ?? manifest.id ?? folder.lastPathComponent,
-            description: manifest.description, license: manifest.license, author: manifest.author,
-            agents: (manifest.agents ?? []).compactMap(AgentKind.init(rawValue:)),
-            spriteVersion: version, spritesheetURL: sheetURL)
     }
 
     /// Decodes the spritesheet and cuts each mood's row into frames, skipping blank cells. Do this once per pack,
     /// off the main thread.
-    public func frames() -> [CompanionMood: [CGImage]] {
-        guard let source = CGImageSourceCreateWithURL(spritesheetURL as CFURL, nil),
+    public func frames(still: Bool = false) -> [CompanionMood: [CGImage]] {
+        let url = still ? stillSpritesheetURL ?? spritesheetURL : spritesheetURL
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
               let sheet = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return [:] }
         var result: [CompanionMood: [CGImage]] = [:]
         for mood in CompanionMood.allCases {

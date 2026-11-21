@@ -145,7 +145,7 @@ automatic updates; both are used only by the app target.
 | `CompanionMood` | `BRBuddyCore/CompanionMood.swift` | Enum | Value type | Which mood to show, and its Codex spritesheet row |
 | `BatteryStatus`, `BatteryReaction`, `BatteryWatch` | `BRBuddyCore/Battery.swift` | Values, held by `BatteryMonitor` | Value types; `read` on the main actor | The internal battery from IOKit power sources; which reaction to show; noticing plug and unplug |
 | `CompanionCatalog` | `BRBuddyCore/CompanionCatalog.swift` | Static namespace | Pure | Built-in list and agent matches; stored `Choice`; resolving a choice to a companion |
-| `CompanionPack`, `CompanionPackLibrary` | `BRBuddyCore/CompanionPack.swift` | Values / static namespace | Load anywhere; cut frames off the main thread | Validates a Codex pet folder, cuts frames per mood, scans and imports packs |
+| `CompanionPack`, `CompanionPackLibrary` | `BRBuddyCore/CompanionPack.swift` | Values / static namespace | Load anywhere; cut frames off the main thread | Validates a Codex pet folder, cuts frames per mood (and from an optional still sheet, shown on battery), scans and imports packs |
 | `ANSIParser`, `TerminalColor`, `TerminalStyle`, `TerminalRun` | `BRBuddyCore/TerminalText.swift` | Static namespace / values | Pure | Colour-coded text → styled lines; drops every non-colour escape; xterm palette |
 | `TmuxReader` | `BRBuddyCore/TmuxReader.swift` | Static namespace | Off the main thread (runs tmux, 2 s limit) | Finds tmux, lists panes, picks the agent's pane, captures it read-only |
 | `AgentActivityLog` | `BRBuddyCore/AgentActivityLog.swift` | Value, held by `AgentMonitor` | Value type | Rolling feed (80 entries) of agent events as styled lines |

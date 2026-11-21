@@ -8,14 +8,16 @@ struct CompanionView: View {
     let agent: AgentKind?
     /// What the battery is up to; the companion reacts to it.
     var battery: BatteryReaction = .none
+    /// On battery: the body holds still and only the face moves.
+    var still = false
 
     var body: some View {
         ZStack {
             switch library.resolved(for: agent) {
             case .builtIn(let builtIn):
-                CritterView(design: .design(for: builtIn.id), mood: mood, battery: battery, quiet: batteryTalks)
+                CritterView(design: .design(for: builtIn.id), mood: mood, battery: battery, quiet: batteryTalks, still: still)
             case .pack(let id):
-                SpritePackView(frames: library.frames(pack: id, mood: mood))
+                SpritePackView(frames: library.frames(pack: id, mood: mood, still: still))
             }
             if battery != .none {
                 BatteryFlair(reaction: battery, talks: batteryTalks)

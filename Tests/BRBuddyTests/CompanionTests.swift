@@ -77,6 +77,18 @@ struct CompanionPackTests {
         #expect(frames[.working]?.isEmpty == true)
     }
 
+    @Test func readsAnOptionalStillSheet() throws {
+        let folder = try makePack(manifest: #"{"spritesheetPath":"spritesheet.png","stillSpritesheetPath":"spritesheet.png"}"#)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let pack = try CompanionPack.load(from: folder)
+        #expect(pack.stillSpritesheetURL != nil)
+        #expect(pack.frames(still: true)[.resting]?.count == 3)
+
+        let missing = try makePack(manifest: #"{"spritesheetPath":"spritesheet.png","stillSpritesheetPath":"../nope.png"}"#)
+        defer { try? FileManager.default.removeItem(at: missing) }
+        #expect(try CompanionPack.load(from: missing).stillSpritesheetURL == nil)  // a bad still sheet is ignored
+    }
+
     @Test func rejectsBadPacks() throws {
         let wrongSize = try makePack(width: 800, height: 600)
         defer { try? FileManager.default.removeItem(at: wrongSize) }

@@ -83,7 +83,8 @@ struct AwayView: View {
 
     @ViewBuilder private var companion: some View {
         if let library = controller.companions {
-            CompanionView(library: library, mood: mood, agent: controller.agents?.relevantAgent, battery: batteryReaction)
+            CompanionView(library: library, mood: mood, agent: controller.agents?.relevantAgent, battery: batteryReaction,
+                          still: batteryStatus.map { !$0.isPluggedIn } ?? false)
         }
     }
 

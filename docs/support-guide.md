@@ -23,7 +23,7 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 | Jump to an agent | Click the agent in the menu | Opens the terminal window it's running in; in Terminal and iTerm2, the exact tab. macOS asks once to let BRBuddy control Terminal/iTerm2 |
 | Companions | Settings → Companion | Six built-in characters (Ember, Pebble, Prism, Comet, Drift, Gremlin), or "Match my agent" |
 | Companion packs | Settings → Companion → Add companion pack… | Any pet made for Codex works (a folder with pet.json and a spritesheet) |
-| Battery on the away screen | Settings → Away Screen → Battery | On by default on MacBooks. Shows charge and time left; the companion cheers when you plug in, sweats when the battery's low and moves in slow motion in Low Power Mode |
+| Battery on the away screen | Settings → Away Screen → Battery | On by default on MacBooks. Shows charge and time left; the companion cheers when you plug in, sweats when the battery's low and moves in slow motion in Low Power Mode. On battery its body holds still to save power and only its face moves |
 | Terminal on the away screen | Settings → Away Screen | Off by default. Shows a tmux pane, a Terminal/iTerm2/Ghostty window, or a feed of what your agent is doing. View-only |
 | Walk-away lock | Settings → Walk-away | Pair your iPhone with the Mac, then pick it; when it moves away, BRBuddy starts BRB or locks the Mac |
 | Open at login | Settings → General | |
