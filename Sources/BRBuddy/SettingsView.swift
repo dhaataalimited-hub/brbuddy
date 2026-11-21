@@ -1,3 +1,4 @@
+import AppKit
 import BRBuddyCore
 import KeyboardShortcuts
 import SwiftUI
@@ -22,7 +23,14 @@ struct SettingsView: View {
         }
         // A fixed size that fits a 13-inch screen; each tab scrolls if its content is taller.
         .frame(width: 540, height: 480)
-        .onAppear { state.agents.refresh() }
+        .onAppear {
+            state.agents.refresh()
+            // Belt and braces for the menu's activation: bring the Settings window above other apps' windows.
+            DispatchQueue.main.async {
+                NSApp.activate()
+                NSApp.windows.first { $0.isVisible && $0.canBecomeKey && $0.level == .normal }?.makeKeyAndOrderFront(nil)
+            }
+        }
     }
 
     private func tab<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
@@ -212,7 +220,7 @@ private struct WalkAwaySection: View {
                 Text("Build BRBuddy as an app (Tools/build-app.sh) to use Bluetooth.")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
-                Toggle("When my iPhone or Apple Watch walks away", isOn: $monitor.settings.enabled)
+                Toggle("When my iPhone walks away", isOn: $monitor.settings.enabled)
                     .disabled(monitor.settings.deviceID == nil)
                 Picker("Then", selection: $monitor.settings.action) {
                     ForEach(ProximitySettings.Action.allCases) { Text($0.title).tag($0) }
@@ -223,12 +231,19 @@ private struct WalkAwaySection: View {
                 HStack {
                     Text(monitor.settings.deviceName.map { "Device: \($0)" } ?? "No device chosen")
                     Spacer()
+                    if monitor.settings.deviceID != nil, !picking {
+                        Button(monitor.test == nil ? "Test…" : "End test") {
+                            if monitor.test == nil { monitor.startTest() } else { monitor.stopTest() }
+                        }
+                    }
                     Button(picking ? "Done" : "Choose device…") {
+                        if monitor.test != nil { monitor.stopTest() }
                         picking.toggle()
                         monitor.setPickerOpen(picking)
                     }
                 }
                 if picking { devicePicker }
+                if let test = monitor.test { testPanel(test) }
                 Text(monitor.statusText)
                     .font(.caption)
                     .foregroundStyle(monitor.bluetoothState == .unauthorized || monitor.bluetoothState == .poweredOff ? .orange : .secondary)
@@ -239,6 +254,60 @@ private struct WalkAwaySection: View {
         }
         .onDisappear {
             if picking { picking = false; monitor.setPickerOpen(false) }
+            if monitor.test != nil { monitor.stopTest() }
+        }
+    }
+
+    /// The dry run: live signal and three steps that tick off as they happen. BRB doesn't start during it.
+    @ViewBuilder private func testPanel(_ test: WalkAwayTest) -> some View {
+        let tracker = monitor.tracker
+        HStack(spacing: 10) {
+            Image(systemName: tracker.state == .away ? "figure.walk.departure" : "dot.radiowaves.left.and.right")
+                .font(.title2)
+                .foregroundStyle(tracker.state == .away ? .orange : .accentColor)
+                .frame(width: 30)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(testHeadline(tracker))
+                    .font(.headline)
+                Text(monitor.connectedName.map { "Connected to \($0)" }
+                     ?? (monitor.isConnected ? "Connected" : "Connecting…"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            if let signal = tracker.smoothed {
+                Text("\(Int(signal.rounded())) dBm")
+                    .font(.body.monospacedDigit())
+                SignalBars(rssi: Int(signal))
+            }
+        }
+        testStep(test.sawClose, "Hold it right next to the Mac: the signal jumps to about \(Int(WalkAwayTest.closeSignal)) dBm or more")
+        testStep(test.sawAway, "Walk away with it: after about 10 s this says Away (BRB won't start during the test)")
+        testStep(test.sawBack, "Come back: it says Nearby again")
+        if test.isComplete {
+            Label("That's your device, and this range works. You can end the test.", systemImage: "checkmark.seal.fill")
+                .foregroundStyle(.green)
+        } else {
+            Text("If the signal doesn't move when you move your phone, it's someone else's device: choose again.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func testHeadline(_ tracker: ProximityTracker) -> String {
+        switch tracker.state {
+        case .near: "Nearby"
+        case .away: "Away"
+        case .unknown: tracker.smoothed == nil ? "Listening…" : "Measuring…"
+        }
+    }
+
+    private func testStep(_ done: Bool, _ text: String) -> some View {
+        Label {
+            Text(text).foregroundStyle(done ? .primary : .secondary)
+        } icon: {
+            Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(done ? .green : .secondary)
         }
     }
 

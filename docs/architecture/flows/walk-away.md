@@ -51,6 +51,29 @@ sequenceDiagram
 - Not live-tested on 2026-11-20 (needs the owner to allow Bluetooth and walk around). Logic covered by
   `ProximityTrackerTests`; the app launches without touching Bluetooth.
 
+## Following the phone's address changes
+iPhones switch to a new random Bluetooth address about every 15 minutes, and macOS gives each address its own
+identifier, so the saved device "goes quiet" while still on the desk. Pairing would make macOS follow it, but macOS
+won't let an app start pairing with an iPhone: every protected iPhone characteristic (Battery, Current Time,
+Continuity) just answers "insufficient authentication" with no prompt (checked 2026-11-21). Instead
+`AddressFollower` (driven by `ProximityMonitor`) switches to a successor: once the watched identifier has been quiet
+for 4 s, a phone/watch-type Apple device first seen after the old address last advertised, heard 3+ times, within
+10 dB of the phone's last level, becomes the watched device (settings' ID and the name's short ID update; the
+tracker's readings carry on). A saved identifier that's stale from launch is replaced only by one held close
+(≥ −50 dBm). Scanning stays on while watching so new addresses are seen. If no successor appears, the tracker's
+silence rule reports away as before. Each switch is logged (subsystem `com.dhaataalimited.brbuddy`, category
+`walk-away`, identifiers only).
+
+iPhones don't share their user-set name over Bluetooth LE (they answer "iPhone"), so rows show the generic name and
+the first four characters of the Mac's identifier, which is not the Bluetooth address.
+
+## Testing the chosen device
+With a device chosen, **Test…** starts a dry run (`ProximityMonitor` test mode, `WalkAwayTest`): BRBuddy connects
+and shows the live smoothed signal, Nearby/Away, and the device's name if it shares one. Three steps tick off: held
+next to the Mac (signal ≥ −50 dBm), walked away (tracker says away), came back (near again). BRB never starts during
+a test, even with walk-away on; leaving the tab, choosing another device or **End test** stops it. A signal that
+doesn't follow the phone means the wrong device was picked.
+
 ## Identifying devices in the picker
 - Only advertisements whose Apple Continuity messages include Nearby Info, Handoff or Nearby Action (0x10, 0x0C,
   0x0F) are listed; AirPods (0x07), AirTags/Find My (0x12) and AirPlay (0x09) are skipped (`AppleDeviceInfo`).
@@ -63,5 +86,5 @@ sequenceDiagram
 Function names change: read the current code in these files before relying on any detail above.
 - `ProximityMonitor.swift`, `SettingsView.swift`, `AppState.swift`, `MenuContent.swift`, `ProximityTracker.swift`,
   `AppleDeviceInfo.swift`
-- Types: `ProximityMonitor`, `ProximityTracker`, `ProximitySettings`, `AppleDeviceInfo`, `AppState`, `ScreenLocker`
-- Tests: `ProximityTrackerTests`, `AppleDeviceInfoTests`
+- Types: `ProximityMonitor`, `ProximityTracker`, `ProximitySettings`, `WalkAwayTest`, `AddressFollower`, `AppleDeviceInfo`, `AppState`, `ScreenLocker`
+- Tests: `ProximityTrackerTests`, `AppleDeviceInfoTests`, `WalkAwayTestTests`, `AddressFollowerTests`

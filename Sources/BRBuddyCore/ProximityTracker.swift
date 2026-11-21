@@ -180,3 +180,81 @@ public struct ProximitySettings: Equatable, Sendable {
     /// Ready to watch a device.
     public var isActive: Bool { enabled && deviceID != nil }
 }
+
+/// A walk-away dry run in Settings, to check the chosen device is really the user's phone or watch and the range
+/// suits the room: hold it close (the signal should jump), walk away (BRBuddy should notice), come back. BRB doesn't
+/// start while a test runs. Pure: fed each reading by `ProximityMonitor`.
+public struct WalkAwayTest: Equatable, Sendable {
+    /// Signal (dBm, smoothed) that counts as "right next to the Mac".
+    public static let closeSignal: Double = -50
+
+    public private(set) var sawClose = false
+    public private(set) var sawAway = false
+    public private(set) var sawBack = false
+
+    public init() {}
+
+    public var isComplete: Bool { sawClose && sawAway && sawBack }
+
+    public mutating func observe(smoothed: Double?, state: ProximityTracker.State) {
+        if let smoothed, smoothed >= Self.closeSignal { sawClose = true }
+        if state == .away { sawAway = true }
+        if sawAway, state == .near { sawBack = true }
+    }
+}
+
+/// Keeps track of the user's iPhone across Bluetooth address changes. iPhones switch to a new random address about
+/// every 15 minutes, and macOS gives each address its own identifier, so a chosen device "disappears" while still on
+/// the desk. When the watched identifier goes quiet and a brand-new Apple device shows up at about the same signal
+/// strength, that's almost certainly the same phone under its new address, so the watcher should switch to it. If
+/// nothing similar shows up, the phone really left and `ProximityTracker` reports it away. Pure: time is passed in.
+public struct AddressFollower: Sendable {
+    /// How long the watched identifier must be quiet before a successor is considered.
+    public var quietFor: TimeInterval = 4
+    /// A successor's smoothed signal must be within this many dB of the phone's last level.
+    public var tolerance: Double = 10
+    /// With no level to compare (the saved identifier was stale from the start), only a device held this close counts.
+    public var closeLevel: Double = -50
+    /// Readings needed before a successor is trusted.
+    public var readingsNeeded = 3
+
+    private var firstSeen: [UUID: Date] = [:]
+    private var candidates: [UUID: (level: Double, count: Int)] = [:]
+
+    public init() {}
+
+    public mutating func reset() {
+        firstSeen = [:]
+        candidates = [:]
+    }
+
+    /// Feeds one advertisement from an Apple phone/watch-type device that isn't the watched one. Returns its
+    /// identifier when it should become the watched device.
+    /// - Parameters:
+    ///   - watchedLastHeard: last reading from the watched identifier (advertisement or connected signal read), nil if
+    ///     never heard since watching began.
+    ///   - watchedLastAdvertised: last advertisement from it. While connected the phone can switch its advertising
+    ///     address and keep the link, so "new" means new since the old address last advertised.
+    ///   - watchedLevel: the watched device's smoothed signal at that time.
+    ///   - watchingSince: when watching began.
+    public mutating func heard(_ id: UUID, rssi: Double, at now: Date, watchedLastHeard: Date?,
+                               watchedLastAdvertised: Date? = nil, watchedLevel: Double?, watchingSince: Date) -> UUID? {
+        firstSeen[id] = firstSeen[id] ?? now
+        let previous = candidates[id]
+        let level = previous.map { $0.level * 0.6 + rssi * 0.4 } ?? rssi
+        candidates[id] = (level, (previous?.count ?? 0) + 1)
+
+        let quietSince = watchedLastHeard ?? watchingSince
+        guard now.timeIntervalSince(quietSince) >= quietFor else { return nil }
+        // A new address, not a device that was already around while the phone was still being heard.
+        let advertisedUntil = watchedLastAdvertised ?? watchedLastHeard ?? watchingSince
+        guard let first = firstSeen[id], first >= advertisedUntil.addingTimeInterval(-2) else { return nil }
+        guard let candidate = candidates[id], candidate.count >= readingsNeeded else { return nil }
+        if let watchedLevel {
+            guard abs(candidate.level - watchedLevel) <= tolerance else { return nil }
+        } else {
+            guard candidate.level >= closeLevel else { return nil }
+        }
+        return id
+    }
+}

@@ -111,6 +111,16 @@ iPhones and watches don't broadcast their names, so press Choose device… and h
 the Mac. Within a few seconds it moves to the top of the list and is marked Closest; press Use next to it. Rows say
 iPhone or Apple Watch once BRBuddy has asked the device its model.
 
+**Why does the list say "iPhone" instead of my phone's name, and what's the code after it?**
+iPhones keep their name private over Bluetooth, so every one shows as "iPhone". The four characters after it are this
+Mac's short ID for that phone (not its Bluetooth address). iPhones change that ID about every 15 minutes for
+privacy; BRBuddy follows the change by itself, so the code in Settings may change now and then.
+
+**How do I check walk-away is watching the right phone?**
+Settings → Walk-away → Test…. Hold the phone next to the Mac (the signal number jumps up), walk away with it until
+the panel says Away, then come back. Each step gets a tick; BRB won't start during the test. If the number doesn't
+change when you move the phone, choose the device again.
+
 **The walk-away lock triggers too early, too late, or not at all.**
 Bluetooth signal varies a lot with walls, pockets and bodies. Try "Away means": Near, Room or Far, and test a few
 times. Keep Bluetooth on on your phone or watch. If the status says BRBuddy isn't allowed to use Bluetooth, allow it

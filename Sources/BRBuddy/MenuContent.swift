@@ -7,6 +7,7 @@ import SwiftUI
 struct MenuContent: View {
     let state: AppState
     let updates: UpdateController
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         Toggle("Keep Mac awake", isOn: Binding(
@@ -33,7 +34,7 @@ struct MenuContent: View {
 
         Divider()
 
-        SettingsLink { Text("Settings…") }
+        Button("Settings…") { showSettings() }
             .keyboardShortcut(",")
 
         if updates.isAvailable {
@@ -49,7 +50,7 @@ struct MenuContent: View {
         if sessions.isEmpty {
             if state.agents.hooksInstalled.isEmpty {
                 Text("No agents set up yet")
-                SettingsLink { Text("Set up agents…") }
+                Button("Set up agents…") { showSettings() }
             } else {
                 Text("No agents active")
             }
@@ -65,6 +66,12 @@ struct MenuContent: View {
                 }
             }
         }
+    }
+
+    /// Opens Settings in front. BRBuddy has no Dock icon, so without activating it the window opens behind others.
+    private func showSettings() {
+        NSApp.activate()
+        openSettings()
     }
 
     private func icon(_ activity: AgentActivity) -> String {

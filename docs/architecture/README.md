@@ -83,7 +83,7 @@ flowchart TD
   State --> Mir[TerminalMirror]
   Mir --> AX[AccessibilityTerminalReader: ApplicationServices AX]
   State --> Prox[ProximityMonitor: CoreBluetooth]
-  Prox --> PT[ProximityTracker, ProximitySettings, AppleDeviceInfo: pure]
+  Prox --> PT[ProximityTracker, ProximitySettings, WalkAwayTest, AddressFollower, AppleDeviceInfo: pure]
   Mir --> Core
   Core --> TText[ANSIParser, TerminalText: pure]
   Core --> Tmux[TmuxReader: tmux list-panes, capture-pane]
@@ -140,7 +140,7 @@ automatic updates; both are used only by the app target.
 | `AgentActivityLog` | `BRBuddyCore/AgentActivityLog.swift` | Value, held by `AgentMonitor` | Value type | Rolling feed (80 entries) of agent events as styled lines |
 | `TerminalMirrorMode` | `BRBuddyCore/TerminalMirrorMode.swift` | Enum | Value type | Off / automatic / tmux / terminal window / activity feed; stored in UserDefaults |
 | `AppleDeviceInfo` | `BRBuddyCore/AppleDeviceInfo.swift` | Static namespace | Pure | Continuity message types in Apple advertisements; model number → iPhone / Watch / iPad / Mac |
-| `ProximityTracker`, `ProximitySettings` | `BRBuddyCore/ProximityTracker.swift` | Values, held by `ProximityMonitor` | Value types | Median-smoothed RSSI → near / away with delay and hysteresis; walk-away preferences |
+| `ProximityTracker`, `ProximitySettings`, `WalkAwayTest`, `AddressFollower` | `BRBuddyCore/ProximityTracker.swift` | Values, held by `ProximityMonitor` | Value types | Median-smoothed RSSI → near / away with delay and hysteresis; walk-away preferences; the Settings dry run's three steps; following the phone to its new Bluetooth address |
 
 `AppState` is passed to views by initializer; `AwayController` is reached through `AppState`. There are no
 singletons. `AwayController` notifies `AppState` that BRB ended through a callback so keep-awake can change mode.
@@ -260,7 +260,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/TmuxReader.swift`: read-only tmux pane listing and capture.
 - `BRBuddyCore/AgentActivityLog.swift`: the agent activity feed.
 - `BRBuddyCore/TerminalMirrorMode.swift`: the mirror setting.
-- `BRBuddyCore/ProximityTracker.swift`: near/away decisions from signal strength; walk-away settings.
+- `BRBuddyCore/ProximityTracker.swift`: near/away decisions from signal strength; walk-away settings; the walk-away test; following address changes.
 - `BRBuddyCore/AppleDeviceInfo.swift`: tells phones and watches from other Apple devices for the picker.
 
 **brbuddy-hook (helper)**
