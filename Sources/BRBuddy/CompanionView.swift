@@ -13,6 +13,8 @@ struct CompanionView: View {
     var still = false
     var canBoop = false
     var boopSounds = true
+    /// Show this Studio design instead of the chosen companion (Companion Studio's preview).
+    var studio: StudioDesign?
 
     @State private var boop: BoopEvent?
     @State private var picker = BoopPicker()
@@ -36,13 +38,26 @@ struct CompanionView: View {
     }
 
     @ViewBuilder private var companion: some View {
-        switch library.resolved(for: agent) {
-        case .builtIn(let builtIn):
-            CritterView(design: .design(for: builtIn.id), mood: mood, battery: battery,
-                        quiet: batteryTalks || boop != nil, still: still, boop: boop?.boop)
-        case .pack(let id):
-            SpritePackView(frames: library.frames(pack: id, mood: boop?.boop.packMood ?? mood, still: still && boop == nil))
+        if let studio {
+            critter(CritterDesign(studio: studio))
+        } else {
+            switch library.resolved(for: agent) {
+            case .builtIn(let builtIn):
+                critter(.design(for: builtIn.id))
+            case .pack(let id):
+                if let design = library.pack(id: id)?.studioDesign {
+                    // Made in Companion Studio: drawn live, like the built-ins.
+                    critter(CritterDesign(studio: design))
+                } else {
+                    SpritePackView(frames: library.frames(pack: id, mood: boop?.boop.packMood ?? mood, still: still && boop == nil))
+                }
+            }
         }
+    }
+
+    private func critter(_ design: CritterDesign) -> some View {
+        CritterView(design: design, mood: mood, battery: battery, quiet: batteryTalks || boop != nil, still: still,
+                    boop: boop?.boop)
     }
 
     /// The battery gets the speech bubble unless the agent needs the user or someone is unlocking.
@@ -52,6 +67,7 @@ struct CompanionView: View {
 
     /// This companion's own boop sound and line: built-ins have one each; packs name theirs in `pet.json`.
     private var signature: (sound: BoopSignature, bubble: String) {
+        if let studio { return (studio.signature, studio.bubble.isEmpty ? Boop.signature.bubble : studio.bubble) }
         switch library.resolved(for: agent) {
         case .builtIn(let builtIn):
             let own = BoopSignature.builtIn(builtIn.id)

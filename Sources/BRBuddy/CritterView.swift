@@ -49,6 +49,36 @@ struct CritterDesign {
     }
 }
 
+extension CritterDesign {
+    /// A Companion Studio design, drawn with the same parts.
+    init(studio: StudioDesign) {
+        func color(_ c: StudioColor) -> Color { Color(red: c.red, green: c.green, blue: c.blue) }
+        let body: Body = switch studio.body {
+        case .round: .round
+        case .pebble: .pebble
+        case .hex: .hex
+        case .cloud: .cloud
+        case .spiky: .spiky
+        }
+        let ears: Ears = switch studio.ears {
+        case .none: .none
+        case .round: .round
+        case .pointy: .pointy
+        }
+        let accent: Accent = switch studio.accent {
+        case .none: .none
+        case .sprout: .sprout
+        case .starFreckles: .starFreckles
+        case .wisps: .wisps
+        case .snaggleTooth: .snaggleTooth
+        }
+        self.init(body: body, top: color(studio.top), bottom: color(studio.bottom), ears: ears,
+                  earColor: color(studio.earColor), accent: accent, accentColor: color(studio.accentColor),
+                  ink: studio.lightInk ? Color(white: 0.98) : Color(red: 0.14, green: 0.09, blue: 0.13),
+                  blush: studio.blush, lopsided: studio.lopsided, floats: studio.floats)
+    }
+}
+
 /// A built-in companion, animated for its mood. Lays out in a 240 × 220 box and scales to fit.
 struct CritterView: View {
     let design: CritterDesign
@@ -62,6 +92,8 @@ struct CritterView: View {
     var still = false
     /// Clicked: shows that reaction's face instead of the mood's (the motion and effects come from `CompanionView`).
     var boop: Boop?
+    /// Draw this moment (seconds) instead of animating: used to render spritesheet frames.
+    var fixedTime: Double?
 
     /// Everything is drawn in this design space, then scaled to fit whatever frame the view is given.
     private static let canvas = CGSize(width: 300, height: 260)
@@ -69,8 +101,8 @@ struct CritterView: View {
     var body: some View {
         GeometryReader { geometry in
             let scale = min(geometry.size.width / Self.canvas.width, geometry.size.height / Self.canvas.height)
-            TimelineView(.animation) { timeline in
-                let t = timeline.date.timeIntervalSinceReferenceDate * timeScale
+            TimelineView(.animation(paused: fixedTime != nil)) { timeline in
+                let t = (fixedTime ?? timeline.date.timeIntervalSinceReferenceDate) * timeScale
                 ZStack {
                     critter(t)
                         .scaleEffect(x: 1 / droop, y: droop, anchor: .bottom)

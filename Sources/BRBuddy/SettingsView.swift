@@ -122,6 +122,7 @@ private struct CompanionSection: View {
     @Bindable var library: CompanionLibrary
     let agent: AgentKind?
     let boopSounds: Bool
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Section("Companion") {
@@ -150,6 +151,10 @@ private struct CompanionSection: View {
                 }
             }
             HStack {
+                Button("Companion Studio…") {
+                    NSApp.activate()
+                    openWindow(id: CompanionStudioView.windowID)
+                }
                 Button("Add companion pack…") { library.chooseAndImport() }
                 Button("Show companions folder") { library.revealFolder() }
             }

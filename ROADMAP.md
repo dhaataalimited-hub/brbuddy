@@ -86,13 +86,13 @@ Three steps, smallest first. No server and no money: sharing goes through GitHub
 1. **"Make one with any AI" guide** ✅ `docs/making-a-companion.md`: a copy-paste prompt with the full pack spec
    (grid, rows, still sheet, `pet.json`, signature sounds) and troubleshooting. Linked from the README and
    CONTRIBUTING.
-2. **Companion Studio, a creator inside Settings.** Build a critter from the parts `CritterDesign` already has
+2. **Companion Studio** ✅ (2026-11-22), opened from Settings → Companion. Build a critter from the parts `CritterDesign` already has
    (body shape, colours, ears, accent, blush, lopsided eyes, floating), pick a signature sound and line, and watch
    it react in the live preview, boops included. **Save as pack** renders both spritesheets with the same drawing
    code the built-ins use and writes a normal Codex-format folder that works in other pet apps too. Original by
    construction: no AI or drawing skills needed.
-   - Open questions: more parts (tails, hats, patterns) and whether a saved design stays editable (keep the
-     design as JSON beside the pack).
+   - Built: a design is saved as `design.json` beside the sheets, so BRBuddy draws it live with every reaction
+     and it can be edited again. **Still open:** more parts (tails, hats, patterns).
 3. **Community gallery.** A public `brbuddy-companions` repo where people submit packs by pull request; each is
    checked for license, originality and the no-logos rule before it's merged. BRBuddy gets **Browse packs…**: it
    lists the gallery's index and downloads a chosen pack into the Companions folder, through the same checks as

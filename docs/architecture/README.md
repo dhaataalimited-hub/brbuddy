@@ -38,6 +38,7 @@ LE, reads its signal strength, and starts BRB (or locks the Mac) when it moves a
 flowchart LR
   App[BRBuddyApp] --> Menu[MenuBarExtra: MenuContent]
   App --> Settings[Settings: SettingsView]
+  App --> Studio[Window: CompanionStudioView]
   State[AppState] --> Away[AwayController]
   Away --> Win[AwayWindow per display: AwayView]
   Win --> Unlock[UnlockPanel, main display only]
@@ -52,6 +53,7 @@ flowchart LR
 | Surface | What it is | Made by |
 |---|---|---|
 | Menu bar item | Paw icon (filled while keeping awake): keep-awake toggle, BRB now, Settings, Quit | `BRBuddyApp` showing `MenuContent` |
+| Companion Studio window | Build a critter from parts, preview and boop it, save it as a pack; opened from Settings → Companion | `BRBuddyApp`'s Window scene showing `CompanionStudioView` |
 | Settings window | Tabs: General (when BRB starts, when it locks for real, shortcut, launch at login), Agents, Companion, Away Screen (terminal mirror), Walk-away; fixed 540×480, each tab scrolls | `BRBuddyApp`'s Settings scene showing `SettingsView` |
 | Away windows | One borderless window per display at screen-saver level, on every Space | `AwayController` makes `AwayWindow`s hosting `AwayView` |
 | Companion | Animated character on the away screen and in Settings' preview | `CompanionView` (built-in `CritterView` or pack `SpritePackView`) |
@@ -121,6 +123,7 @@ automatic updates; both are used only by the app target.
 | `BatteryMonitor` | `BRBuddy/BatteryMonitor.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; 1-second timer while retained | Reads the battery while BRB is up (retained by `AwayController`); holds `BatteryWatch` and the current reaction |
 | `BatteryBadge`, `BatteryFlair` | `BRBuddy/BatteryView.swift` | `AwayView`; `CompanionView` | Main actor (views) | The away screen's battery pill (liquid fill, bubbles, glow, sparks); the companion's battery props and speech bubble |
 | `CritterView`, `CritterDesign` | `BRBuddy/CritterView.swift` | `CompanionView`, contact sheet | Main actor (views) | Draws and animates the six built-in critters per mood |
+| `CompanionStudioView`, `StudioSheetRenderer` | `BRBuddy/CompanionStudio.swift` | `BRBuddyApp`'s Window scene | Main actor; sheets rendered on the main actor, yielding between rows | Companion Studio: edits a `StudioDesign` with a live, boopable preview; renders the pack's two spritesheets from `CritterView`; saves through `StudioPackWriter` and picks it |
 | `CompanionContactSheet` | `BRBuddy/CompanionContactSheet.swift` | `AppDelegate` (debug only) | Main actor | Renders every built-in in every mood to a PNG |
 | `TerminalMirror` | `BRBuddy/TerminalMirror.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; capture on a detached task | Picks a source per `TerminalMirrorMode`, refreshes every second while retained (BRB up or Settings open) |
 | `TerminalMirrorView` | `BRBuddy/TerminalMirrorView.swift` | `AwayView`, Settings | Main actor (view) | Draws styled lines, latest that fit; no input path |
@@ -144,6 +147,7 @@ automatic updates; both are used only by the app target.
 | `AgentProcessScanner` | `BRBuddyCore/AgentProcessScanner.swift` | Static namespace | Any thread (run detached) | Running agent CLIs by process name or Node script path; desktop app bundle IDs |
 | `TerminalLocation` | `BRBuddyCore/TerminalLocation.swift` | Value, made by the helper, carried on `AgentEvent` and `AgentTracker.Session` | Value type | App bundles among the hook's ancestors and its controlling tty, read from the kernel |
 | `CompanionMood` | `BRBuddyCore/CompanionMood.swift` | Enum | Value type | Which mood to show, and its Codex spritesheet row |
+| `StudioDesign`, `StudioColor`, `StudioPackWriter` | `BRBuddyCore/StudioDesign.swift` | Values / static namespace | Pure, plus file writes | A Studio companion's parts, colours (`#RRGGBB`), signature and line; random designs; folder names; writes `design.json`, `pet.json` and the sheets |
 | `Boop`, `BoopEvent`, `BoopPicker`, `BoopSignature`, `BoopSound` | `BRBuddyCore/Boop.swift` | Values, `BoopPicker` held by `CompanionView` | Pure | The six click reactions (five shared, one signature); which comes next; each companion's signature; their synthesised WAV sounds |
 | `BatteryStatus`, `BatteryReaction`, `BatteryWatch` | `BRBuddyCore/Battery.swift` | Values, held by `BatteryMonitor` | Value types; `read` on the main actor | The internal battery from IOKit power sources; which reaction to show; noticing plug and unplug |
 | `CompanionCatalog` | `BRBuddyCore/CompanionCatalog.swift` | Static namespace | Pure | Built-in list and agent matches; stored `Choice`; resolving a choice to a companion |
@@ -179,7 +183,8 @@ group) or `~/.grok/hooks/brbuddy.json` (our own file). The first change saves `<
 sessions are kept in memory only.
 
 Companion packs live in `~/Library/Application Support/BRBuddy/Companions/<folder>/` (`pet.json` + spritesheet,
-Codex pet format v1 or v2, at most 20 MB). "Add companion pack…" validates a folder and copies it there.
+Codex pet format v1 or v2, at most 20 MB). "Add companion pack…" validates a folder and copies it there. Companion
+Studio saves there too, adding `design.json`; a pack with one is drawn live by `CritterView`.
 
 ## Concurrency
 Swift 6 language mode. App types are main-actor; timers hop back with `MainActor.assumeIsolated`. The password check
@@ -245,6 +250,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/BoopView.swift`: boop sounds, motion and effects.
 - `BRBuddy/BatteryMonitor.swift`: reads the battery while BRB is up; notices plug and unplug.
 - `BRBuddy/BatteryView.swift`: the away screen's battery badge and the companion's battery props.
+- `BRBuddy/CompanionStudio.swift`: Companion Studio window and its spritesheet renderer.
 - `BRBuddy/CompanionView.swift`: shows the chosen companion; sprite pack player.
 - `BRBuddy/CritterView.swift`: the six built-in critters and their shapes.
 - `BRBuddy/CompanionContactSheet.swift`: debug-only render of every critter and mood.
@@ -274,6 +280,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/TerminalLocation.swift`: which app and terminal tab a hook ran from.
 - `BRBuddyCore/Boop.swift`: click reactions, the picker and their synthesised sounds.
 - `BRBuddyCore/Battery.swift`: battery status from IOKit, battery reactions, plug/unplug watch.
+- `BRBuddyCore/StudioDesign.swift`: Companion Studio designs and writing them as packs.
 - `BRBuddyCore/CompanionMood.swift`: companion moods and their spritesheet rows.
 - `BRBuddyCore/CompanionCatalog.swift`: built-in companions and resolving the user's choice.
 - `BRBuddyCore/CompanionPack.swift`: loading, checking and importing Codex-format packs.

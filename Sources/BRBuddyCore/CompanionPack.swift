@@ -9,8 +9,8 @@ import ImageIO
 /// running-right, running-left, waving, jumping, failed, waiting, running, review. BRBuddy reads rows 0–8 and adds
 /// optional `license`, `author`, `agents` (e.g. `["claude", "codex"]`) and `stillSpritesheetPath` (a second sheet of
 /// the same size where the body holds still and only the face moves, shown on battery), `boopSignature` (a
-/// `BoopSignature` name for its own boop sound) and `boopBubble` (what it says then) to `pet.json`; other apps
-/// ignore them.
+/// `BoopSignature` name for its own boop sound), `boopBubble` (what it says then) and `studioDesign` (a Companion
+/// Studio design file, drawn live instead of the sheets) to `pet.json`; other apps ignore them.
 public struct CompanionPack: Sendable, Identifiable {
     public enum LoadError: LocalizedError, Equatable {
         case missingManifest
@@ -53,6 +53,8 @@ public struct CompanionPack: Sendable, Identifiable {
     public let boopSignature: BoopSignature?
     /// What it says on its signature boop.
     public let boopBubble: String?
+    /// Made in Companion Studio: BRBuddy draws it live from this design instead of from the spritesheets.
+    public let studioDesign: StudioDesign?
 
     struct Manifest: Decodable {
         var id: String?
@@ -66,6 +68,7 @@ public struct CompanionPack: Sendable, Identifiable {
         var stillSpritesheetPath: String?
         var boopSignature: String?
         var boopBubble: String?
+        var studioDesign: String?
     }
 
     /// Reads and checks a pack folder without decoding the whole image.
@@ -86,7 +89,16 @@ public struct CompanionPack: Sendable, Identifiable {
             spriteVersion: version, spritesheetURL: sheetURL,
             stillSpritesheetURL: still?.version == version ? still?.url : nil,
             boopSignature: manifest.boopSignature.flatMap(BoopSignature.init(rawValue:)),
-            boopBubble: manifest.boopBubble.map { String($0.prefix(24)) })
+            boopBubble: manifest.boopBubble.map { String($0.prefix(24)) },
+            studioDesign: manifest.studioDesign.flatMap { loadDesign($0, in: folder) })
+    }
+
+    /// Reads a Studio design file from inside the folder; `nil` if it's missing, outside the folder or not valid.
+    static func loadDesign(_ name: String, in folder: URL) -> StudioDesign? {
+        let url = folder.appending(path: name).standardizedFileURL
+        guard url.path.hasPrefix(folder.standardizedFileURL.path),
+              let data = try? Data(contentsOf: url), data.count < 64 * 1024 else { return nil }
+        return try? JSONDecoder().decode(StudioDesign.self, from: data).tidied
     }
 
     /// Checks one spritesheet: inside the folder, not too big, a size we know. Returns its URL and sprite version.

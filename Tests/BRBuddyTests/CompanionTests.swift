@@ -243,3 +243,70 @@ struct BoopTests {
         #expect(sounds.count == BoopSignature.allCases.count)  // all different
     }
 }
+
+struct StudioDesignTests {
+    @Test func coloursRoundTripThroughHex() throws {
+        let color = try #require(StudioColor(hex: "#FFB38A"))
+        #expect(color.hex == "#FFB38A")
+        #expect(StudioColor(hex: "nope") == nil)
+        #expect(StudioColor(hue: 0, saturation: 1, brightness: 1).hex == "#FF0000")
+        #expect(StudioColor(hue: 1.0 / 3, saturation: 1, brightness: 1).hex == "#00FF00")
+    }
+
+    @Test func designRoundTripsThroughJSONWithHexColours() throws {
+        let data = try JSONEncoder().encode(StudioDesign.starter)
+        #expect(String(decoding: data, as: UTF8.self).contains("\"#FFB38A\""))
+        #expect(try JSONDecoder().decode(StudioDesign.self, from: data) == .starter)
+    }
+
+    @Test func randomDesignsVaryAndAreTidy() {
+        var generator = BoopTests.Seeded(state: 3)
+        let designs = (0..<8).map { _ in StudioDesign.random(using: &generator) }
+        #expect(Set(designs.map(\.top)).count > 4)
+        #expect(designs.allSatisfy { $0 == $0.tidied })
+    }
+
+    @Test func folderNamesAreSafeSlugs() {
+        var design = StudioDesign.starter
+        design.name = "Mr. Fluffy  Pants!"
+        #expect(design.folderName == "mr-fluffy-pants")
+        design.name = "../../etc"
+        #expect(design.folderName == "etc")
+        design.name = "🐱"
+        #expect(design.folderName == "studio-companion")
+        design.name = "   "
+        #expect(design.tidied.name == "Buddy")
+    }
+
+    @Test func writesAPackThatLoadsAsALiveDesign() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "brb-studio-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        var design = StudioDesign.starter
+        design.signature = .zoom
+        let sheet = try blankSheet()
+        let folder = StudioPackWriter.folder(for: design, in: root)
+        try StudioPackWriter.write(design, sheet: sheet, stillSheet: sheet, to: folder)
+        #expect(folder.lastPathComponent == "buddy")
+        #expect(StudioPackWriter.folder(for: design, in: root).lastPathComponent == "buddy-2")  // name taken
+        #expect(StudioPackWriter.folder(for: design, in: root, preferred: "buddy").lastPathComponent == "buddy")
+
+        let pack = try CompanionPack.load(from: folder)
+        #expect(pack.studioDesign == design)
+        #expect(pack.boopSignature == .zoom && pack.boopBubble == design.bubble)
+        #expect(pack.stillSpritesheetURL != nil)
+    }
+
+    /// A transparent 1536 × 1872 PNG.
+    private func blankSheet() throws -> Data {
+        let context = try #require(CGContext(data: nil, width: 1536, height: 1872, bitsPerComponent: 8, bytesPerRow: 0,
+                                             space: CGColorSpaceCreateDeviceRGB(),
+                                             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        let image = try #require(context.makeImage())
+        let data = NSMutableData()
+        let destination = try #require(CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil))
+        CGImageDestinationAddImage(destination, image, nil)
+        #expect(CGImageDestinationFinalize(destination))
+        return data as Data
+    }
+}

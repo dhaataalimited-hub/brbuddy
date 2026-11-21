@@ -24,6 +24,7 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 | Companions | Settings → Companion | Six built-in characters (Ember, Pebble, Prism, Comet, Drift, Gremlin), or "Match my agent" |
 | Boop your companion | Click it on the away screen or in Settings → Companion | Six reactions with sounds: squish, giggle, spin, heart eyes, grumpy (if you click too fast) and one that's each companion's own. Turn the sounds off in Settings → Companion → Boops |
 | Companion packs | Settings → Companion → Add companion pack… | Any pet made for Codex works (a folder with pet.json and a spritesheet) |
+| Companion Studio | Settings → Companion → Companion Studio… | Build your own critter: shape, colours, ears, extras, face, its own boop sound and line. Save makes it your companion; Show in Finder gives you the folder to share |
 | Make your own companion | docs/making-a-companion.md in the project | A prompt to paste into any AI; it builds a pack you then add with Add companion pack… |
 | Battery on the away screen | Settings → Away Screen → Battery | On by default on MacBooks. Shows charge and time left; the companion cheers when you plug in, sweats when the battery's low and moves in slow motion in Low Power Mode. On battery its body holds still to save power and only its face moves |
 | Terminal on the away screen | Settings → Away Screen | Off by default. Shows a tmux pane, a Terminal/iTerm2/Ghostty window, or a feed of what your agent is doing. View-only |

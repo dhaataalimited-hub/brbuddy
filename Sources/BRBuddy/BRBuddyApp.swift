@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// App entry point: a menu bar item and a Settings window, no Dock icon or main window.
+/// App entry point: a menu bar item, a Settings window and the Companion Studio window; no Dock icon or main window.
 @main
 struct BRBuddyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
@@ -18,5 +18,9 @@ struct BRBuddyApp: App {
         Settings {
             SettingsView(state: delegate.state)
         }
+        Window("Companion Studio", id: CompanionStudioView.windowID) {
+            CompanionStudioView(library: delegate.state.companions)
+        }
+        .windowResizability(.contentSize)
     }
 }

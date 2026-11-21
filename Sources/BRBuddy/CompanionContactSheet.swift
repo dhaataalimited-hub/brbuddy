@@ -95,6 +95,38 @@ enum CompanionContactSheet {
         }
     }
 
+    /// Companion Studio's window and a sample design's spritesheets, saved into `folder`. `BRBUDDY_STUDIO_SNAPSHOT=<dir>`.
+    static func renderStudio(library: CompanionLibrary, to folder: URL) async {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 560), styleMask: [.titled],
+                              backing: .buffered, defer: false)
+        let host = NSHostingView(rootView: CompanionStudioView(library: library))
+        window.contentView = host
+        window.orderFront(nil)
+        try? await Task.sleep(for: .seconds(1.5))
+        if let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) {
+            host.cacheDisplay(in: host.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(to: folder.appending(path: "studio-window.png"))
+        }
+        window.orderOut(nil)
+        var generator = SeededGenerator(state: 11)
+        let design = StudioDesign.random(using: &generator)
+        if let sheet = try? await StudioSheetRenderer.render(design, still: false) {
+            try? sheet.write(to: folder.appending(path: "studio-sheet.png"))
+        }
+        if let sheet = try? await StudioSheetRenderer.render(design, still: true) {
+            try? sheet.write(to: folder.appending(path: "studio-sheet-still.png"))
+        }
+    }
+
+    /// A repeatable random generator for debug renders.
+    struct SeededGenerator: RandomNumberGenerator {
+        var state: UInt64
+        mutating func next() -> UInt64 {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            return state
+        }
+    }
+
     private static func save(_ view: some View, to url: URL) {
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2

@@ -65,6 +65,19 @@ sequenceDiagram
 - Sounds are synthesised in code by `BoopSound` (no sound files). On the away screen, the click also brings up the
   unlock prompt as before.
 
+## Companion Studio (making your own)
+- **Settings → Companion → Companion Studio…** opens `CompanionStudioView` in its own window. The user picks a
+  shape, two body colours, ears, an extra (sprout, star freckles, wisps, snaggle tooth), face options, floating, a
+  signature sound and a line; **Surprise me** makes a random `StudioDesign` with matching colours.
+- The preview is a `CompanionView` given the design directly: it plays every mood and can be booped.
+- **Save** renders both spritesheets (`StudioSheetRenderer` draws `CritterView` at fixed moments, 8 frames per
+  mood, each row covering one loop of its main motion), then `StudioPackWriter` writes `design.json`, `pet.json`
+  and the sheets into the companions folder (a new folder per name, "-2" if taken; editing keeps its folder).
+  "Use it as my companion" then picks it.
+- In BRBuddy a pack with `studioDesign` in `pet.json` is drawn live by `CritterView`, so it gets every reaction a
+  built-in gets (battery, holding still, boop faces). Other pet apps use its sheets. **Edit …** in the Studio's
+  menu reopens any saved design.
+
 ## Gotchas
 - Built-in art is code, not images: change `CritterDesign` and check with the debug contact sheet
   (`BRBUDDY_COMPANION_SHEET`). Keep them original: no vendor mascots, logos or look-alikes.
@@ -80,6 +93,8 @@ Function names change: read the current code in these files before relying on an
   `flows/battery.md`.
 - Boops: `Boop.swift`, `BoopView.swift`; types `Boop`, `BoopPicker`, `BoopEvent`, `BoopSound`, `BoopPlayer`,
   `BoopFlair`, `BoopSignature`; tests `BoopTests`.
+- Studio: `StudioDesign.swift`, `CompanionStudio.swift`; types `StudioDesign`, `StudioPackWriter`,
+  `CompanionStudioView`, `StudioSheetRenderer`; tests `StudioDesignTests`.
 - Types: `CompanionLibrary`, `CompanionView`, `SpritePackView`, `CritterView`, `CritterDesign`, `CompanionMood`,
   `CompanionCatalog`, `CompanionPack`, `CompanionPackLibrary`, `AwayController`, `AgentMonitor`
 - Tests: `CompanionMoodTests`, `CompanionCatalogTests`, `CompanionPackTests`
