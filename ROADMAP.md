@@ -46,7 +46,9 @@ SwiftPM package, menu bar item, keep-awake toggle, bundling script, architecture
   low, slow motion in Low Power Mode); on battery the body holds still and only the face moves (packs can ship a
   still sheet); clicking a companion "boops" it: five shared reactions plus a signature one with its own
   synthesised sound and line (packs name theirs in `pet.json`).
-- **Still open:** pixel-art (nearest-neighbour) scaling option. Making and sharing packs moved to Phase 7.
+- Added 2026-11-22: Shuffle mode, a different companion each time BRB starts.
+- **Still open:** pixel-art (nearest-neighbour) scaling option; choosing which companions Shuffle uses. Making and
+  sharing packs moved to Phase 7.
 - No vendor logos or mascots, ever.
 
 ## Phase 4: Terminal mirror ✅ (2026-11-20, except where noted)

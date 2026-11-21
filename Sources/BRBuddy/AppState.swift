@@ -84,6 +84,7 @@ final class AppState {
 
     func startAway() {
         guard !away.isAway else { return }
+        companions.shuffleNext()  // Shuffle mode: a new companion each time
         away.start(settings: settings)
         applyKeepAwakeMode()
     }

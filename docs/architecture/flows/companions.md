@@ -65,6 +65,14 @@ sequenceDiagram
 - Sounds are synthesised in code by `BoopSound` (no sound files). On the away screen, the click also brings up the
   unlock prompt as before.
 
+## Shuffle
+- **Shuffle (a new one each BRB)** in the picker makes `CompanionLibrary` keep a `CompanionShuffle`: every built-in
+  and pack in a shuffled order, each shown once before any repeats, never the same one twice in a row.
+- `AppState` moves it on each time BRB starts (menu, shortcut, auto-start, walk-away all go through it), so the
+  companion stays the same for the whole BRB. **Next companion** in Settings moves it on by hand.
+- Its position is saved (`companion.shuffle.*`), so it carries on after a relaunch; packs that have gone are skipped
+  and new ones join the next round.
+
 ## Companion Studio (making your own)
 - **Settings → Companion → Companion Studio…** opens `CompanionStudioView` in its own window. The user picks a
   shape, two body colours, ears, an extra (sprout, star freckles, wisps, snaggle tooth), face options, a mouth
@@ -97,6 +105,7 @@ Function names change: read the current code in these files before relying on an
   `BoopFlair`, `BoopSignature`; tests `BoopTests`.
 - Studio: `StudioDesign.swift`, `CompanionStudio.swift`; types `StudioDesign`, `StudioPackWriter`,
   `CompanionStudioView`, `StudioSheetRenderer`; tests `StudioDesignTests`.
+- Shuffle: type `CompanionShuffle`; tests `CompanionShuffleTests`.
 - Types: `CompanionLibrary`, `CompanionView`, `SpritePackView`, `CritterView`, `CritterDesign`, `CompanionMood`,
   `CompanionCatalog`, `CompanionPack`, `CompanionPackLibrary`, `AwayController`, `AgentMonitor`
 - Tests: `CompanionMoodTests`, `CompanionCatalogTests`, `CompanionPackTests`

@@ -20,6 +20,42 @@ struct CompanionMoodTests {
     }
 }
 
+struct CompanionShuffleTests {
+    @Test func showsEveryCompanionBeforeRepeatingAndNeverTwiceInARow() {
+        let pool = CompanionShuffle.pool(packs: ["cat", "dog"])
+        #expect(pool.count == CompanionCatalog.builtIns.count + 2)
+        var shuffle = CompanionShuffle()
+        var generator = BoopTests.Seeded(state: 5)
+        var picks: [CompanionCatalog.Choice] = []
+        for _ in 0..<(pool.count * 3) {
+            shuffle.advance(pool: pool, using: &generator)
+            picks.append(shuffle.current!)
+        }
+        for round in 0..<3 {
+            #expect(Set(picks[(round * pool.count)..<((round + 1) * pool.count)]) == Set(pool))
+        }
+        #expect(!zip(picks, picks.dropFirst()).contains { $0 == $1 })
+    }
+
+    @Test func skipsPacksThatHaveGoneAndSurvivesARelaunch() throws {
+        var shuffle = CompanionShuffle(current: .builtIn("ember"), upcoming: [.pack("gone"), .builtIn("comet")])
+        var generator = BoopTests.Seeded(state: 9)
+        shuffle.advance(pool: CompanionShuffle.pool(packs: []), using: &generator)
+        #expect(shuffle.current == .builtIn("comet"))
+
+        let store = try #require(UserDefaults(suiteName: "brb-shuffle-\(UUID().uuidString)"))
+        shuffle.save(to: store)
+        #expect(CompanionShuffle.load(from: store) == shuffle)
+    }
+
+    @Test func shuffleResolvesToItsPick() {
+        #expect(CompanionCatalog.resolve(.shuffle, agent: nil, availablePacks: [:]) == .builtIn(CompanionCatalog.defaultBuiltIn))
+        #expect(CompanionCatalog.resolve(.shuffle, agent: nil, availablePacks: ["cat": []], shufflePick: .pack("cat")) == .pack("cat"))
+        #expect(CompanionCatalog.resolve(.shuffle, agent: nil, availablePacks: [:], shufflePick: .builtIn("comet"))
+                == .builtIn(CompanionCatalog.builtIn(id: "comet")!))
+    }
+}
+
 struct CompanionCatalogTests {
     @Test func everyAgentHasItsOwnBuiltIn() {
         let matched = Set(AgentKind.allCases.map { CompanionCatalog.builtIn(for: $0).id })
@@ -27,7 +63,7 @@ struct CompanionCatalogTests {
     }
 
     @Test func choiceRoundTripsThroughStorage() {
-        for choice in [CompanionCatalog.Choice.matchAgent, .builtIn("comet"), .pack("my-cat")] {
+        for choice in [CompanionCatalog.Choice.matchAgent, .shuffle, .builtIn("comet"), .pack("my-cat")] {
             #expect(CompanionCatalog.Choice(storageValue: choice.storageValue) == choice)
         }
         #expect(CompanionCatalog.Choice(storageValue: nil) == .matchAgent)

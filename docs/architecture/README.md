@@ -150,7 +150,7 @@ automatic updates; both are used only by the app target.
 | `StudioDesign`, `StudioColor`, `StudioPackWriter` | `BRBuddyCore/StudioDesign.swift` | Values / static namespace | Pure, plus file writes | A Studio companion's parts, colours (`#RRGGBB`), signature and line; random designs; folder names; writes `design.json`, `pet.json` and the sheets |
 | `Boop`, `BoopEvent`, `BoopPicker`, `BoopSignature`, `BoopSound` | `BRBuddyCore/Boop.swift` | Values, `BoopPicker` held by `CompanionView` | Pure | The six click reactions (five shared, one signature); which comes next; each companion's signature; their synthesised WAV sounds |
 | `BatteryStatus`, `BatteryReaction`, `BatteryWatch` | `BRBuddyCore/Battery.swift` | Values, held by `BatteryMonitor` | Value types; `read` on the main actor | The internal battery from IOKit power sources; which reaction to show; noticing plug and unplug |
-| `CompanionCatalog` | `BRBuddyCore/CompanionCatalog.swift` | Static namespace | Pure | Built-in list and agent matches; stored `Choice`; resolving a choice to a companion |
+| `CompanionCatalog`, `CompanionShuffle` | `BRBuddyCore/CompanionCatalog.swift` | Static namespace; value held by `CompanionLibrary` | Pure | Built-in list and agent matches; stored `Choice`; resolving a choice to a companion; Shuffle's running order |
 | `CompanionPack`, `CompanionPackLibrary` | `BRBuddyCore/CompanionPack.swift` | Values / static namespace | Load anywhere; cut frames off the main thread | Validates a Codex pet folder, cuts frames per mood (and from an optional still sheet, shown on battery), scans and imports packs |
 | `ANSIParser`, `TerminalColor`, `TerminalStyle`, `TerminalRun` | `BRBuddyCore/TerminalText.swift` | Static namespace / values | Pure | Colour-coded text → styled lines; drops every non-colour escape; xterm palette |
 | `TmuxReader` | `BRBuddyCore/TmuxReader.swift` | Static namespace | Off the main thread (runs tmux, 2 s limit) | Finds tmux, lists panes, picks the agent's pane, captures it read-only |
@@ -171,7 +171,8 @@ resting after 30 seconds without input; any phase → locking for real when `Awa
 `AwaySettings` in UserDefaults under `away.*` keys: auto-start on/off, idle minutes (1–120, default 3), failed tries
 before real lock (1–10, default 3), minutes before real lock (0 = never, default 60). The global shortcut is stored
 by KeyboardShortcuts; `agents.keepAwake` holds "keep awake while an agent works" (default on); `companion.choice` holds
-the companion (`auto`, `builtin:<id>` or `pack:<folder>`); `mirror.mode` holds the terminal mirror mode (default
+the companion (`auto`, `shuffle`, `builtin:<id>` or `pack:<folder>`), and `companion.shuffle.*` Shuffle's current pick
+and what's left this round; `mirror.mode` holds the terminal mirror mode (default
 `off`); `away.showBattery` holds the battery badge (default on); `companion.boopSounds` holds boop sounds (default on); `proximity.*` holds walk-away (enabled, device ID and name, range, action). Launch at login is
 held by macOS (`SMAppService`). Passwords are never stored or logged.
 

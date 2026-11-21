@@ -30,15 +30,19 @@ public enum CompanionCatalog {
         builtIns.first { $0.agent == agent } ?? defaultBuiltIn
     }
 
-    /// What the user picked in Settings. Stored as a string: "auto", "builtin:<id>" or "pack:<folder name>".
+    /// What the user picked in Settings. Stored as a string: "auto", "shuffle", "builtin:<id>" or
+    /// "pack:<folder name>".
     public enum Choice: Equatable, Hashable, Sendable {
         case matchAgent
+        /// A different companion each time BRB starts (`CompanionShuffle`).
+        case shuffle
         case builtIn(String)
         case pack(String)
 
         public var storageValue: String {
             switch self {
             case .matchAgent: "auto"
+            case .shuffle: "shuffle"
             case .builtIn(let id): "builtin:\(id)"
             case .pack(let id): "pack:\(id)"
             }
@@ -48,6 +52,7 @@ public enum CompanionCatalog {
             guard let value = storageValue else { self = .matchAgent; return }
             if value.hasPrefix("builtin:") { self = .builtIn(String(value.dropFirst(8))) }
             else if value.hasPrefix("pack:") { self = .pack(String(value.dropFirst(5))) }
+            else if value == "shuffle" { self = .shuffle }
             else { self = .matchAgent }
         }
 
@@ -70,8 +75,13 @@ public enum CompanionCatalog {
         case pack(String)
     }
 
-    public static func resolve(_ choice: Choice, agent: AgentKind?, availablePacks: [String: [AgentKind]]) -> Resolved {
+    /// `shufflePick` is what Shuffle landed on this time (a built-in or pack choice).
+    public static func resolve(_ choice: Choice, agent: AgentKind?, availablePacks: [String: [AgentKind]],
+                               shufflePick: Choice? = nil) -> Resolved {
         switch choice {
+        case .shuffle:
+            guard let pick = shufflePick, pick != .shuffle else { return .builtIn(defaultBuiltIn) }
+            return resolve(pick, agent: agent, availablePacks: availablePacks)
         case .builtIn(let id):
             if let found = builtIn(id: id) { return .builtIn(found) }
         case .pack(let id):
@@ -82,5 +92,53 @@ public enum CompanionCatalog {
         guard let agent else { return .builtIn(defaultBuiltIn) }
         if let pack = availablePacks.filter({ $0.value.contains(agent) }).keys.sorted().first { return .pack(pack) }
         return .builtIn(builtIn(for: agent))
+    }
+}
+
+/// Shuffle mode's running order: every built-in and pack in a shuffled order, each shown once before any repeats,
+/// never the same one twice in a row. Moves on each time BRB starts; saved so it carries on after a relaunch.
+public struct CompanionShuffle: Equatable, Sendable {
+    /// What's showing now.
+    public private(set) var current: CompanionCatalog.Choice?
+    /// What's still to come this round.
+    public private(set) var upcoming: [CompanionCatalog.Choice] = []
+
+    public init(current: CompanionCatalog.Choice? = nil, upcoming: [CompanionCatalog.Choice] = []) {
+        self.current = current
+        self.upcoming = upcoming
+    }
+
+    /// Everything Shuffle can land on: the built-ins, then the packs in the companions folder.
+    public static func pool(packs: [String]) -> [CompanionCatalog.Choice] {
+        CompanionCatalog.builtIns.map { .builtIn($0.id) } + packs.sorted().map { .pack($0) }
+    }
+
+    /// Moves to the next companion. Packs that have gone are skipped; a new round starts when this one runs out.
+    public mutating func advance<G: RandomNumberGenerator>(pool: [CompanionCatalog.Choice], using generator: inout G) {
+        guard !pool.isEmpty else { current = nil; upcoming = []; return }
+        upcoming.removeAll { !pool.contains($0) }
+        if upcoming.isEmpty {
+            upcoming = pool.shuffled(using: &generator)
+            if upcoming.first == current, upcoming.count > 1 { upcoming.swapAt(0, upcoming.count - 1) }
+        }
+        current = upcoming.removeFirst()
+    }
+
+    public mutating func advance(pool: [CompanionCatalog.Choice]) {
+        var generator = SystemRandomNumberGenerator()
+        advance(pool: pool, using: &generator)
+    }
+
+    static let currentKey = "companion.shuffle.current"
+    static let upcomingKey = "companion.shuffle.upcoming"
+
+    public static func load(from store: UserDefaults = .standard) -> CompanionShuffle {
+        CompanionShuffle(current: store.string(forKey: currentKey).map { CompanionCatalog.Choice(storageValue: $0) },
+                         upcoming: (store.stringArray(forKey: upcomingKey) ?? []).map { CompanionCatalog.Choice(storageValue: $0) })
+    }
+
+    public func save(to store: UserDefaults = .standard) {
+        store.set(current?.storageValue, forKey: Self.currentKey)
+        store.set(upcoming.map(\.storageValue), forKey: Self.upcomingKey)
     }
 }

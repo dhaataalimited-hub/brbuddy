@@ -8,8 +8,13 @@ import Observation
 @Observable
 final class CompanionLibrary {
     var choice: CompanionCatalog.Choice {
-        didSet { choice.save() }
+        didSet {
+            choice.save()
+            if choice == .shuffle, oldValue != .shuffle { shuffleNext() }
+        }
     }
+    /// Shuffle mode's running order; moves on each time BRB starts.
+    private(set) var shuffle = CompanionShuffle.load()
 
     private(set) var packs: [CompanionPack] = []
     private(set) var problems: [(folder: String, reason: String)] = []
@@ -31,7 +36,15 @@ final class CompanionLibrary {
 
     func resolved(for agent: AgentKind?) -> CompanionCatalog.Resolved {
         CompanionCatalog.resolve(choice, agent: agent,
-                                 availablePacks: Dictionary(uniqueKeysWithValues: packs.map { ($0.id, $0.agents) }))
+                                 availablePacks: Dictionary(uniqueKeysWithValues: packs.map { ($0.id, $0.agents) }),
+                                 shufflePick: shuffle.current)
+    }
+
+    /// In Shuffle mode, moves on to the next companion (called each time BRB starts, and by "Next" in Settings).
+    func shuffleNext() {
+        guard choice == .shuffle else { return }
+        shuffle.advance(pool: CompanionShuffle.pool(packs: packs.map(\.id)))
+        shuffle.save()
     }
 
     func pack(id: String) -> CompanionPack? { packs.first { $0.id == id } }

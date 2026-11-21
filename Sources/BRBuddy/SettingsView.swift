@@ -134,6 +134,7 @@ private struct CompanionSection: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Picker("Companion", selection: $library.choice) {
                         Text("Match my agent").tag(CompanionCatalog.Choice.matchAgent)
+                        Text("Shuffle (a new one each BRB)").tag(CompanionCatalog.Choice.shuffle)
                         Divider()
                         ForEach(CompanionCatalog.builtIns) { critter in
                             Text("\(critter.name) (\(critter.agent.displayName) vibe)").tag(CompanionCatalog.Choice.builtIn(critter.id))
@@ -148,6 +149,10 @@ private struct CompanionSection: View {
                     Text(caption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if library.choice == .shuffle {
+                        Button("Next companion") { library.shuffleNext() }
+                            .controlSize(.small)
+                    }
                 }
             }
             HStack {
@@ -172,15 +177,30 @@ private struct CompanionSection: View {
     }
 
     private var caption: String {
+        let now = shuffleCaption
         switch library.resolved(for: agent) {
         case .builtIn(let critter):
-            return critter.blurb + "."
+            return now ?? critter.blurb + "."
         case .pack(let id):
             guard let pack = library.pack(id: id) else { return "" }
+            if let now { return now }
             let by = pack.author.map { " by \($0)" } ?? ""
             let license = pack.license.map { " · \($0)" } ?? " · license not stated"
             return "Community pack\(by)\(license)"
         }
+    }
+}
+
+extension CompanionSection {
+    /// In Shuffle mode: who's up now, out of how many.
+    fileprivate var shuffleCaption: String? {
+        guard library.choice == .shuffle else { return nil }
+        let name: String = switch library.resolved(for: agent) {
+        case .builtIn(let critter): critter.name
+        case .pack(let id): library.pack(id: id)?.displayName ?? id
+        }
+        let total = CompanionCatalog.builtIns.count + library.packs.count
+        return "A different one of your \(total) companions each time BRB starts. Now: \(name)."
     }
 }
 
