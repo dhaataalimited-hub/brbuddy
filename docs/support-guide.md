@@ -23,6 +23,7 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 | Jump to an agent | Click the agent in the menu | Opens the terminal window it's running in; in Terminal and iTerm2, the exact tab. macOS asks once to let BRBuddy control Terminal/iTerm2 |
 | Companions | Settings → Companion | Six built-in characters (Ember, Pebble, Prism, Comet, Drift, Gremlin), or "Match my agent" |
 | Companion packs | Settings → Companion → Add companion pack… | Any pet made for Codex works (a folder with pet.json and a spritesheet) |
+| Battery on the away screen | Settings → Away Screen → Battery | On by default on MacBooks. Shows charge and time left; the companion cheers when you plug in, sweats when the battery's low and moves in slow motion in Low Power Mode |
 | Terminal on the away screen | Settings → Away Screen | Off by default. Shows a tmux pane, a Terminal/iTerm2/Ghostty window, or a feed of what your agent is doing. View-only |
 | Walk-away lock | Settings → Walk-away | Pair your iPhone with the Mac, then pick it; when it moves away, BRBuddy starts BRB or locks the Mac |
 | Open at login | Settings → General | |
@@ -52,6 +53,10 @@ licence.
 Check the paw in the menu bar is filled in. If you're relying on your agent to keep it awake, make sure that agent
 is set up in Settings → Agents and "Keep the Mac awake while an agent is working" is on. Closing the lid on battery
 still sleeps the Mac; that's macOS, not BRBuddy.
+
+**The away screen doesn't show the battery.**
+Check Settings → Away Screen → "Show the battery on the away screen" is on; the change applies the next time BRB
+starts. Desktop Macs (iMac, Mac mini, Mac Studio, Mac Pro) have no battery, so there's nothing to show.
 
 **BRB didn't start on its own.**
 It only starts by itself while the Mac is being kept awake (by you, or because an agent is working) and when

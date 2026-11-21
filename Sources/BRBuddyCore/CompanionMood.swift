@@ -15,11 +15,13 @@ public enum CompanionMood: String, CaseIterable, Sendable {
     /// A failed unlock, or handing off to the real lock screen.
     case oops
 
-    /// Picks the mood. Away-screen events (someone at the Mac, a failure) win over what the agent is doing.
+    /// Picks the mood. Away-screen events (someone at the Mac, a failure) win, then a fresh plug or unplug of the
+    /// charger, then what the agent is doing.
     public static func current(isUnlocking: Bool, recentFailure: Bool, lockingForReal: Bool,
-                               agent: AgentTracker.Summary) -> CompanionMood {
+                               agent: AgentTracker.Summary, battery: BatteryReaction = .none) -> CompanionMood {
         if lockingForReal || recentFailure { return .oops }
         if isUnlocking { return .greeting }
+        if let mood = battery.moodOverride { return mood }
         switch agent {
         case .waiting: return .waiting
         case .working: return .working

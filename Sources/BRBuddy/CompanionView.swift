@@ -6,14 +6,26 @@ struct CompanionView: View {
     let library: CompanionLibrary
     let mood: CompanionMood
     let agent: AgentKind?
+    /// What the battery is up to; the companion reacts to it.
+    var battery: BatteryReaction = .none
 
     var body: some View {
-        switch library.resolved(for: agent) {
-        case .builtIn(let builtIn):
-            CritterView(design: .design(for: builtIn.id), mood: mood)
-        case .pack(let id):
-            SpritePackView(frames: library.frames(pack: id, mood: mood))
+        ZStack {
+            switch library.resolved(for: agent) {
+            case .builtIn(let builtIn):
+                CritterView(design: .design(for: builtIn.id), mood: mood, battery: battery, quiet: batteryTalks)
+            case .pack(let id):
+                SpritePackView(frames: library.frames(pack: id, mood: mood))
+            }
+            if battery != .none {
+                BatteryFlair(reaction: battery, talks: batteryTalks)
+            }
         }
+    }
+
+    /// The battery gets the speech bubble unless the agent needs the user or someone is unlocking.
+    private var batteryTalks: Bool {
+        battery.bubble != nil && mood != .waiting && mood != .greeting
     }
 }
 

@@ -53,6 +53,11 @@ struct CritterDesign {
 struct CritterView: View {
     let design: CritterDesign
     let mood: CompanionMood
+    /// Battery reactions change how it moves: slow motion in Low Power Mode, drooping when low, glowing on the
+    /// charger.
+    var battery: BatteryReaction = .none
+    /// Hide its own speech bubble (while the battery has something to say).
+    var quiet = false
 
     /// Everything is drawn in this design space, then scaled to fit whatever frame the view is given.
     private static let canvas = CGSize(width: 300, height: 260)
@@ -61,12 +66,14 @@ struct CritterView: View {
         GeometryReader { geometry in
             let scale = min(geometry.size.width / Self.canvas.width, geometry.size.height / Self.canvas.height)
             TimelineView(.animation) { timeline in
-                let t = timeline.date.timeIntervalSinceReferenceDate
+                let t = timeline.date.timeIntervalSinceReferenceDate * timeScale
                 ZStack {
                     critter(t)
+                        .scaleEffect(x: 1 / droop, y: droop, anchor: .bottom)
+                        .shadow(color: .yellow.opacity(glow(t)), radius: 22)
                         .offset(x: motionX(t), y: motionY(t))
-                        .rotationEffect(.degrees(mood == .greeting ? 6 * sin(t * 2.5) : 0), anchor: .bottom)
-                    bubble(t)
+                        .rotationEffect(.degrees(mood == .greeting ? 6 * sin(t * 2.5) : lean(t)), anchor: .bottom)
+                    if !quiet { bubble(t) }
                 }
                 .frame(width: Self.canvas.width, height: Self.canvas.height)
                 .scaleEffect(scale)
@@ -77,6 +84,36 @@ struct CritterView: View {
     }
 
     // MARK: Motion
+
+    /// Low Power Mode plays everything in slow motion; a low battery makes it sluggish.
+    private var timeScale: Double {
+        switch battery {
+        case .lowPower: 0.4
+        case .low, .critical: 0.7
+        default: 1
+        }
+    }
+
+    /// Squashed down when the battery is low.
+    private var droop: Double {
+        switch battery {
+        case .low: 0.94
+        case .critical: 0.88
+        default: 1
+        }
+    }
+
+    /// A warm glow while charging.
+    private func glow(_ t: Double) -> Double {
+        switch battery {
+        case .pluggedIn: 0.8
+        case .charging: 0.25 + 0.15 * sin(t * 1.5)
+        default: 0
+        }
+    }
+
+    /// Wobbles when critical, as if about to tip over.
+    private func lean(_ t: Double) -> Double { battery == .critical ? 4 * sin(t * 2.2) : 0 }
 
     private func motionY(_ t: Double) -> Double {
         let lift = design.floats ? -10 + 5 * sin(t * 1.3) : 0
@@ -255,7 +292,7 @@ struct CritterView: View {
     }
 }
 
-private struct BubbleLabel: View {
+struct BubbleLabel: View {
     let text: String
     var tint: Color = .white
 

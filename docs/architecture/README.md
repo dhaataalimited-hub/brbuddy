@@ -23,6 +23,9 @@ The away screen's companion is one of six original built-in critters drawn in co
 automatically or by the user) or a community pack in the Codex pet format, and acts out a mood: resting, working,
 waiting, finished, greeting or oops.
 
+On a MacBook the away screen shows the battery in its top-right corner, and the companion reacts to it: cheering
+when the charger goes in, sweating when low, slow motion in Low Power Mode (on by default; Settings → Away Screen).
+
 Optionally (off by default) the away screen also mirrors a read-only terminal view below the companion: a tmux
 pane (with colours), a Terminal/iTerm2/Ghostty window read through Accessibility, or an agent activity feed built
 from hook events (no permissions needed).
@@ -40,6 +43,7 @@ flowchart LR
   Win --> Unlock[UnlockPanel, main display only]
   Win --> Comp[CompanionView: CritterView or SpritePackView]
   Win --> Mirror[TerminalMirrorView, when enabled]
+  Win --> Batt[BatteryBadge + BatteryFlair, on MacBooks]
   Agents[AI agent hooks] --> Hook[brbuddy-hook helper process]
   Hook --> Sock[(agents.sock)] --> Monitor[AgentMonitor]
   State --> Monitor
@@ -86,6 +90,8 @@ flowchart TD
   Prox --> PT[ProximityTracker, ProximitySettings, WalkAwayTest, AppleDeviceInfo, WalkAwayPairing: pure]
   Prox --> PD[PairedDevices: IOBluetooth]
   Mir --> Core
+  State --> Bat[BatteryMonitor]
+  Bat --> BatCore[BatteryStatus, BatteryWatch, BatteryReaction: IOKit power sources + pure]
   Core --> TText[ANSIParser, TerminalText: pure]
   Core --> Tmux[TmuxReader: tmux list-panes, capture-pane]
   Core --> Feed[AgentActivityLog: pure]
@@ -110,7 +116,9 @@ automatic updates; both are used only by the app target.
 | `AwayView` | `BRBuddy/AwayView.swift` | `AwayController`, hosted in each `AwayWindow` | Main actor (view) | Companion, tagline, time away, footer per phase |
 | `UnlockPanel` | `BRBuddy/UnlockPanel.swift` | `AwayView` on the main display while unlocking | Main actor (view); password check on a detached task | Embedded Touch ID view and password field |
 | `CompanionLibrary` | `BRBuddy/CompanionLibrary.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; frames cut on a detached task | The user's companion choice; community packs and their frames; import |
-| `CompanionView`, `SpritePackView` | `BRBuddy/CompanionView.swift` | `AwayView`, Settings | Main actor (views) | Shows the resolved companion; plays a pack's frames at 8 fps |
+| `CompanionView`, `SpritePackView` | `BRBuddy/CompanionView.swift` | `AwayView`, Settings | Main actor (views) | Shows the resolved companion with its battery props; plays a pack's frames at 8 fps |
+| `BatteryMonitor` | `BRBuddy/BatteryMonitor.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; 1-second timer while retained | Reads the battery while BRB is up (retained by `AwayController`); holds `BatteryWatch` and the current reaction |
+| `BatteryBadge`, `BatteryFlair` | `BRBuddy/BatteryView.swift` | `AwayView`; `CompanionView` | Main actor (views) | The away screen's battery pill (liquid fill, bubbles, glow, sparks); the companion's battery props and speech bubble |
 | `CritterView`, `CritterDesign` | `BRBuddy/CritterView.swift` | `CompanionView`, contact sheet | Main actor (views) | Draws and animates the six built-in critters per mood |
 | `CompanionContactSheet` | `BRBuddy/CompanionContactSheet.swift` | `AppDelegate` (debug only) | Main actor | Renders every built-in in every mood to a PNG |
 | `TerminalMirror` | `BRBuddy/TerminalMirror.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; capture on a detached task | Picks a source per `TerminalMirrorMode`, refreshes every second while retained (BRB up or Settings open) |
@@ -135,6 +143,7 @@ automatic updates; both are used only by the app target.
 | `AgentProcessScanner` | `BRBuddyCore/AgentProcessScanner.swift` | Static namespace | Any thread (run detached) | Running agent CLIs by process name or Node script path; desktop app bundle IDs |
 | `TerminalLocation` | `BRBuddyCore/TerminalLocation.swift` | Value, made by the helper, carried on `AgentEvent` and `AgentTracker.Session` | Value type | App bundles among the hook's ancestors and its controlling tty, read from the kernel |
 | `CompanionMood` | `BRBuddyCore/CompanionMood.swift` | Enum | Value type | Which mood to show, and its Codex spritesheet row |
+| `BatteryStatus`, `BatteryReaction`, `BatteryWatch` | `BRBuddyCore/Battery.swift` | Values, held by `BatteryMonitor` | Value types; `read` on the main actor | The internal battery from IOKit power sources; which reaction to show; noticing plug and unplug |
 | `CompanionCatalog` | `BRBuddyCore/CompanionCatalog.swift` | Static namespace | Pure | Built-in list and agent matches; stored `Choice`; resolving a choice to a companion |
 | `CompanionPack`, `CompanionPackLibrary` | `BRBuddyCore/CompanionPack.swift` | Values / static namespace | Load anywhere; cut frames off the main thread | Validates a Codex pet folder, cuts frames per mood, scans and imports packs |
 | `ANSIParser`, `TerminalColor`, `TerminalStyle`, `TerminalRun` | `BRBuddyCore/TerminalText.swift` | Static namespace / values | Pure | Colour-coded text → styled lines; drops every non-colour escape; xterm palette |
@@ -157,7 +166,7 @@ resting after 30 seconds without input; any phase → locking for real when `Awa
 before real lock (1–10, default 3), minutes before real lock (0 = never, default 60). The global shortcut is stored
 by KeyboardShortcuts; `agents.keepAwake` holds "keep awake while an agent works" (default on); `companion.choice` holds
 the companion (`auto`, `builtin:<id>` or `pack:<folder>`); `mirror.mode` holds the terminal mirror mode (default
-`off`); `proximity.*` holds walk-away (enabled, device ID and name, range, action). Launch at login is
+`off`); `away.showBattery` holds the battery badge (default on); `proximity.*` holds walk-away (enabled, device ID and name, range, action). Launch at login is
 held by macOS (`SMAppService`). Passwords are never stored or logged.
 
 Agent files: `~/Library/Application Support/BRBuddy/agents.sock` (the socket, 0600, recreated at launch) and
@@ -216,6 +225,7 @@ snapshot code), and `BRBUDDY_COMPANION_SHEET=<file.png>` renders every built-in 
 | `flows/companions.md` | Choosing a companion, adding a pack, and how moods are picked |
 | `flows/terminal-mirror.md` | Turning on the terminal mirror and where its text comes from |
 | `flows/walk-away.md` | Picking a phone or watch and what happens when it leaves |
+| `flows/battery.md` | The battery badge on the away screen and how the companion reacts |
 
 ## File index
 Every source file in `Sources/`. The docs test fails if a file is missing here or a listed one is gone.
@@ -230,6 +240,8 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/AwayView.swift`: what the away windows show.
 - `BRBuddy/UnlockPanel.swift`: embedded Touch ID and password field.
 - `BRBuddy/CompanionLibrary.swift`: companion choice, community packs and their frames.
+- `BRBuddy/BatteryMonitor.swift`: reads the battery while BRB is up; notices plug and unplug.
+- `BRBuddy/BatteryView.swift`: the away screen's battery badge and the companion's battery props.
 - `BRBuddy/CompanionView.swift`: shows the chosen companion; sprite pack player.
 - `BRBuddy/CritterView.swift`: the six built-in critters and their shapes.
 - `BRBuddy/CompanionContactSheet.swift`: debug-only render of every critter and mood.
@@ -257,6 +269,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/AgentSocket.swift`: the local socket, sending and listening.
 - `BRBuddyCore/AgentProcessScanner.swift`: finds running agents and desktop apps.
 - `BRBuddyCore/TerminalLocation.swift`: which app and terminal tab a hook ran from.
+- `BRBuddyCore/Battery.swift`: battery status from IOKit, battery reactions, plug/unplug watch.
 - `BRBuddyCore/CompanionMood.swift`: companion moods and their spritesheet rows.
 - `BRBuddyCore/CompanionCatalog.swift`: built-in companions and resolving the user's choice.
 - `BRBuddyCore/CompanionPack.swift`: loading, checking and importing Codex-format packs.

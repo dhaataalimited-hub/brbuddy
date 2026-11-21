@@ -61,6 +61,8 @@ sequenceDiagram
 Function names change: read the current code in these files before relying on any detail above.
 - `CompanionLibrary.swift`, `CompanionView.swift`, `CritterView.swift`, `CompanionContactSheet.swift`,
   `SettingsView.swift`, `AwayView.swift`, `CompanionMood.swift`, `CompanionCatalog.swift`, `CompanionPack.swift`
+- Battery reactions (plugging in, low battery, Low Power Mode) add props and can briefly change the mood: see
+  `flows/battery.md`.
 - Types: `CompanionLibrary`, `CompanionView`, `SpritePackView`, `CritterView`, `CritterDesign`, `CompanionMood`,
   `CompanionCatalog`, `CompanionPack`, `CompanionPackLibrary`, `AwayController`, `AgentMonitor`
 - Tests: `CompanionMoodTests`, `CompanionCatalogTests`, `CompanionPackTests`

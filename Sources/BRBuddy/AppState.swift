@@ -22,6 +22,7 @@ final class AppState {
     let agents = AgentMonitor()
     let companions = CompanionLibrary()
     let mirror = TerminalMirror()
+    let battery = BatteryMonitor()
     let proximity = ProximityMonitor()
 
     /// Keep-awake switched on by hand from the menu.
@@ -42,6 +43,7 @@ final class AppState {
         away.agents = agents
         away.companions = companions
         away.mirror = mirror
+        away.battery = battery
         mirror.agents = agents
         proximity.onLeft = { [weak self] in self?.deviceLeft() }
         away.onEnded = { [weak self] _ in self?.applyKeepAwakeMode() }

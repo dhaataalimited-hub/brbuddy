@@ -4,7 +4,8 @@ import KeyboardShortcuts
 import SwiftUI
 
 /// The Settings window, in tabs so it fits small screens: General (when BRB starts and when it hands off to the real
-/// lock screen, the shortcut, launch at login), Agents, Companion, Away screen (terminal mirror) and Walk-away.
+/// lock screen, the shortcut, launch at login), Agents, Companion, Away screen (battery, terminal mirror) and
+/// Walk-away.
 struct SettingsView: View {
     @Bindable var state: AppState
 
@@ -16,7 +17,15 @@ struct SettingsView: View {
                 .tabItem { Label("Agents", systemImage: "terminal") }
             tab { CompanionSection(library: state.companions, agent: state.agents.relevantAgent) }
                 .tabItem { Label("Companion", systemImage: "pawprint") }
-            tab { MirrorSection(mirror: state.mirror) }
+            tab {
+                Section("Battery") {
+                    Toggle("Show the battery on the away screen", isOn: $state.settings.showBattery)
+                    Text("Your companion reacts too: it cheers when you plug in, sweats when the battery's low, and moves in slow motion in Low Power Mode. Macs without a battery skip this.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                MirrorSection(mirror: state.mirror)
+            }
                 .tabItem { Label("Away Screen", systemImage: "display") }
             tab { WalkAwaySection(monitor: state.proximity) }
                 .tabItem { Label("Walk-away", systemImage: "figure.walk") }

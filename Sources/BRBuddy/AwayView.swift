@@ -43,6 +43,18 @@ struct AwayView: View {
             }
             .padding(40)
         }
+        .overlay(alignment: .topTrailing) {
+            if let status = batteryStatus {
+                BatteryBadge(status: status, reaction: batteryReaction)
+                    .padding(36)
+            }
+        }
+    }
+
+    private var batteryStatus: BatteryStatus? { controller.showsBattery ? controller.battery?.status : nil }
+
+    private var batteryReaction: BatteryReaction {
+        batteryStatus == nil ? .none : controller.battery?.reaction ?? .none
     }
 
     @ViewBuilder private var footer: some View {
@@ -71,7 +83,7 @@ struct AwayView: View {
 
     @ViewBuilder private var companion: some View {
         if let library = controller.companions {
-            CompanionView(library: library, mood: mood, agent: controller.agents?.relevantAgent)
+            CompanionView(library: library, mood: mood, agent: controller.agents?.relevantAgent, battery: batteryReaction)
         }
     }
 
@@ -79,7 +91,7 @@ struct AwayView: View {
         var locking = false
         if case .lockingForReal = controller.phase { locking = true }
         return CompanionMood.current(isUnlocking: controller.phase == .unlocking, recentFailure: controller.recentFailure,
-                                     lockingForReal: locking, agent: agentSummary)
+                                     lockingForReal: locking, agent: agentSummary, battery: batteryReaction)
     }
 
     private var awayFor: String {

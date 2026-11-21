@@ -47,6 +47,7 @@ sequenceDiagram
 - The away screen shows `AgentMonitor`'s headline under the tagline ("Claude Code is working on brbuddy", orange
   "… needs you in …" when waiting); the companion's mood follows `CompanionMood` (see `flows/companions.md`). With the terminal mirror on, the
 companion shrinks and `TerminalMirrorView` sits below the text (see `flows/terminal-mirror.md`).
+- On a MacBook the top-right corner shows the battery and the companion reacts to it (see `flows/battery.md`).
 - Displays plugged in or out: windows are rebuilt. Unlock UI is only on the first screen; others say "Unlock on your
   main display".
 - Unlock prompt goes back to the resting companion after 30 seconds without input.

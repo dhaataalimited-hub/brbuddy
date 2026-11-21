@@ -32,7 +32,44 @@ enum CompanionContactSheet {
         .padding(20)
         .background(Color(red: 0.09, green: 0.07, blue: 0.13))
 
-        let renderer = ImageRenderer(content: sheet)
+        save(sheet, to: url)
+    }
+
+    /// Every battery reaction: the away-screen badge above Ember reacting to it. `BRBUDDY_BATTERY_SHEET=<file.png>`.
+    static func renderBattery(to url: URL) {
+        let cases: [(String, BatteryStatus, BatteryReaction)] = [
+            ("on battery", BatteryStatus(percent: 72, isPluggedIn: false, isCharging: false, minutesRemaining: 250), .none),
+            ("plugged in", BatteryStatus(percent: 41, isPluggedIn: true, isCharging: true), .pluggedIn),
+            ("charging", BatteryStatus(percent: 41, isPluggedIn: true, isCharging: true, minutesRemaining: 83), .charging),
+            ("full", BatteryStatus(percent: 100, isPluggedIn: true, isCharging: false), .full),
+            ("unplugged", BatteryStatus(percent: 99, isPluggedIn: false, isCharging: false), .unplugged),
+            ("low power", BatteryStatus(percent: 55, isPluggedIn: false, isCharging: false, isLowPowerMode: true,
+                                        minutesRemaining: 190), .lowPower),
+            ("low", BatteryStatus(percent: 18, isPluggedIn: false, isCharging: false, minutesRemaining: 34), .low),
+            ("critical", BatteryStatus(percent: 6, isPluggedIn: false, isCharging: false, minutesRemaining: 9), .critical),
+        ]
+        let sheet = LazyVGrid(columns: Array(repeating: GridItem(.fixed(330), spacing: 16), count: 4), spacing: 16) {
+            ForEach(cases, id: \.0) { name, status, reaction in
+                VStack(spacing: 10) {
+                    Text(name).font(.system(size: 14, weight: .semibold, design: .rounded)).foregroundStyle(.white)
+                    BatteryBadge(status: status, reaction: reaction)
+                    ZStack {
+                        CritterView(design: .design(for: "ember"), mood: reaction.moodOverride ?? .resting, battery: reaction,
+                                    quiet: reaction.bubble != nil)
+                        BatteryFlair(reaction: reaction, talks: true)
+                    }
+                    .frame(width: 240, height: 210)
+                }
+                .frame(height: 340)
+            }
+        }
+        .padding(24)
+        .background(Color(red: 0.09, green: 0.07, blue: 0.13))
+        save(sheet, to: url)
+    }
+
+    private static func save(_ view: some View, to url: URL) {
+        let renderer = ImageRenderer(content: view)
         renderer.scale = 2
         guard let image = renderer.cgImage else { return }
         let rep = NSBitmapImageRep(cgImage: image)

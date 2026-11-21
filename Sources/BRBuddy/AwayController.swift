@@ -37,6 +37,10 @@ final class AwayController {
     var companions: CompanionLibrary?
     /// The read-only terminal view, refreshed while BRB is up. Set by `AppState`.
     var mirror: TerminalMirror?
+    /// The battery, read while BRB is up so the away screen can show it. Set by `AppState`.
+    var battery: BatteryMonitor?
+    /// Whether the away screen shows the battery, from the settings BRB started with.
+    var showsBattery: Bool { settings.showBattery }
 
     private var settings = AwaySettings.defaults
     private var windows: [AwayWindow] = []
@@ -72,6 +76,7 @@ final class AwayController {
         NSApp.activate(ignoringOtherApps: true)
         NSApp.presentationOptions = Self.lockedDownOptions
         mirror?.retain()
+        if settings.showBattery { battery?.retain() }
         buildWindows()
 
         let center = NSWorkspace.shared.notificationCenter
@@ -102,6 +107,7 @@ final class AwayController {
         windows.forEach { $0.orderOut(nil) }
         windows.removeAll()
         mirror?.release()
+        if settings.showBattery { battery?.release() }
         NSApp.presentationOptions = []
         isAway = false
         phase = .resting

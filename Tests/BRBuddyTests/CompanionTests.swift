@@ -1,6 +1,7 @@
 @testable import BRBuddyCore
 import CoreGraphics
 import Foundation
+import IOKit.ps
 import ImageIO
 import Testing
 import UniformTypeIdentifiers
@@ -100,5 +101,64 @@ struct CompanionPackTests {
         let scan = CompanionPackLibrary.scan(root)
         #expect(scan.packs.map(\.id) == [source.lastPathComponent])
         #expect(scan.problems.map(\.folder) == ["broken"])
+    }
+}
+
+struct BatteryTests {
+    let start = Date(timeIntervalSinceReferenceDate: 0)
+
+    @Test func readsAnInternalBattery() {
+        let description: [String: Any] = [
+            kIOPSTypeKey: kIOPSInternalBatteryType, kIOPSIsPresentKey: true, kIOPSCurrentCapacityKey: 27,
+            kIOPSMaxCapacityKey: 100, kIOPSPowerSourceStateKey: kIOPSBatteryPowerValue, kIOPSIsChargingKey: false,
+            kIOPSTimeToEmptyKey: 81, kIOPSTimeToFullChargeKey: -1,
+        ]
+        let status = BatteryStatus.parse(description, lowPowerMode: false)
+        #expect(status == BatteryStatus(percent: 27, isPluggedIn: false, isCharging: false, minutesRemaining: 81))
+    }
+
+    @Test func stillCalculatingHasNoTimeAndUPSIsIgnored() {
+        let charging: [String: Any] = [
+            kIOPSTypeKey: kIOPSInternalBatteryType, kIOPSCurrentCapacityKey: 50, kIOPSMaxCapacityKey: 100,
+            kIOPSPowerSourceStateKey: kIOPSACPowerValue, kIOPSIsChargingKey: true, kIOPSTimeToFullChargeKey: -1,
+        ]
+        #expect(BatteryStatus.parse(charging, lowPowerMode: true)?.minutesRemaining == nil)
+        #expect(BatteryStatus.parse(charging, lowPowerMode: true)?.isLowPowerMode == true)
+        let ups: [String: Any] = [kIOPSTypeKey: kIOPSUPSType, kIOPSCurrentCapacityKey: 50]
+        #expect(BatteryStatus.parse(ups, lowPowerMode: false) == nil)
+    }
+
+    @Test func reactionsFollowTheBattery() {
+        func reaction(_ status: BatteryStatus?) -> BatteryReaction { .current(status, lastChange: nil) }
+        #expect(reaction(nil) == .none)
+        #expect(reaction(BatteryStatus(percent: 80, isPluggedIn: false, isCharging: false)) == .none)
+        #expect(reaction(BatteryStatus(percent: 20, isPluggedIn: false, isCharging: false)) == .low)
+        #expect(reaction(BatteryStatus(percent: 9, isPluggedIn: false, isCharging: false, isLowPowerMode: true)) == .critical)
+        #expect(reaction(BatteryStatus(percent: 60, isPluggedIn: false, isCharging: false, isLowPowerMode: true)) == .lowPower)
+        #expect(reaction(BatteryStatus(percent: 9, isPluggedIn: true, isCharging: true)) == .charging)
+        #expect(reaction(BatteryStatus(percent: 100, isPluggedIn: true, isCharging: false)) == .full)
+    }
+
+    @Test func plugAndUnplugFlourishThenSettle() {
+        var watch = BatteryWatch()
+        watch.update(BatteryStatus(percent: 15, isPluggedIn: false, isCharging: false), now: start)
+        #expect(watch.reaction(now: start) == .low)  // the first reading isn't a change
+        watch.update(BatteryStatus(percent: 15, isPluggedIn: true, isCharging: true), now: start + 10)
+        #expect(watch.reaction(now: start + 12) == .pluggedIn)
+        #expect(watch.reaction(now: start + 17) == .charging)
+        watch.update(BatteryStatus(percent: 16, isPluggedIn: false, isCharging: false), now: start + 20)
+        #expect(watch.reaction(now: start + 21) == .unplugged)
+        #expect(watch.reaction(now: start + 30) == .low)
+    }
+
+    @Test func flourishesShowOnTheCompanionButPeopleWin() {
+        #expect(CompanionMood.current(isUnlocking: false, recentFailure: false, lockingForReal: false, agent: .none,
+                                      battery: .pluggedIn) == .finished)
+        #expect(CompanionMood.current(isUnlocking: false, recentFailure: false, lockingForReal: false, agent: .none,
+                                      battery: .unplugged) == .oops)
+        #expect(CompanionMood.current(isUnlocking: true, recentFailure: false, lockingForReal: false, agent: .none,
+                                      battery: .pluggedIn) == .greeting)
+        #expect(CompanionMood.current(isUnlocking: false, recentFailure: false, lockingForReal: false, agent: .none,
+                                      battery: .low) == .resting)
     }
 }
