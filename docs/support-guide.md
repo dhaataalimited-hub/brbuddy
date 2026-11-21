@@ -16,15 +16,15 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 | Keep Mac awake | Menu bar paw → Keep Mac awake | The paw fills in while the Mac is being kept awake |
 | Keep awake while an agent works | Settings → Agents | On by default once an agent is set up; turns off by itself when the agent finishes |
 | BRB (the away screen) | Menu → BRB now, or ⌃⌥⌘B | Covers every display; shows your companion, how long you've been away and what your agent is doing |
-| Start BRB on its own | Settings → Starting BRB | After 3 minutes with no keyboard or mouse (1–120), while the Mac is being kept awake |
+| Start BRB on its own | Settings → General → Starting BRB | After 3 minutes with no keyboard or mouse (1–120), while the Mac is being kept awake |
 | Unlock | Press any key on the away screen | Touch ID, or type your Mac login password |
-| Lock for real | Settings → Locking for real | After 3 wrong tries (1–10) or an hour away (or never), BRBuddy switches to the normal macOS lock screen. Your agent keeps running |
+| Lock for real | Settings → General → Locking for real | After 3 wrong tries (1–10) or an hour away (or never), BRBuddy switches to the normal macOS lock screen. Your agent keeps running |
 | Agent status | Settings → Agents → Set up | One button per agent; the menu and away screen then show "working", "needs you" or "done" |
 | Jump to an agent | Click the agent in the menu | Opens the terminal window it's running in; in Terminal and iTerm2, the exact tab. macOS asks once to let BRBuddy control Terminal/iTerm2 |
 | Companions | Settings → Companion | Six built-in characters (Ember, Pebble, Prism, Comet, Drift, Gremlin), or "Match my agent" |
 | Companion packs | Settings → Companion → Add companion pack… | Any pet made for Codex works (a folder with pet.json and a spritesheet) |
-| Terminal on the away screen | Settings → Terminal on the away screen | Off by default. Shows a tmux pane, a Terminal/iTerm2/Ghostty window, or a feed of what your agent is doing. View-only |
-| Walk-away lock | Settings → Walk-away lock | Pick your iPhone or Apple Watch; when it moves away, BRBuddy starts BRB or locks the Mac |
+| Terminal on the away screen | Settings → Away Screen | Off by default. Shows a tmux pane, a Terminal/iTerm2/Ghostty window, or a feed of what your agent is doing. View-only |
+| Walk-away lock | Settings → Walk-away | Pick your iPhone or Apple Watch; when it moves away, BRBuddy starts BRB or locks the Mac |
 | Open at login | Settings → General | |
 | Updates | Menu → Check for Updates… | Downloaded releases check once a day and offer new versions; builds made from source don't update themselves |
 
@@ -105,6 +105,11 @@ Accessibility), or no agent has reported anything yet.
 **BRBuddy forgot its Accessibility permission after an update.**
 macOS ties the permission to the exact app build. Switch BRBuddy off and on again under System Settings → Privacy &
 Security → Accessibility.
+
+**Which device in the walk-away list is mine?**
+iPhones and watches don't broadcast their names, so press Choose device… and hold your phone (unlocked) right next to
+the Mac. Within a few seconds it moves to the top of the list and is marked Closest; press Use next to it. Rows say
+iPhone or Apple Watch once BRBuddy has asked the device its model.
 
 **The walk-away lock triggers too early, too late, or not at all.**
 Bluetooth signal varies a lot with walls, pockets and bodies. Try "Away means": Near, Room or Far, and test a few

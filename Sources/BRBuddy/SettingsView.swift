@@ -2,80 +2,93 @@ import BRBuddyCore
 import KeyboardShortcuts
 import SwiftUI
 
-/// The Settings window: when BRB starts, when it hands off to the real lock screen, the shortcut, launch at login.
+/// The Settings window, in tabs so it fits small screens: General (when BRB starts and when it hands off to the real
+/// lock screen, the shortcut, launch at login), Agents, Companion, Away screen (terminal mirror) and Walk-away.
 struct SettingsView: View {
     @Bindable var state: AppState
 
     var body: some View {
-        Form {
-            CompanionSection(library: state.companions, agent: state.agents.relevantAgent)
+        TabView {
+            tab { generalSections }
+                .tabItem { Label("General", systemImage: "gearshape") }
+            tab { agentsSection }
+                .tabItem { Label("Agents", systemImage: "terminal") }
+            tab { CompanionSection(library: state.companions, agent: state.agents.relevantAgent) }
+                .tabItem { Label("Companion", systemImage: "pawprint") }
+            tab { MirrorSection(mirror: state.mirror) }
+                .tabItem { Label("Away Screen", systemImage: "display") }
+            tab { WalkAwaySection(monitor: state.proximity) }
+                .tabItem { Label("Walk-away", systemImage: "figure.walk") }
+        }
+        // A fixed size that fits a 13-inch screen; each tab scrolls if its content is taller.
+        .frame(width: 540, height: 480)
+        .onAppear { state.agents.refresh() }
+    }
 
-            MirrorSection(mirror: state.mirror)
+    private func tab<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        Form { content() }.formStyle(.grouped)
+    }
 
-            WalkAwaySection(monitor: state.proximity)
+    @ViewBuilder private var generalSections: some View {
+        Section("Starting BRB") {
+            Toggle("Start BRB on its own while keeping the Mac awake", isOn: $state.settings.autoStartEnabled)
+            Stepper("After \(state.settings.idleMinutes) min with no keyboard or mouse",
+                    value: $state.settings.idleMinutes, in: 1...120)
+                .disabled(!state.settings.autoStartEnabled)
+            KeyboardShortcuts.Recorder("BRB now shortcut:", name: .brbNow)
+        }
 
-            Section("Agents") {
-                Toggle("Keep the Mac awake while an agent is working or needs you", isOn: $state.settings.keepAwakeForAgents)
-                ForEach(AgentKind.allCases) { agent in
-                    AgentRow(agent: agent, monitor: state.agents)
-                }
-                if !state.agents.runningDesktopApps.isEmpty {
-                    Text("Also open: \(state.agents.runningDesktopApps.joined(separator: ", ")). Desktop apps have no hooks, so BRBuddy can't see when they're working.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Text("Set up adds BRBuddy's hook to that agent's own settings file (a backup is saved next to it). The hook only reports what the agent is doing; it can't change or block anything.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if let error = state.agents.listenerError {
-                    Text(error).font(.caption).foregroundStyle(.orange)
-                }
+        Section("Locking for real") {
+            Stepper("After \(state.settings.maxFailedAttempts) failed unlock tries",
+                    value: $state.settings.maxFailedAttempts, in: 1...10)
+            Picker("After being away for", selection: $state.settings.escalateAfterMinutes) {
+                Text("Never").tag(0)
+                Text("15 minutes").tag(15)
+                Text("30 minutes").tag(30)
+                Text("1 hour").tag(60)
+                Text("2 hours").tag(120)
+                Text("4 hours").tag(240)
             }
+            Text("Hands off to the macOS lock screen. Your agent keeps running; only sleep stops it.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
 
-            Section("Starting BRB") {
-                Toggle("Start BRB on its own while keeping the Mac awake", isOn: $state.settings.autoStartEnabled)
-                Stepper("After \(state.settings.idleMinutes) min with no keyboard or mouse",
-                        value: $state.settings.idleMinutes, in: 1...120)
-                    .disabled(!state.settings.autoStartEnabled)
-                KeyboardShortcuts.Recorder("BRB now shortcut:", name: .brbNow)
-            }
-
-            Section("Locking for real") {
-                Stepper("After \(state.settings.maxFailedAttempts) failed unlock tries",
-                        value: $state.settings.maxFailedAttempts, in: 1...10)
-                Picker("After being away for", selection: $state.settings.escalateAfterMinutes) {
-                    Text("Never").tag(0)
-                    Text("15 minutes").tag(15)
-                    Text("30 minutes").tag(30)
-                    Text("1 hour").tag(60)
-                    Text("2 hours").tag(120)
-                    Text("4 hours").tag(240)
-                }
-                Text("Hands off to the macOS lock screen. Your agent keeps running; only sleep stops it.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("General") {
-                Toggle("Open BRBuddy at login", isOn: Binding(
-                    get: { state.launchesAtLogin },
-                    set: { state.setLaunchesAtLogin($0) }
-                ))
-                if let error = state.launchAtLoginError {
-                    Text(error).font(.caption).foregroundStyle(.orange)
-                }
-            }
-
-            Section {
-                Text("BRB is a deterrent, not a vault: holding the power button still restarts the Mac.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        Section("General") {
+            Toggle("Open BRBuddy at login", isOn: Binding(
+                get: { state.launchesAtLogin },
+                set: { state.setLaunchesAtLogin($0) }
+            ))
+            if let error = state.launchAtLoginError {
+                Text(error).font(.caption).foregroundStyle(.orange)
             }
         }
-        .formStyle(.grouped)
-        .frame(width: 520)
-        .fixedSize()
-        .onAppear { state.agents.refresh() }
+
+        Section {
+            Text("BRB is a deterrent, not a vault: holding the power button still restarts the Mac.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder private var agentsSection: some View {
+        Section("Agents") {
+            Toggle("Keep the Mac awake while an agent is working or needs you", isOn: $state.settings.keepAwakeForAgents)
+            ForEach(AgentKind.allCases) { agent in
+                AgentRow(agent: agent, monitor: state.agents)
+            }
+            if !state.agents.runningDesktopApps.isEmpty {
+                Text("Also open: \(state.agents.runningDesktopApps.joined(separator: ", ")). Desktop apps have no hooks, so BRBuddy can't see when they're working.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Text("Set up adds BRBuddy's hook to that agent's own settings file (a backup is saved next to it). The hook only reports what the agent is doing; it can't change or block anything.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let error = state.agents.listenerError {
+                Text(error).font(.caption).foregroundStyle(.orange)
+            }
+        }
     }
 }
 
@@ -230,19 +243,32 @@ private struct WalkAwaySection: View {
     }
 
     @ViewBuilder private var devicePicker: some View {
+        Text("Hold your iPhone or Apple Watch right next to the Mac, unlocked: yours moves to the top and is marked Closest.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
         if monitor.nearbyDevices.isEmpty {
             HStack {
                 ProgressView().controlSize(.small)
-                Text("Looking for nearby Apple devices… keep your phone or watch unlocked and close.")
+                Text("Looking for nearby iPhones and Apple Watches…")
                     .font(.caption)
             }
         } else {
-            ForEach(monitor.nearbyDevices) { device in
+            ForEach(monitor.nearbyDevices.prefix(6)) { device in
                 HStack {
-                    Image(systemName: device.name.localizedCaseInsensitiveContains("watch") ? "applewatch" : "iphone")
-                    Text(device.name)
+                    Image(systemName: icon(device.kind))
+                        .frame(width: 18)
+                    Text(device.title)
+                    if device.id == monitor.closestDeviceID {
+                        Text("Closest")
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .background(Capsule().fill(Color.accentColor.opacity(0.2)))
+                    }
                     Spacer()
-                    SignalBars(rssi: device.rssi)
+                    Text("\(Int(device.rssi.rounded())) dBm")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    SignalBars(rssi: Int(device.rssi))
                     Button("Use") {
                         monitor.choose(device)
                         picking = false
@@ -252,14 +278,21 @@ private struct WalkAwaySection: View {
             }
         }
     }
+
+    private func icon(_ kind: AppleDeviceInfo.Kind?) -> String {
+        switch kind {
+        case .watch: "applewatch"
+        case .iPhone: "iphone"
+        default: "questionmark.circle"
+        }
+    }
 }
 
-/// Four bars for a Bluetooth signal strength.
 private struct SignalBars: View {
     let rssi: Int
 
     var body: some View {
-        let lit = rssi > -55 ? 4 : rssi > -67 ? 3 : rssi > -78 ? 2 : 1
+        let lit = rssi > -45 ? 4 : rssi > -60 ? 3 : rssi > -75 ? 2 : 1
         HStack(alignment: .bottom, spacing: 2) {
             ForEach(1...4, id: \.self) { bar in
                 RoundedRectangle(cornerRadius: 1)

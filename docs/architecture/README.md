@@ -48,7 +48,7 @@ flowchart LR
 | Surface | What it is | Made by |
 |---|---|---|
 | Menu bar item | Paw icon (filled while keeping awake): keep-awake toggle, BRB now, Settings, Quit | `BRBuddyApp` showing `MenuContent` |
-| Settings window | When BRB starts, when it locks for real, shortcut, launch at login | `BRBuddyApp`'s Settings scene showing `SettingsView` |
+| Settings window | Tabs: General (when BRB starts, when it locks for real, shortcut, launch at login), Agents, Companion, Away Screen (terminal mirror), Walk-away; fixed 540×480, each tab scrolls | `BRBuddyApp`'s Settings scene showing `SettingsView` |
 | Away windows | One borderless window per display at screen-saver level, on every Space | `AwayController` makes `AwayWindow`s hosting `AwayView` |
 | Companion | Animated character on the away screen and in Settings' preview | `CompanionView` (built-in `CritterView` or pack `SpritePackView`) |
 | Terminal mirror | Read-only panel on the away screen and in Settings' preview | `TerminalMirrorView` showing `TerminalMirror`'s snapshot |
@@ -83,7 +83,7 @@ flowchart TD
   State --> Mir[TerminalMirror]
   Mir --> AX[AccessibilityTerminalReader: ApplicationServices AX]
   State --> Prox[ProximityMonitor: CoreBluetooth]
-  Prox --> PT[ProximityTracker, ProximitySettings: pure]
+  Prox --> PT[ProximityTracker, ProximitySettings, AppleDeviceInfo: pure]
   Mir --> Core
   Core --> TText[ANSIParser, TerminalText: pure]
   Core --> Tmux[TmuxReader: tmux list-panes, capture-pane]
@@ -114,7 +114,7 @@ automatic updates; both are used only by the app target.
 | `CompanionContactSheet` | `BRBuddy/CompanionContactSheet.swift` | `AppDelegate` (debug only) | Main actor | Renders every built-in in every mood to a PNG |
 | `TerminalMirror` | `BRBuddy/TerminalMirror.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; capture on a detached task | Picks a source per `TerminalMirrorMode`, refreshes every second while retained (BRB up or Settings open) |
 | `TerminalMirrorView` | `BRBuddy/TerminalMirrorView.swift` | `AwayView`, Settings | Main actor (view) | Draws styled lines, latest that fit; no input path |
-| `ProximityMonitor` | `BRBuddy/ProximityMonitor.swift` | `AppState`, app lifetime; Bluetooth manager created only when walk-away is on or the picker is open | `@MainActor`, `@Observable`; CoreBluetooth on the main queue | Lists nearby Apple devices; connects to the chosen one, reads RSSI every 2 s, reconnects; tells `AppState` when it leaves |
+| `ProximityMonitor` | `BRBuddy/ProximityMonitor.swift` | `AppState`, app lifetime; Bluetooth manager created only when walk-away is on or the picker is open | `@MainActor`, `@Observable`; CoreBluetooth on the main queue | Lists nearby iPhones and Watches (filters accessories by Continuity type, briefly connects to read each model, hides Macs/iPads, marks the closest); connects to the chosen one, reads RSSI every 2 s, reconnects; tells `AppState` when it leaves |
 | `AccessibilityTerminalReader` | `BRBuddy/AccessibilityTerminalReader.swift` | Static namespace | Running apps on main; AX reads off main | Text of a Terminal/iTerm2/Ghostty window; Accessibility permission prompt |
 | `MenuContent` | `BRBuddy/MenuContent.swift` | `BRBuddyApp`'s menu scene | Main actor (view) | Menu items; agent rows jump to their terminal |
 | `TerminalFocuser` | `BRBuddy/TerminalFocuser.swift` | Static namespace | Main actor; `osascript` on a detached task | Finds the running app hosting a session; selects its Terminal/iTerm2 tab by tty, else activates the app and raises the window for its folder (Accessibility) |
@@ -139,13 +139,14 @@ automatic updates; both are used only by the app target.
 | `TmuxReader` | `BRBuddyCore/TmuxReader.swift` | Static namespace | Off the main thread (runs tmux, 2 s limit) | Finds tmux, lists panes, picks the agent's pane, captures it read-only |
 | `AgentActivityLog` | `BRBuddyCore/AgentActivityLog.swift` | Value, held by `AgentMonitor` | Value type | Rolling feed (80 entries) of agent events as styled lines |
 | `TerminalMirrorMode` | `BRBuddyCore/TerminalMirrorMode.swift` | Enum | Value type | Off / automatic / tmux / terminal window / activity feed; stored in UserDefaults |
+| `AppleDeviceInfo` | `BRBuddyCore/AppleDeviceInfo.swift` | Static namespace | Pure | Continuity message types in Apple advertisements; model number → iPhone / Watch / iPad / Mac |
 | `ProximityTracker`, `ProximitySettings` | `BRBuddyCore/ProximityTracker.swift` | Values, held by `ProximityMonitor` | Value types | Median-smoothed RSSI → near / away with delay and hysteresis; walk-away preferences |
 
 `AppState` is passed to views by initializer; `AwayController` is reached through `AppState`. There are no
 singletons. `AwayController` notifies `AppState` that BRB ended through a callback so keep-awake can change mode.
 
 ## Navigation
-Menu: keep-awake toggle (plus "Kept awake while your agent works" when an agent is the reason), BRB now (shows the global shortcut), a hint line when auto-start is armed, the agents list (up to six sessions with state and project, or "Set up agents…"; clicking one jumps to the window, and in Terminal/iTerm2 the tab, it runs in), Settings…, Quit. Settings has an Agents section with a row per agent.
+Menu: keep-awake toggle (plus "Kept awake while your agent works" when an agent is the reason), BRB now (shows the global shortcut), a hint line when auto-start is armed, the agents list (up to six sessions with state and project, or "Set up agents…"; clicking one jumps to the window, and in Terminal/iTerm2 the tab, it runs in), Settings…, Quit. Settings has five tabs (General, Agents, Companion, Away Screen, Walk-away); Agents has a row per agent.
 Away screen phases (`AwayController.Phase`): resting → (any key, click, scroll or mouse move) unlocking → back to
 resting after 30 seconds without input; any phase → locking for real when `AwayPolicy` says so.
 
@@ -235,7 +236,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/ProximityMonitor.swift`: Bluetooth device picker and walk-away watching.
 - `BRBuddy/MenuContent.swift`: the menu's items.
 - `BRBuddy/TerminalFocuser.swift`: jumps from a menu row to the agent's terminal tab or window.
-- `BRBuddy/SettingsView.swift`: the Settings window, including the Agents section.
+- `BRBuddy/SettingsView.swift`: the Settings window and its five tabs.
 - `BRBuddy/AgentMonitor.swift`: agent events, sessions, process scan and hook setup for the app.
 
 **BRBuddyCore**
@@ -260,6 +261,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/AgentActivityLog.swift`: the agent activity feed.
 - `BRBuddyCore/TerminalMirrorMode.swift`: the mirror setting.
 - `BRBuddyCore/ProximityTracker.swift`: near/away decisions from signal strength; walk-away settings.
+- `BRBuddyCore/AppleDeviceInfo.swift`: tells phones and watches from other Apple devices for the picker.
 
 **brbuddy-hook (helper)**
 - `brbuddy-hook/main.swift`: run by agent hooks; forwards one event and exits.

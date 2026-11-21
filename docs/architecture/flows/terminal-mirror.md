@@ -1,7 +1,7 @@
 # Terminal mirror
 
 ## What the user does
-In Settings → "Terminal on the away screen" they pick Off (default), Automatic, tmux pane, Terminal window or Agent
+In Settings → Away Screen ("Terminal on the away screen") they pick Off (default), Automatic, tmux pane, Terminal window or Agent
 activity feed. A live preview shows what BRB will display, with the reason when there's nothing to show, a button
 to allow Accessibility when a terminal window is wanted, and a warning that anyone at the Mac can read it. When BRB
 is up, the companion shrinks and a dark "read-only" panel shows the latest lines that fit, labelled with its source

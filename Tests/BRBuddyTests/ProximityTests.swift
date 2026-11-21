@@ -59,3 +59,33 @@ struct ProximityTrackerTests {
         #expect(s.isActive)
     }
 }
+
+struct AppleDeviceInfoTests {
+    @Test func readsContinuityMessageTypes() {
+        // Apple company ID, then Nearby Info (0x10, 5 bytes) and Handoff (0x0C, 2 bytes).
+        let phone = Data([0x4C, 0x00, 0x10, 0x05, 1, 2, 3, 4, 5, 0x0C, 0x02, 9, 9])
+        #expect(AppleDeviceInfo.messageTypes(manufacturerData: phone) == [0x10, 0x0C])
+        #expect(AppleDeviceInfo.isPersonalDevice(manufacturerData: phone))
+    }
+
+    @Test func skipsAccessoriesAndOtherMakers() {
+        let airpods = Data([0x4C, 0x00, 0x07, 0x03, 1, 2, 3])
+        let airtag = Data([0x4C, 0x00, 0x12, 0x02, 0, 0])
+        let other = Data([0x06, 0x00, 0x10, 0x01, 0])
+        #expect(!AppleDeviceInfo.isPersonalDevice(manufacturerData: airpods))
+        #expect(!AppleDeviceInfo.isPersonalDevice(manufacturerData: airtag))
+        #expect(!AppleDeviceInfo.isPersonalDevice(manufacturerData: other))
+        #expect(AppleDeviceInfo.messageTypes(manufacturerData: Data([0x4C])) == nil)
+        // A length running past the end stops cleanly.
+        #expect(AppleDeviceInfo.messageTypes(manufacturerData: Data([0x4C, 0x00, 0x10, 0xFF, 1])) == [0x10])
+    }
+
+    @Test func classifiesModelNumbers() {
+        #expect(AppleDeviceInfo.kind(model: "iPhone15,2") == .iPhone)
+        #expect(AppleDeviceInfo.kind(model: "Watch6,1") == .watch)
+        #expect(AppleDeviceInfo.kind(model: "MacBookPro18,3") == .mac)
+        #expect(AppleDeviceInfo.kind(model: "iPad13,1") == .iPad)
+        #expect(AppleDeviceInfo.kind(model: "AppleTV14,1") == .other)
+        #expect(AppleDeviceInfo.Kind.iPhone.isCarried && !AppleDeviceInfo.Kind.mac.isCarried)
+    }
+}
