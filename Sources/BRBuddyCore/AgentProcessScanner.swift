@@ -46,10 +46,14 @@ public enum AgentProcessScanner {
     }
 
     static func processName(_ pid: pid_t) -> String {
+        executablePath(pid).map { ($0 as NSString).lastPathComponent } ?? ""
+    }
+
+    /// The full path of a process's executable, or nil if it's gone or hidden from us.
+    static func executablePath(_ pid: pid_t) -> String? {
         var buffer = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
-        guard proc_pidpath(pid, &buffer, UInt32(buffer.count)) > 0 else { return "" }
-        let path = String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
-        return (path as NSString).lastPathComponent
+        guard proc_pidpath(pid, &buffer, UInt32(buffer.count)) > 0 else { return nil }
+        return String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
     }
 
     /// A process's arguments (argv), read from the kernel. Empty if not allowed or gone.

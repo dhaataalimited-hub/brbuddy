@@ -77,7 +77,7 @@ sparkle="$contents/Frameworks/Sparkle.framework/Versions/B"
 "${sign[@]}" "$sparkle/Updater.app"
 "${sign[@]}" "$contents/Frameworks/Sparkle.framework"
 "${sign[@]}" "$contents/Helpers/brbuddy-hook"
-"${sign[@]}" "$app"
+"${sign[@]}" --entitlements Config/BRBuddy.entitlements "$app"
 codesign --verify --strict --deep "$app"
 
 echo "Built $root/$app (version $version, build $build_number, signed with: $identity)"

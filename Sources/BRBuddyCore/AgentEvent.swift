@@ -11,14 +11,18 @@ public struct AgentEvent: Codable, Equatable, Sendable {
     /// A short description for the activity feed: the tool and what it's working on ("Bash: swift test"), or the
     /// agent's notification text. Never the user's prompt.
     public var detail: String?
+    /// The app and terminal tab the agent runs in, found by the helper. Older helpers don't send it.
+    public var terminal: TerminalLocation?
 
-    public init(agent: AgentKind, event: String, session: String, cwd: String?, time: Date, detail: String? = nil) {
+    public init(agent: AgentKind, event: String, session: String, cwd: String?, time: Date, detail: String? = nil,
+                terminal: TerminalLocation? = nil) {
         self.agent = agent
         self.event = event
         self.session = session
         self.cwd = cwd
         self.time = time
         self.detail = detail
+        self.terminal = terminal
     }
 
     public var activity: AgentActivity? { agent.activity(forEvent: event) }

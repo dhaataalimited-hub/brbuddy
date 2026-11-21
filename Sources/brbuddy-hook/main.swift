@@ -33,5 +33,7 @@ func readStdin(timeout: TimeInterval) -> Data {
 }
 
 let input = readStdin(timeout: 1)
-AgentSocket.send(AgentEvent.fromHook(agent: agent, event: event, stdin: input))
+var hookEvent = AgentEvent.fromHook(agent: agent, event: event, stdin: input)
+hookEvent.terminal = TerminalLocation.current()
+AgentSocket.send(hookEvent)
 exit(0)

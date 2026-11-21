@@ -20,6 +20,7 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 | Unlock | Press any key on the away screen | Touch ID, or type your Mac login password |
 | Lock for real | Settings → Locking for real | After 3 wrong tries (1–10) or an hour away (or never), BRBuddy switches to the normal macOS lock screen. Your agent keeps running |
 | Agent status | Settings → Agents → Set up | One button per agent; the menu and away screen then show "working", "needs you" or "done" |
+| Jump to an agent | Click the agent in the menu | Opens the terminal window it's running in; in Terminal and iTerm2, the exact tab. macOS asks once to let BRBuddy control Terminal/iTerm2 |
 | Companions | Settings → Companion | Six built-in characters (Ember, Pebble, Prism, Comet, Drift, Gremlin), or "Match my agent" |
 | Companion packs | Settings → Companion → Add companion pack… | Any pet made for Codex works (a folder with pet.json and a spritesheet) |
 | Terminal on the away screen | Settings → Terminal on the away screen | Off by default. Shows a tmux pane, a Terminal/iTerm2/Ghostty window, or a feed of what your agent is doing. View-only |
@@ -81,6 +82,12 @@ agent's own docs explain it), then press Set up again.
 Start a new session of the agent after pressing Set up; sessions that were already open only start reporting from
 their next step. Desktop apps (Claude, ChatGPT, Cursor's editor) can't report their status; only their command-line
 agents can.
+
+**Clicking an agent in the menu doesn't go to its tab.**
+In Terminal or iTerm2, allow BRBuddy under System Settings → Privacy & Security → Automation. In other apps BRBuddy
+brings the app forward; to pick the right window it needs Accessibility (System Settings → Privacy & Security →
+Accessibility). Sessions started before this update, and agents running inside tmux or over SSH, show as plain text
+until their next session.
 
 **How do I remove BRBuddy from an agent?**
 Settings → Agents → Remove next to the agent. A backup of the agent's original settings file stays next to it,

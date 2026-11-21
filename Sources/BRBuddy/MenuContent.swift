@@ -56,7 +56,13 @@ struct MenuContent: View {
         } else {
             Text("Agents")
             ForEach(sessions.prefix(6)) { session in
-                Text("\(icon(session.activity)) \(session.agent.displayName)\(session.projectName.map { " · \($0)" } ?? "") — \(label(session.activity))")
+                let title = "\(icon(session.activity)) \(session.agent.displayName)\(session.projectName.map { " · \($0)" } ?? "") — \(label(session.activity))"
+                if TerminalFocuser.hostApp(of: session) != nil {
+                    // Clicking jumps to the window (and tab, in Terminal and iTerm2) the agent runs in.
+                    Button(title) { TerminalFocuser.focus(session) }
+                } else {
+                    Text(title)
+                }
             }
         }
     }

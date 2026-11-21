@@ -8,6 +8,8 @@ public struct AgentTracker: Sendable {
         public var cwd: String?
         public var activity: AgentActivity
         public var lastEvent: Date
+        /// Where the session runs, for jumping to it from the menu.
+        public var terminal: TerminalLocation? = nil
 
         /// The project folder's name, for display.
         public var projectName: String? { cwd.map { ($0 as NSString).lastPathComponent } }
@@ -50,7 +52,8 @@ public struct AgentTracker: Sendable {
             return
         }
         sessions[key] = Session(agent: event.agent, id: event.session, cwd: event.cwd ?? sessions[key]?.cwd,
-                                activity: activity, lastEvent: event.time)
+                                activity: activity, lastEvent: event.time,
+                                terminal: event.terminal ?? sessions[key]?.terminal)
     }
 
     /// Drops sessions that have gone quiet for longer than their state allows.

@@ -183,7 +183,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   <h3>Surfaces</h3>
   <div class="tablebox"><table>
     <tr><th>Surface</th><th>What it is</th><th>Made by</th></tr>
-    <tr><td>Menu bar item</td><td>Paw (filled while kept awake): keep-awake toggle, BRB now, agents list, Settings, Quit. No Dock icon (<code>LSUIElement</code>).</td><td><code>BRBuddyApp</code> → <code>MenuContent</code></td></tr>
+    <tr><td>Menu bar item</td><td>Paw (filled while kept awake): keep-awake toggle, BRB now, agents list (click one to jump to its terminal), Settings, Quit. No Dock icon (<code>LSUIElement</code>).</td><td><code>BRBuddyApp</code> → <code>MenuContent</code></td></tr>
     <tr><td>Settings window</td><td>Companion, terminal mirror, walk-away, agents, starting BRB, locking for real, general.</td><td><code>BRBuddyApp</code> → <code>SettingsView</code></td></tr>
     <tr><td>Away windows</td><td>One borderless window per display at screen-saver level, on every Space.</td><td><code>AwayController</code> → <code>AwayWindow</code> hosting <code>AwayView</code></td></tr>
     <tr><td>Companion</td><td>Animated character on the away screen and in Settings' preview.</td><td><code>CompanionView</code> (<code>CritterView</code> or <code>SpritePackView</code>)</td></tr>
@@ -210,12 +210,12 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><td><code>AgentTracker</code></td><td class="mono">BRBuddyCore/AgentTracker.swift</td><td>Value in <code>AgentMonitor</code></td><td>Pure</td><td>Sessions, timeouts, summary</td></tr>
     <tr><td><code>ProximityTracker</code></td><td class="mono">BRBuddyCore/ProximityTracker.swift</td><td>Value in <code>ProximityMonitor</code></td><td>Pure</td><td>Median signal → near or away, with delay and hysteresis</td></tr>
   </table></div>
-  <p style="margin-top:10px">Pure namespaces with no state: <code>AwayPolicy</code>, <code>IdleMonitor</code>, <code>ScreenLocker</code>, <code>PasswordVerifier</code>, <code>AgentProcessScanner</code>, <code>CompanionCatalog</code>, <code>ANSIParser</code>, <code>TmuxReader</code>. The README's owners table lists every type.</p>
+  <p style="margin-top:10px">Pure namespaces with no state: <code>AwayPolicy</code>, <code>IdleMonitor</code>, <code>ScreenLocker</code>, <code>PasswordVerifier</code>, <code>AgentProcessScanner</code>, <code>TerminalFocuser</code>, <code>CompanionCatalog</code>, <code>ANSIParser</code>, <code>TmuxReader</code>. The README's owners table lists every type.</p>
 </section>
 
 <section id="nav" aria-labelledby="nav-h">
   <h2 id="nav-h">Menus and screens</h2>
-  <p><b>Menu:</b> Keep Mac awake · "Kept awake while your agent works" · BRB now (⌃⌥⌘B) · "BRB starts after N min away" · "Walk-away: …" · agents list (up to six sessions) or "Set up agents…" · Settings… · Quit BRBuddy.</p>
+  <p><b>Menu:</b> Keep Mac awake · "Kept awake while your agent works" · BRB now (⌃⌥⌘B) · "BRB starts after N min away" · "Walk-away: …" · agents list (up to six sessions; clicking one jumps to its Terminal/iTerm2 tab or app window) or "Set up agents…" · Settings… · Quit BRBuddy.</p>
   <p><b>Away screen phases</b> (<code>AwayController.Phase</code>): resting → any key, click, scroll or mouse move → unlocking → back to resting after 30 s without input. Any phase → locking for real when <code>AwayPolicy</code> says so (3 failures or 60 min by default), which shows the reason for 2 s, calls the real lock, then takes the away screen down behind it.</p>
 </section>
 
@@ -241,8 +241,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
       <span class="status ok">Claude Code verified</span>
       <h3>Agents: setup and status</h3>
       <div class="chain">Agent hook → helper (main.swift) → <b>AgentSocket</b> → <b>AgentEventListener</b> → <b>AgentMonitor</b> → <b>AgentTracker</b> → <b>AppState</b></div>
-      <ul><li>Six agents; per-agent config shapes; our entries found by the helper's name, backups saved once.</li><li>Helper prints nothing, exits 0, gives up within about 2 s.</li><li>Timeouts: working 30 min, waiting 4 h, finished 15 min.</li></ul>
-      <div class="files">BRBuddy/AgentMonitor.swift · BRBuddyCore/AgentKind.swift · BRBuddyCore/AgentEvent.swift · BRBuddyCore/AgentHookInstaller.swift · BRBuddyCore/AgentSocket.swift · BRBuddyCore/AgentProcessScanner.swift</div>
+      <ul><li>Six agents; per-agent config shapes; our entries found by the helper's name, backups saved once.</li><li>Helper prints nothing, exits 0, gives up within about 2 s.</li><li>Timeouts: working 30 min, waiting 4 h, finished 15 min.</li><li>Jump: the helper adds a <code>TerminalLocation</code> (ancestor apps, tty); <b>MenuContent</b> → <b>TerminalFocuser</b> selects the Terminal/iTerm2 tab by tty, else activates the app and raises the folder's window. Verified with Terminal.app.</li></ul>
+      <div class="files">BRBuddy/AgentMonitor.swift · BRBuddyCore/AgentKind.swift · BRBuddyCore/AgentEvent.swift · BRBuddyCore/AgentHookInstaller.swift · BRBuddyCore/AgentSocket.swift · BRBuddyCore/AgentProcessScanner.swift · BRBuddyCore/TerminalLocation.swift · BRBuddy/TerminalFocuser.swift</div>
     </article>
     <article class="card" id="j-companions">
       <span class="status ok">rendered</span>
@@ -297,6 +297,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><td>Unlock UI stays inside the away window (system dialogs open underneath)</td><td><code>UnlockPanel</code>, <code>PasswordVerifier</code></td></tr>
     <tr><td>Tests never call the real lock or check a password</td><td><code>SystemHookTests</code></td></tr>
     <tr><td>BRB can't be quit while it's up</td><td><code>AppDelegate</code>, <code>AwayWindow</code></td></tr>
+    <tr><td>Signed builds keep the Apple-events entitlement and usage text, or jumping to a Terminal/iTerm2 tab fails</td><td>Config/BRBuddy.entitlements, Tools/build-app.sh</td></tr>
     <tr><td>Release builds carry the Sparkle public key and a signed appcast; local builds have no updater (setup: docs/releasing.md)</td><td><code>UpdateController</code>, Tools/release.sh</td></tr>
     <tr><td>The hook helper never prints, never blocks, always exits 0</td><td>helper main.swift, <code>AgentSocketTests</code></td></tr>
     <tr><td>Agent files change only on Set up / Remove; only our entries; backup first; never rewrite invalid JSON</td><td><code>AgentHookInstaller</code></td></tr>
@@ -333,5 +334,5 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   </dl>
 </section>
 
-<footer>Generated 2026-11-20 from docs/architecture for Phase 5 (branch phase-5-releases). The markdown is the source; regenerate this page after changes.</footer>
+<footer>Generated 2026-11-21 from docs/architecture after jump-to-terminal (branch feature/jump-to-terminal). The markdown is the source; regenerate this page after changes.</footer>
 </div>

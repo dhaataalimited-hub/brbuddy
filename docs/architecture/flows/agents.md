@@ -4,7 +4,7 @@
 Opens Settings. The Agents section lists Claude Code, Codex, Gemini CLI, Cursor, Antigravity and Grok, each marked
 "Hooked up", "Not set up" or "Not found on this Mac", plus "running now" when its process is up. They press
 **Set up** for the ones they use. From then on, while an agent works or waits for them, the menu lists it ("⚙︎
-Claude Code · brbuddy — working"), the Mac stays awake by itself, BRB can start on its own, and the away screen says
+Claude Code · brbuddy — working"; clicking the row jumps to that agent's terminal tab or window), the Mac stays awake by itself, BRB can start on its own, and the away screen says
 what the agent is doing. **Remove** takes the hook out again. Desktop apps (Claude, ChatGPT/Codex, Cursor) are only
 noted as open: they have no hooks.
 
@@ -12,6 +12,8 @@ noted as open: they have no hooks.
 Setup: `SettingsView` (`AgentRow`) → `AgentMonitor` → `AgentHookInstaller` → the agent's config file.
 Events: agent hook → `brbuddy-hook/main.swift` (`AgentEvent` from stdin, `AgentSocket` send) → `AgentEventListener`
 → `AgentMonitor` (`AgentTracker`) → `AppState` (keep-awake mode) and the views (`MenuContent`, `AwayView`).
+Jump: `brbuddy-hook` adds a `TerminalLocation` (ancestor apps, tty) to each event → `AgentTracker.Session` →
+`MenuContent` row → `TerminalFocuser` (AppleScript tab select for Terminal/iTerm2, else activate + Accessibility raise).
 Detection: `AgentMonitor` every 15 s → `AgentProcessScanner` (detached) and running desktop apps.
 
 ```mermaid
@@ -47,18 +49,28 @@ sequenceDiagram
 - The helper is copied from the app bundle (`Contents/Helpers`) to Application Support on launch whenever it
   differs, so hooks keep working if the app moves.
 
+- Jumping to a session: the helper walks its own process ancestry (sysctl `KERN_PROC_PID`, `proc_pidpath`) and
+  lists every `.app/Contents/MacOS` bundle on the way, nearest first, plus the first controlling tty. The app picks
+  the first that's a running regular app, so wrappers (Xcode's Python.app, Claude Code's bundled `claude.app`,
+  editor helper apps) are skipped. A row with no such app (old events, tmux server sessions, SSH) is plain text.
+- Terminal and iTerm2 select the tab whose `tty` matches (macOS asks once to let BRBuddy control them). Ghostty,
+  Cursor, VS Code and others are activated, and with Accessibility allowed the window whose document is the
+  session folder, else whose title names it, is raised.
+
 ## Gotchas
 - Agents change hook formats (Codex renamed its feature flag; Google replaced Gemini CLI with Antigravity). Formats
   follow AgentPet as of 2026-11-20; re-check when an agent updates.
 - Hooks fire only for sessions started after setup; running sessions show up from their next event (or restart).
+- Jump-to-terminal was checked on 2026-11-21 with a real Terminal.app tab (helper reported Terminal.app and its tty;
+  the script selected that tab). iTerm2 and Ghostty weren't installed, so their paths are untested.
 - Only Claude Code and Codex were present on the owner's Mac on 2026-11-20. End-to-end testing used fake events sent
   through the real helper; no real agent config was edited.
 
 ## Code to check
 Function names change: read the current code in these files before relying on any detail above.
-- `AgentMonitor.swift`, `SettingsView.swift`, `MenuContent.swift`, `AgentKind.swift`, `AgentEvent.swift`,
+- `AgentMonitor.swift`, `SettingsView.swift`, `MenuContent.swift`, `TerminalFocuser.swift`, `TerminalLocation.swift`, `AgentKind.swift`, `AgentEvent.swift`,
   `AgentTracker.swift`, `AgentHookInstaller.swift`, `AgentSocket.swift`, `AgentProcessScanner.swift`,
   `brbuddy-hook/main.swift`
 - Types: `AgentMonitor`, `AgentKind`, `AgentActivity`, `AgentEvent`, `AgentTracker`, `AgentHookInstaller`,
-  `AgentSocket`, `AgentEventListener`, `AgentProcessScanner`, `AppState`
-- Tests: `AgentEventTests`, `AgentTrackerTests`, `AgentHookInstallerTests`, `AgentSocketTests`
+  `AgentSocket`, `AgentEventListener`, `AgentProcessScanner`, `TerminalLocation`, `TerminalFocuser`, `AppState`
+- Tests: `AgentEventTests`, `AgentTrackerTests`, `AgentHookInstallerTests`, `AgentSocketTests`, `TerminalLocationTests`

@@ -194,3 +194,39 @@ struct AgentSocketTests {
         #expect(event?.session == "abc" && event?.cwd == "/work/brbuddy" && event?.activity == .waiting)
     }
 }
+
+struct TerminalLocationTests {
+    @Test func findsTheAppBundleOfAnExecutable() {
+        #expect(TerminalLocation.appBundle(ofExecutable: "/Applications/iTerm.app/Contents/MacOS/iTermServer-3.5")
+            == "/Applications/iTerm.app")
+        #expect(TerminalLocation.appBundle(
+            ofExecutable: "/Applications/Cursor.app/Contents/Frameworks/Cursor Helper (Plugin).app/Contents/MacOS/Cursor Helper (Plugin)")
+            == "/Applications/Cursor.app/Contents/Frameworks/Cursor Helper (Plugin).app")
+        #expect(TerminalLocation.appBundle(ofExecutable: "/bin/zsh") == nil)
+        #expect(TerminalLocation.appBundle(ofExecutable: "/Applications/Xcode.app/Contents/Developer/usr/bin/git") == nil)
+    }
+
+    @Test func eventsCarryTheLocationAndOldEventsStillDecode() throws {
+        var event = AgentEvent(agent: .claude, event: "Notification", session: "s", cwd: "/p", time: Date(timeIntervalSince1970: 5))
+        event.terminal = TerminalLocation(appPaths: ["/System/Applications/Utilities/Terminal.app"], tty: "/dev/ttys004")
+        #expect(AgentEvent.decode(line: try event.encodedLine().dropLast()) == event)
+
+        let old = Data(#"{"agent":"claude","event":"Stop","session":"s","time":5}"#.utf8)
+        #expect(AgentEvent.decode(line: old)?.terminal == nil)
+    }
+
+    @Test func trackerKeepsTheLocationWhenLaterEventsLackIt() {
+        var tracker = AgentTracker()
+        let place = TerminalLocation(appPaths: ["/Applications/Ghostty.app"], tty: "/dev/ttys009")
+        tracker.apply(AgentEvent(agent: .codex, event: "UserPromptSubmit", session: "a", cwd: "/p", time: Date(), terminal: place))
+        tracker.apply(AgentEvent(agent: .codex, event: "Stop", session: "a", cwd: "/p", time: Date()))
+        #expect(tracker.orderedSessions.first?.terminal == place)
+    }
+
+    @Test func readsThisProcesssParentWithoutCrashing() {
+        // Whatever ran the tests (a terminal, an editor, CI) is fine; it only has to come back without trouble.
+        let location = TerminalLocation.current()
+        #expect(location?.tty?.hasPrefix("/dev/") ?? true)
+        #expect(location?.appPaths.allSatisfy { $0.hasSuffix(".app") } ?? true)
+    }
+}

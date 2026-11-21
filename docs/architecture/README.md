@@ -116,7 +116,8 @@ automatic updates; both are used only by the app target.
 | `TerminalMirrorView` | `BRBuddy/TerminalMirrorView.swift` | `AwayView`, Settings | Main actor (view) | Draws styled lines, latest that fit; no input path |
 | `ProximityMonitor` | `BRBuddy/ProximityMonitor.swift` | `AppState`, app lifetime; Bluetooth manager created only when walk-away is on or the picker is open | `@MainActor`, `@Observable`; CoreBluetooth on the main queue | Lists nearby Apple devices; connects to the chosen one, reads RSSI every 2 s, reconnects; tells `AppState` when it leaves |
 | `AccessibilityTerminalReader` | `BRBuddy/AccessibilityTerminalReader.swift` | Static namespace | Running apps on main; AX reads off main | Text of a Terminal/iTerm2/Ghostty window; Accessibility permission prompt |
-| `MenuContent` | `BRBuddy/MenuContent.swift` | `BRBuddyApp`'s menu scene | Main actor (view) | Menu items |
+| `MenuContent` | `BRBuddy/MenuContent.swift` | `BRBuddyApp`'s menu scene | Main actor (view) | Menu items; agent rows jump to their terminal |
+| `TerminalFocuser` | `BRBuddy/TerminalFocuser.swift` | Static namespace | Main actor; `osascript` on a detached task | Finds the running app hosting a session; selects its Terminal/iTerm2 tab by tty, else activates the app and raises the window for its folder (Accessibility) |
 | `SettingsView` | `BRBuddy/SettingsView.swift` | `BRBuddyApp`'s Settings scene | Main actor (view) | Edits `AwaySettings` through `AppState` |
 | `KeepAwake` | `BRBuddyCore/KeepAwake.swift` | `AppState`, app lifetime | Used from the main actor | Holds at most one IOKit power assertion; released on `deinit` |
 | `AwaySettings` | `BRBuddyCore/AwaySettings.swift` | Value, held by `AppState` and copied into `AwayController` at start | Value type | Preferences; loads with defaults and clamping, saves to UserDefaults |
@@ -130,6 +131,7 @@ automatic updates; both are used only by the app target.
 | `AgentHookInstaller` | `BRBuddyCore/AgentHookInstaller.swift` | Value, held by `AgentMonitor` | Main actor in practice | Adds/removes our hooks in each agent's config; backups; Codex feature flag |
 | `AgentSocket`, `AgentEventListener` | `BRBuddyCore/AgentSocket.swift` | Static namespace; listener owned by `AgentMonitor` | Listener reads on a private serial queue | Socket path, sending (helper), listening (app) |
 | `AgentProcessScanner` | `BRBuddyCore/AgentProcessScanner.swift` | Static namespace | Any thread (run detached) | Running agent CLIs by process name or Node script path; desktop app bundle IDs |
+| `TerminalLocation` | `BRBuddyCore/TerminalLocation.swift` | Value, made by the helper, carried on `AgentEvent` and `AgentTracker.Session` | Value type | App bundles among the hook's ancestors and its controlling tty, read from the kernel |
 | `CompanionMood` | `BRBuddyCore/CompanionMood.swift` | Enum | Value type | Which mood to show, and its Codex spritesheet row |
 | `CompanionCatalog` | `BRBuddyCore/CompanionCatalog.swift` | Static namespace | Pure | Built-in list and agent matches; stored `Choice`; resolving a choice to a companion |
 | `CompanionPack`, `CompanionPackLibrary` | `BRBuddyCore/CompanionPack.swift` | Values / static namespace | Load anywhere; cut frames off the main thread | Validates a Codex pet folder, cuts frames per mood, scans and imports packs |
@@ -143,7 +145,7 @@ automatic updates; both are used only by the app target.
 singletons. `AwayController` notifies `AppState` that BRB ended through a callback so keep-awake can change mode.
 
 ## Navigation
-Menu: keep-awake toggle (plus "Kept awake while your agent works" when an agent is the reason), BRB now (shows the global shortcut), a hint line when auto-start is armed, the agents list (up to six sessions with state and project, or "Set up agents…"), Settings…, Quit. Settings has an Agents section with a row per agent.
+Menu: keep-awake toggle (plus "Kept awake while your agent works" when an agent is the reason), BRB now (shows the global shortcut), a hint line when auto-start is armed, the agents list (up to six sessions with state and project, or "Set up agents…"; clicking one jumps to the window, and in Terminal/iTerm2 the tab, it runs in), Settings…, Quit. Settings has an Agents section with a row per agent.
 Away screen phases (`AwayController.Phase`): resting → (any key, click, scroll or mouse move) unlocking → back to
 resting after 30 seconds without input; any phase → locking for real when `AwayPolicy` says so.
 
@@ -192,6 +194,7 @@ serial queue and hop to the main actor in `AgentMonitor`; the process scan runs 
 | Hook events carry tool details, never the user's prompt text | `AgentEvent`, `ActivityFeedTests` |
 | Touch Bluetooth only when walk-away is on or the picker is open (no surprise permission prompt) | `ProximityMonitor` |
 | The Bluetooth usage text must stay in the bundle's Info.plist, or macOS kills the app on first use | `Config/Info.plist`, `ProximityMonitor` |
+| Signed builds keep the Apple-events entitlement and usage text, or jumping to a Terminal/iTerm2 tab silently fails | `Config/BRBuddy.entitlements`, `Config/Info.plist`, `Tools/build-app.sh` |
 
 ## Debug only
 Debug builds read three environment variables in `AppDelegate`: `BRBUDDY_START_AWAY=<seconds>` opens BRB that many
@@ -231,6 +234,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/AccessibilityTerminalReader.swift`: reads terminal window text via Accessibility.
 - `BRBuddy/ProximityMonitor.swift`: Bluetooth device picker and walk-away watching.
 - `BRBuddy/MenuContent.swift`: the menu's items.
+- `BRBuddy/TerminalFocuser.swift`: jumps from a menu row to the agent's terminal tab or window.
 - `BRBuddy/SettingsView.swift`: the Settings window, including the Agents section.
 - `BRBuddy/AgentMonitor.swift`: agent events, sessions, process scan and hook setup for the app.
 
@@ -247,6 +251,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/AgentHookInstaller.swift`: adds and removes hooks in agents' config files.
 - `BRBuddyCore/AgentSocket.swift`: the local socket, sending and listening.
 - `BRBuddyCore/AgentProcessScanner.swift`: finds running agents and desktop apps.
+- `BRBuddyCore/TerminalLocation.swift`: which app and terminal tab a hook ran from.
 - `BRBuddyCore/CompanionMood.swift`: companion moods and their spritesheet rows.
 - `BRBuddyCore/CompanionCatalog.swift`: built-in companions and resolving the user's choice.
 - `BRBuddyCore/CompanionPack.swift`: loading, checking and importing Codex-format packs.
