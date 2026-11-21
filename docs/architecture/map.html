@@ -256,7 +256,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
       <span class="status ok">rendered</span>
       <h3>Companions</h3>
       <div class="chain"><b>AwayView</b> → <b>CompanionMood</b> → <b>CompanionView</b> → <b>CompanionLibrary</b> + <b>CompanionCatalog</b> → <b>CritterView</b> or <b>SpritePackView</b> (<b>CompanionPack</b> frames)</div>
-      <ul><li>Moods: resting, working, waiting, finished, greeting, oops.</li><li>Codex pet rows 0, 3, 4, 5, 6, 7; v1 1536×1872 or v2 1536×2288; 20 MB cap.</li><li>Built-ins are code-drawn originals; third-party pet art is never bundled.</li><li>Click to boop: <b>BoopPicker</b> picks squish, giggle, spin, love or the companion's own signature (<b>BoopSignature</b>; packs name theirs in pet.json), grumpy if clicked 5× in 3 s; <b>BoopSound</b> synthesises the sound; critters get the boop's own face.</li><li>Companion Studio (<b>CompanionStudioView</b>) builds a <b>StudioDesign</b> from the built-ins' parts (plus six mouth styles and a size); saved packs carry <code>design.json</code> and are drawn live by <b>CritterView</b>.</li></ul>
+      <ul><li>Moods: resting, working, waiting, finished, greeting, oops.</li><li>Codex pet rows 0, 3, 4, 5, 6, 7; v1 1536×1872 or v2 1536×2288; 20 MB cap.</li><li>Built-ins are code-drawn originals; third-party pet art is never bundled.</li><li>Click to boop: <b>BoopPicker</b> picks squish, giggle, spin, love or the companion's own signature (<b>BoopSignature</b>; packs name theirs in pet.json), grumpy if clicked 5× in 3 s; <b>BoopSound</b> synthesises the sound; critters get the boop's own face.</li><li>Companion Studio (<b>CompanionStudioView</b>) builds a <b>StudioDesign</b> from the built-ins' parts (plus six mouth styles, a mouth size and blush colour); saved packs carry <code>design.json</code> and are drawn live by <b>CritterView</b>.</li></ul>
       <div class="files">BRBuddy/CompanionLibrary.swift · BRBuddy/CompanionView.swift · BRBuddy/CritterView.swift · BRBuddy/BoopView.swift · BRBuddy/CompanionStudio.swift · BRBuddyCore/Boop.swift · BRBuddyCore/StudioDesign.swift · BRBuddyCore/CompanionMood.swift · BRBuddyCore/CompanionCatalog.swift · BRBuddyCore/CompanionPack.swift</div>
     </article>
     <article class="card" id="j-mirror">
@@ -351,5 +351,5 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   </dl>
 </section>
 
-<footer>Generated 2026-11-21 from docs/architecture after adding Studio mouths (branch studio-mouths). The markdown is the source; regenerate this page after changes.</footer>
+<footer>Generated 2026-11-21 from docs/architecture after adding Studio blush colour (branch studio-blush). The markdown is the source; regenerate this page after changes.</footer>
 </div>

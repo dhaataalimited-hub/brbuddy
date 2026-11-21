@@ -6,10 +6,12 @@ public struct StudioColor: Codable, Equatable, Hashable, Sendable {
     public var green: Double
     public var blue: Double
 
+    /// Each channel is clamped to 0–1 and snapped to the nearest 1/255, so a colour survives `#RRGGBB` exactly.
     public init(red: Double, green: Double, blue: Double) {
-        self.red = min(max(red, 0), 1)
-        self.green = min(max(green, 0), 1)
-        self.blue = min(max(blue, 0), 1)
+        func channel(_ v: Double) -> Double { (min(max(v.isFinite ? v : 0, 0), 1) * 255).rounded() / 255 }
+        self.red = channel(red)
+        self.green = channel(green)
+        self.blue = channel(blue)
     }
 
     /// From hue, saturation and brightness, each 0–1.
@@ -91,6 +93,8 @@ public struct StudioDesign: Codable, Equatable, Sendable {
     /// White eyes and mouth instead of dark ones (for dark bodies).
     public var lightInk: Bool
     public var blush: Bool
+    /// The cheeks' colour (drawn half see-through).
+    public var blushColor: StudioColor
     /// One eye bigger than the other.
     public var lopsided: Bool
     /// Hovers off the ground.
@@ -110,7 +114,9 @@ public struct StudioDesign: Codable, Equatable, Sendable {
 
     public init(name: String, body: Body, top: StudioColor, bottom: StudioColor, ears: Ears, earColor: StudioColor,
                 accent: Accent, accentColor: StudioColor, lightInk: Bool, blush: Bool, lopsided: Bool, floats: Bool,
-                signature: BoopSignature, bubble: String, mouth: Mouth = .standard, mouthSize: Double = 1) {
+                signature: BoopSignature, bubble: String, mouth: Mouth = .standard, mouthSize: Double = 1,
+                blushColor: StudioColor = StudioDesign.defaultBlush) {
+        self.blushColor = blushColor
         self.mouth = mouth
         self.mouthSize = mouthSize
         self.name = name
@@ -130,13 +136,16 @@ public struct StudioDesign: Codable, Equatable, Sendable {
     }
 
     public static let mouthSizes: ClosedRange<Double> = 0.6...1.5
+    /// The built-ins' pink.
+    public static let defaultBlush = StudioColor(red: 1, green: 0.18, blue: 0.33)
 
     private enum CodingKeys: String, CodingKey {
         case name, body, top, bottom, ears, earColor, accent, accentColor, lightInk, blush, lopsided, floats, signature,
-             bubble, mouth, mouthSize
+             bubble, mouth, mouthSize, blushColor
     }
 
-    /// Designs saved before mouths could be chosen have no mouth fields; they get the standard mouth.
+    /// Designs saved before mouths or blush colours could be chosen lack those fields; they get the standard mouth
+    /// and pink cheeks.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.init(name: try c.decode(String.self, forKey: .name), body: try c.decode(Body.self, forKey: .body),
@@ -149,7 +158,8 @@ public struct StudioDesign: Codable, Equatable, Sendable {
                   signature: try c.decode(BoopSignature.self, forKey: .signature),
                   bubble: try c.decode(String.self, forKey: .bubble),
                   mouth: try c.decodeIfPresent(Mouth.self, forKey: .mouth) ?? .standard,
-                  mouthSize: try c.decodeIfPresent(Double.self, forKey: .mouthSize) ?? 1)
+                  mouthSize: try c.decodeIfPresent(Double.self, forKey: .mouthSize) ?? 1,
+                  blushColor: try c.decodeIfPresent(StudioColor.self, forKey: .blushColor) ?? Self.defaultBlush)
     }
 
     public static let maxNameLength = 30

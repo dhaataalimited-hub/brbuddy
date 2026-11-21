@@ -69,7 +69,8 @@ sequenceDiagram
 - **Settings → Companion → Companion Studio…** opens `CompanionStudioView` in its own window. The user picks a
   shape, two body colours, ears, an extra (sprout, star freckles, wisps, snaggle tooth), face options, a mouth
   (standard, cat ω, big grin, tongue out, fangs or beak, each still changing with the mood) and its size, floating, a
-  signature sound and a line; designs saved before mouths existed load with the standard one; **Surprise me** makes a random `StudioDesign` with matching colours.
+  signature sound and a line; blush on or off and its colour; designs saved before mouths or blush colours existed load with the standard mouth
+  and pink cheeks; **Surprise me** makes a random `StudioDesign` with matching colours.
 - The preview is a `CompanionView` given the design directly: it plays every mood and can be booped.
 - **Save** renders both spritesheets (`StudioSheetRenderer` draws `CritterView` at fixed moments, 8 frames per
   mood, each row covering one loop of its main motion), then `StudioPackWriter` writes `design.json`, `pet.json`

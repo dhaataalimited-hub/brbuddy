@@ -95,6 +95,8 @@ struct CompanionStudioView: View {
                     }
                     Toggle("Light eyes (for dark bodies)", isOn: $design.lightInk)
                     Toggle("Blush", isOn: $design.blush)
+                    ColorPicker("Blush colour", selection: color($design.blushColor), supportsOpacity: false)
+                        .disabled(!design.blush)
                     Toggle("One eye bigger", isOn: $design.lopsided)
                 }
             }

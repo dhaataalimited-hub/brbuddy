@@ -17,6 +17,8 @@ struct CritterDesign {
     var accentColor: Color
     var ink = Color(red: 0.14, green: 0.09, blue: 0.13)
     var blush = true
+    /// Cheek colour, drawn half see-through.
+    var blushColor = Color.pink
     /// Gremlin's left eye is bigger.
     var lopsided = false
     /// Drift hovers higher off the ground.
@@ -87,8 +89,8 @@ extension CritterDesign {
         self.init(body: body, top: color(studio.top), bottom: color(studio.bottom), ears: ears,
                   earColor: color(studio.earColor), accent: accent, accentColor: color(studio.accentColor),
                   ink: studio.lightInk ? Color(white: 0.98) : Color(red: 0.14, green: 0.09, blue: 0.13),
-                  blush: studio.blush, lopsided: studio.lopsided, floats: studio.floats, mouth: mouth,
-                  mouthScale: studio.mouthSize)
+                  blush: studio.blush, blushColor: color(studio.blushColor), lopsided: studio.lopsided,
+                  floats: studio.floats, mouth: mouth, mouthScale: studio.mouthSize)
     }
 }
 
@@ -265,8 +267,8 @@ struct CritterView: View {
             }
             if design.blush {
                 HStack(spacing: 96) {
-                    Ellipse().fill(Color.pink.opacity(0.45)).frame(width: 22, height: 12)
-                    Ellipse().fill(Color.pink.opacity(0.45)).frame(width: 22, height: 12)
+                    Ellipse().fill(design.blushColor.opacity(0.45)).frame(width: 22, height: 12)
+                    Ellipse().fill(design.blushColor.opacity(0.45)).frame(width: 22, height: 12)
                 }
                 .padding(.top, -8)
             }

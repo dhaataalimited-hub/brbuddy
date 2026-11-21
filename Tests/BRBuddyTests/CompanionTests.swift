@@ -270,8 +270,13 @@ struct StudioDesignTests {
         var old = try JSONSerialization.jsonObject(with: JSONEncoder().encode(StudioDesign.starter)) as! [String: Any]
         old["mouth"] = nil
         old["mouthSize"] = nil
+        old["blushColor"] = nil
         let loaded = try JSONDecoder().decode(StudioDesign.self, from: JSONSerialization.data(withJSONObject: old))
         #expect(loaded.mouth == .standard && loaded.mouthSize == 1)
+        #expect(loaded.blushColor == StudioDesign.defaultBlush)
+
+        design.blushColor = StudioColor(hex: "#FFAA00")!
+        #expect(try JSONDecoder().decode(StudioDesign.self, from: JSONEncoder().encode(design)).blushColor.hex == "#FFAA00")
 
         design.mouthSize = 9
         #expect(design.tidied.mouthSize == StudioDesign.mouthSizes.upperBound)

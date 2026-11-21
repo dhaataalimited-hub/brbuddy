@@ -93,7 +93,7 @@ Three steps, smallest first. No server and no money: sharing goes through GitHub
    construction: no AI or drawing skills needed.
    - Built: a design is saved as `design.json` beside the sheets, so BRBuddy draws it live with every reaction
      and it can be edited again. Mouths added the same day: six styles (standard, cat, grin, tongue out, fangs, beak)
-     and a size. **Still open:** more parts (tails, hats, patterns).
+     and a size; blush colour too. **Still open:** more parts (tails, hats, patterns).
 3. **Community gallery.** A public `brbuddy-companions` repo where people submit packs by pull request; each is
    checked for license, originality and the no-logos rule before it's merged. BRBuddy gets **Browse packs…**: it
    lists the gallery's index and downloads a chosen pack into the Companions folder, through the same checks as
