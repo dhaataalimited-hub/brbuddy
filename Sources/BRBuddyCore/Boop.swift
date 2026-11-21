@@ -170,7 +170,7 @@ public enum BoopSound {
     static func tones(for signature: BoopSignature) -> [Tone] {
         switch signature {
         case .sparkle:
-            [c6, e6, g6, 2093].enumerated().map { Tone(from: $1, to: $1, length: 0.25, start: Double($0) * 0.07, volume: 0.15, bright: true) }
+            run([c6, e6, g6, 2093], every: 0.07, length: 0.25, volume: 0.15, bright: true)
         case .fwoosh:
             [Tone(from: 300, to: 5000, length: 0.45, volume: 0.35, noise: true),
              Tone(from: 110, to: 260, length: 0.4, volume: 0.2)]
@@ -178,25 +178,29 @@ public enum BoopSound {
             [Tone(from: 1900, to: 1800, length: 0.18, volume: 0.25, bright: true),
              Tone(from: 2500, to: 2450, length: 0.25, start: 0.12, volume: 0.18, bright: true)]
         case .shimmer:
-            [e6, g6, 1976, 2637, 1976, 2637].enumerated().map { Tone(from: $1, to: $1, length: 0.3, start: Double($0) * 0.055, volume: 0.12, bright: true) }
+            run([e6, g6, 1976, 2637, 1976, 2637], every: 0.055, length: 0.3, volume: 0.12, bright: true)
         case .zoom:
             [Tone(from: 1700, to: 260, length: 0.55, volume: 0.25, wobble: 0.03)]
         case .breeze:
             [Tone(from: 400, to: 1400, length: 0.7, volume: 0.3, wobble: 0.3, noise: true)]
         case .cackle:
-            (0..<6).map { i in Tone(from: i % 2 == 0 ? 330 : 280, to: i % 2 == 0 ? 300 : 250, length: 0.07,
-                                    start: Double(i) * 0.085, volume: 0.15, buzzy: true) }
+            (0..<6).map { (i: Int) -> Tone in
+                let high: Bool = i % 2 == 0
+                let from: Double = high ? 330 : 280
+                let start: Double = Double(i) * 0.085
+                return Tone(from: from, to: from - 30, length: 0.07, start: start, volume: 0.15, buzzy: true)
+            }
         case .chord:
-            [261.63, 329.63, 392.0, c5, 1046.5].map { Tone(from: $0, to: $0, length: 1.0, volume: 0.12, bright: true) }
+            run([261.63, 329.63, 392.0, c5, 1046.5], every: 0, length: 1.0, volume: 0.12, bright: true)
         case .clickWheel:
-            (0..<7).map { i in Tone(from: 3200, to: 3000, length: 0.012, start: Double(i) * 0.055, volume: 0.35) }
+            (0..<7).map { (i: Int) -> Tone in Tone(from: 3200, to: 3000, length: 0.012, start: Double(i) * 0.055, volume: 0.35) }
         case .glassTap:
             [Tone(from: 2093, to: 2093, length: 0.2, volume: 0.18, bright: true),
              Tone(from: 2637, to: 2637, length: 0.3, start: 0.1, volume: 0.16, bright: true)]
         case .bleeps:
-            [600.0, 900, 750, 1200, 500, 1000].enumerated().map { Tone(from: $1, to: $1, length: 0.05, start: Double($0) * 0.065, volume: 0.12, buzzy: true) }
+            run([600, 900, 750, 1200, 500, 1000], every: 0.065, length: 0.05, volume: 0.12, buzzy: true)
         case .marimba:
-            [g5, c6, e6, c6, g6].enumerated().map { Tone(from: $1, to: $1, length: 0.18, start: Double($0) * 0.11, volume: 0.2, bright: true) }
+            run([g5, c6, e6, c6, g6], every: 0.11, length: 0.18, volume: 0.2, bright: true)
         case .whirr:
             [Tone(from: 180, to: 320, length: 0.3, volume: 0.12, wobble: 0.04, buzzy: true),
              Tone(from: 320, to: 200, length: 0.3, start: 0.3, volume: 0.12, wobble: 0.04, buzzy: true)]
@@ -204,15 +208,24 @@ public enum BoopSound {
             [Tone(from: 1500, to: 1500, length: 0.04, volume: 0.5, noise: true),
              Tone(from: 380, to: 620, length: 0.2, start: 0.08, volume: 0.22)]
         case .fanfare:
-            [Tone(from: c5, to: c5, length: 0.12, volume: 0.15, bright: true),
-             Tone(from: e5, to: e5, length: 0.12, start: 0.13, volume: 0.15, bright: true),
-             Tone(from: g5, to: g5, length: 0.12, start: 0.26, volume: 0.15, bright: true)]
-                + [c5, e5, g5, c6].map { Tone(from: $0, to: $0, length: 0.7, start: 0.4, volume: 0.1, bright: true) }
+            run([c5, e5, g5], every: 0.13, length: 0.12, volume: 0.15, bright: true)
+                + run([c5, e5, g5, c6], every: 0, length: 0.7, start: 0.4, volume: 0.1, bright: true)
         case .blueBox:
             [Tone(from: 2600, to: 2600, length: 0.22, volume: 0.15),
              Tone(from: 1300, to: 1300, length: 0.08, start: 0.3, volume: 0.15),
              Tone(from: 1700, to: 1700, length: 0.08, start: 0.42, volume: 0.15)]
         }
+    }
+
+    /// Notes one after another (`every` seconds apart; 0 plays them together as a chord).
+    static func run(_ notes: [Double], every: Double, length: Double, start: Double = 0, volume: Double,
+                    bright: Bool = false, buzzy: Bool = false) -> [Tone] {
+        var tones: [Tone] = []
+        for (index, note) in notes.enumerated() {
+            let at: Double = start + Double(index) * every
+            tones.append(Tone(from: note, to: note, length: length, start: at, volume: volume, bright: bright, buzzy: buzzy))
+        }
+        return tones
     }
 
     static func samples(_ tones: [Tone]) -> [Int16] {
