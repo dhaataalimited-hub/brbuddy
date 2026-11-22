@@ -84,9 +84,21 @@ if [ ! -x "$tools/bin/generate_appcast" ]; then
 fi
 key_args=()
 if [ -n "${SPARKLE_PRIVATE_KEY_PATH:-}" ]; then key_args=(--ed-key-file "$SPARKLE_PRIVATE_KEY_PATH"); fi
-"$tools/bin/generate_appcast" ${key_args[@]+"${key_args[@]}"} \
-    --download-url-prefix "$repo_url/releases/download/v$version/" \
-    --link "$repo_url" "$out"
+# generate_appcast mounts the disk image. Right after stapling and spctl, macOS can still be holding it and the mount
+# fails with "Resource busy"; a failed attempt also leaves an empty folder in Sparkle's cache that the next attempt
+# trusts. So clear that cache and try a few times.
+for attempt in 1 2 3 4 5; do
+    rm -rf "$HOME/Library/Caches/Sparkle_generate_appcast"
+    if "$tools/bin/generate_appcast" ${key_args[@]+"${key_args[@]}"} \
+        --download-url-prefix "$repo_url/releases/download/v$version/" \
+        --link "$repo_url" "$out"; then
+        break
+    fi
+    if [ "$attempt" = 5 ]; then echo "error: generate_appcast failed 5 times" >&2; exit 1; fi
+    echo "generate_appcast failed (attempt $attempt); retrying in 10 s" >&2
+    sleep 10
+done
+[ -f "$out/appcast.xml" ] || { echo "error: generate_appcast made no appcast.xml" >&2; exit 1; }
 # Sparkle ignores unsigned updates, so an unsigned appcast would silently break updates for everyone.
 if [ "${SKIP_NOTARIZE:-0}" != "1" ] && ! grep -q 'sparkle:edSignature' "$out/appcast.xml"; then
     echo "error: appcast.xml isn't signed; set SPARKLE_PRIVATE_KEY_PATH or add the key to this Mac's keychain" >&2
