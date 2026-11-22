@@ -138,20 +138,31 @@ public struct AgentHookInstaller: Sendable {
     }
 
     /// Codex only reads hooks.json when hooks are on: makes sure `[features] hooks = true` is set, touching nothing
-    /// else. Returns nil when it's already on.
+    /// else. Only a `hooks` key inside the `[features]` table counts; any other table's `hooks` is left alone.
+    /// Returns nil when it's already on.
     static func enableCodexHooks(in toml: String) -> String? {
         var lines = toml.components(separatedBy: "\n")
+        var table = ""  // the table the current line belongs to; "" is the top level
+        var featuresHeader: Int?
         for (index, line) in lines.enumerated() {
-            let compact = line.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: " ", with: "")
-            if compact.hasPrefix("#") { continue }
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("#") || trimmed.isEmpty { continue }
+            if trimmed.hasPrefix("["), let close = trimmed.firstIndex(of: "]") {
+                // `[name]` or `[[name]]`, maybe followed by a comment.
+                table = trimmed[..<close].trimmingCharacters(in: CharacterSet(charactersIn: "[ "))
+                if table == "features", !trimmed.hasPrefix("[[") { featuresHeader = index }
+                continue
+            }
+            guard table == "features" else { continue }
+            let compact = trimmed.replacingOccurrences(of: " ", with: "")
             if compact.hasPrefix("hooks=true") { return nil }
             if compact.hasPrefix("hooks=") {
                 lines[index] = "hooks = true"
                 return lines.joined(separator: "\n")
             }
         }
-        if let features = lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == "[features]" }) {
-            lines.insert("hooks = true", at: features + 1)
+        if let featuresHeader {
+            lines.insert("hooks = true", at: featuresHeader + 1)
             return lines.joined(separator: "\n")
         }
         var result = toml
@@ -173,7 +184,7 @@ public struct AgentHookInstaller: Sendable {
             let toml = (try? String(contentsOf: tomlURL, encoding: .utf8)) ?? ""
             if let updated = Self.enableCodexHooks(in: toml) {
                 try backUpOnce(tomlURL)
-                try Data(updated.utf8).write(to: tomlURL, options: .atomic)
+                try Self.writeInPlace(Data(updated.utf8), to: tomlURL)
             }
         }
     }
@@ -202,10 +213,22 @@ public struct AgentHookInstaller: Sendable {
         try backUpOnce(url)
         let data = try JSONSerialization.data(withJSONObject: config,
                                               options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
-        try data.write(to: url, options: .atomic)
+        try Self.writeInPlace(data, to: url)
+    }
+
+    /// Writes a config file atomically without breaking how the user keeps it: if the path is a symlink (a dotfiles
+    /// repo, say) the real file behind it is written and the link stays; the file keeps its permissions, and a new
+    /// file is private to the user (0600), since these configs can hold API keys.
+    static func writeInPlace(_ data: Data, to url: URL) throws {
+        let target = url.resolvingSymlinksInPath()
+        let fm = FileManager.default
+        let mode = (try? fm.attributesOfItem(atPath: target.path)[.posixPermissions] as? NSNumber)?.intValue ?? 0o600
+        try data.write(to: target, options: .atomic)
+        try fm.setAttributes([.posixPermissions: NSNumber(value: mode)], ofItemAtPath: target.path)
     }
 
     private func backUpOnce(_ url: URL) throws {
+        let url = url.resolvingSymlinksInPath()
         let backup = URL(fileURLWithPath: url.path + ".brbuddy-backup")
         let fm = FileManager.default
         guard fm.fileExists(atPath: url.path), !fm.fileExists(atPath: backup.path) else { return }

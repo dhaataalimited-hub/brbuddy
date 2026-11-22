@@ -70,6 +70,24 @@ public struct AgentEvent: Codable, Equatable, Sendable {
         return try encoder.encode(self) + Data([0x0A])
     }
 
+    /// The app's view of an event that came over the socket: stamped with the time it arrived (a client can't keep a
+    /// session alive with a future date) and with every string capped, whoever sent it.
+    public func received(at now: Date) -> AgentEvent {
+        func cap(_ text: String, _ limit: Int) -> String {
+            text.count > limit ? String(text.prefix(limit - 1)) + "…" : text
+        }
+        var event = self
+        event.time = now
+        event.event = cap(event.event, 64)
+        event.session = cap(event.session, 128)
+        event.cwd = event.cwd.map { cap($0, 1024) }
+        event.detail = event.detail.map { cap($0.replacingOccurrences(of: "\n", with: " "), Self.maxDetailLength) }
+        event.terminal = event.terminal.map {
+            TerminalLocation(appPaths: $0.appPaths.prefix(8).map { cap($0, 1024) }, tty: $0.tty.map { cap($0, 64) })
+        }
+        return event
+    }
+
     public static func decode(line: Data) -> AgentEvent? {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .secondsSince1970

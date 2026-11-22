@@ -6,8 +6,8 @@ BRBuddy is a free, open-source Mac menu bar app for when you step away while an 
 Mac awake, covers the screen with a cute companion (and, if you want, a read-only view of your terminal), and asks
 for Touch ID or your password when someone touches the keyboard.
 
-> **Status: early.** Keep-awake, BRB (Away mode), agent status, companions, the terminal mirror and the walk-away
-> lock work. The first signed release is being prepared. See [ROADMAP.md](ROADMAP.md).
+> **Status: early (v0.1).** Keep-awake, BRB (Away mode), agent status, companions, the terminal mirror and the
+> walk-away lock work. See [ROADMAP.md](ROADMAP.md).
 
 ## Using it
 - Open **Settings…** and press **Set up** for the agents you use (Claude Code, Codex, Gemini CLI, Cursor,
@@ -17,6 +17,9 @@ for Touch ID or your password when someone touches the keyboard.
   **BRB now** or **⌃⌥⌘B**.
 - Come back, press any key, and unlock with Touch ID or your password.
 - Three wrong tries, or an hour away, and BRBuddy hands off to the real macOS lock screen. Your agent keeps running.
+- BRB is a **privacy screen, not a lock**: it keeps passers-by off your keyboard and screen, but anything running as
+  you (including your agent) can close it, and a restart ends it. When you need real security, lock the Mac (or let
+  BRBuddy hand off to the macOS lock screen).
 - Pick a companion in **Settings…**: six original critters (one per agent's vibe), or add any Codex pet with
   **Add companion pack…** (or make your own with any AI: [docs/making-a-companion.md](docs/making-a-companion.md)).
   Change everything else there too.

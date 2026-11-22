@@ -158,12 +158,103 @@ enum CompanionContactSheet {
         }
     }
 
+    /// App icon candidates, each a 1024 px PNG in Apple's macOS icon grid (an 824 px rounded square with room for its
+    /// shadow). `BRBUDDY_ICON_OPTIONS=<dir>`.
+    static func renderIconOptions(to folder: URL) {
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for option in AppIconArt.Option.allCases {
+            let renderer = ImageRenderer(content: AppIconArt(option: option))
+            renderer.scale = 1
+            guard let image = renderer.cgImage else { continue }
+            try? NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])?
+                .write(to: folder.appending(path: "icon-\(option.rawValue).png"))
+        }
+    }
+
     private static func save(_ view: some View, to url: URL) {
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2
         guard let image = renderer.cgImage else { return }
         let rep = NSBitmapImageRep(cgImage: image)
         try? rep.representation(using: .png, properties: [:])?.write(to: url)
+    }
+}
+/// The app icon artwork: Ember on a rounded square, drawn with the companion code itself.
+struct AppIconArt: View {
+    enum Option: String, CaseIterable {
+        case nightNap = "1-night-nap", brbBubble = "2-brb-bubble", peekaboo = "3-peekaboo", sunrise = "4-sunrise"
+    }
+    let option: Option
+
+    private let canvas: CGFloat = 1024, tile: CGFloat = 824
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 185, style: .continuous)
+                .fill(.black.opacity(0.35))
+                .frame(width: tile, height: tile)
+                .blur(radius: 14)
+                .offset(y: 12)
+            content
+                .frame(width: tile, height: tile)
+                .clipShape(RoundedRectangle(cornerRadius: 185, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 185, style: .continuous)
+                    .strokeBorder(.white.opacity(0.12), lineWidth: 3))
+        }
+        .frame(width: canvas, height: canvas)
+    }
+
+    private let ember = CritterDesign.design(for: "ember")
+    private let night = LinearGradient(colors: [Color(red: 0.2, green: 0.14, blue: 0.36), Color(red: 0.07, green: 0.05, blue: 0.13)],
+                                       startPoint: .top, endPoint: .bottom)
+
+    @ViewBuilder private var content: some View {
+        switch option {
+        case .nightNap:
+            ZStack {
+                night
+                stars
+                Circle().fill(Color(red: 1, green: 0.93, blue: 0.7)).frame(width: 110, height: 110)
+                    .overlay(Circle().fill(Color(red: 0.2, green: 0.14, blue: 0.36)).frame(width: 96, height: 96).offset(x: 34, y: -22))
+                    .offset(x: 250, y: -250)
+                CritterView(design: ember, mood: .resting, fixedTime: 41).frame(width: 800, height: 693).offset(y: 95)
+            }
+        case .brbBubble:
+            ZStack {
+                LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.55), Color(red: 0.93, green: 0.45, blue: 0.52)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                CritterView(design: ember, mood: .greeting, quiet: true, fixedTime: 41).frame(width: 780, height: 676).offset(x: -20, y: 110)
+                BubbleLabel(text: "BRB").scaleEffect(4.6).offset(x: 160, y: -250)
+            }
+        case .peekaboo:
+            ZStack {
+                night
+                stars
+                RoundedRectangle(cornerRadius: 40, style: .continuous).fill(Color(red: 0.13, green: 0.1, blue: 0.2))
+                    .frame(width: 700, height: 300).offset(y: 330)
+                CritterView(design: ember, mood: .resting, quiet: true, fixedTime: 41).frame(width: 820, height: 711).offset(y: 120)
+                    .mask(Rectangle().frame(width: 824, height: 592).offset(y: -116))
+                BubbleLabel(text: "BRB", tint: Color(red: 1, green: 0.85, blue: 0.4)).scaleEffect(4.4).offset(x: 0, y: -270)
+            }
+        case .sunrise:
+            ZStack {
+                LinearGradient(colors: [Color(red: 0.16, green: 0.12, blue: 0.32), Color(red: 0.55, green: 0.3, blue: 0.55),
+                                        Color(red: 1, green: 0.66, blue: 0.46)], startPoint: .top, endPoint: .bottom)
+                stars.opacity(0.6)
+                CritterView(design: ember, mood: .finished, fixedTime: 41).frame(width: 800, height: 693).offset(y: 80)
+            }
+        }
+    }
+
+    private var stars: some View {
+        let points: [(CGFloat, CGFloat, CGFloat)] = [(-300, -300, 10), (-170, -340, 6), (-330, -120, 7), (40, -340, 8),
+                                                     (330, -60, 6), (-250, -220, 5), (150, -250, 5), (300, -330, 7)]
+        return ZStack {
+            ForEach(points.indices, id: \.self) { i in
+                Circle().fill(.white.opacity(0.85)).frame(width: points[i].2, height: points[i].2)
+                    .offset(x: points[i].0, y: points[i].1)
+            }
+        }
     }
 }
 #endif

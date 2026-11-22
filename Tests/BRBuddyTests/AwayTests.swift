@@ -54,6 +54,13 @@ struct SystemHookTests {
         #expect(ScreenLocker.canLockImmediately)
     }
 
+    /// The lock check BRB relies on before coming down: the tests run on an unlocked session, so it must say unlocked,
+    /// and waiting for a lock that never comes must give up and report false (BRB then stays up).
+    @Test func lockCheckFailsClosed() async {
+        #expect(!ScreenLocker.isScreenLocked)
+        #expect(await ScreenLocker.waitUntilLocked(timeout: .milliseconds(300)) == false)
+    }
+
     /// Only looks up the user record. Never checks a password (a wrong one counts against the account).
     @Test func currentUserRecordIsFound() {
         #expect(PasswordVerifier.currentUserRecord() != nil)

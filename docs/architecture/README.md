@@ -124,7 +124,8 @@ automatic updates; both are used only by the app target.
 | `BatteryBadge`, `BatteryFlair` | `BRBuddy/BatteryView.swift` | `AwayView`; `CompanionView` | Main actor (views) | The away screen's battery pill (liquid fill, bubbles, glow, sparks); the companion's battery props and speech bubble |
 | `CritterView`, `CritterDesign` | `BRBuddy/CritterView.swift` | `CompanionView`, contact sheet | Main actor (views) | Draws and animates the six built-in critters per mood |
 | `CompanionStudioView`, `StudioSheetRenderer` | `BRBuddy/CompanionStudio.swift` | `BRBuddyApp`'s Window scene | Main actor; sheets rendered on the main actor, yielding between rows | Companion Studio: edits a `StudioDesign` with a live, boopable preview; renders the pack's two spritesheets from `CritterView`; saves through `StudioPackWriter` and picks it |
-| `CompanionContactSheet` | `BRBuddy/CompanionContactSheet.swift` | `AppDelegate` (debug only) | Main actor | Renders every built-in in every mood to a PNG |
+| `CompanionContactSheet` | `BRBuddy/CompanionContactSheet.swift` | `AppDelegate` (debug only) | Main actor | Renders every built-in in every mood to a PNG, and the app icon options |
+| `AppIconArt` | `BRBuddy/CompanionContactSheet.swift` | `CompanionContactSheet` (debug only) | Main actor | The app icon artwork, drawn with `CritterView`; option 2 ("BRB bubble") is `Config/AppIcon.icns` |
 | `TerminalMirror` | `BRBuddy/TerminalMirror.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; capture on a detached task | Picks a source per `TerminalMirrorMode`, refreshes every second while retained (BRB up or Settings open) |
 | `TerminalMirrorView` | `BRBuddy/TerminalMirrorView.swift` | `AwayView`, Settings | Main actor (view) | Draws styled lines, latest that fit; no input path |
 | `ProximityMonitor` | `BRBuddy/ProximityMonitor.swift` | `AppState`, app lifetime; Bluetooth manager created only when walk-away is on or the picker is open | `@MainActor`, `@Observable`; CoreBluetooth on the main queue | Lists nearby iPhones and Watches (filters accessories by Continuity type, briefly connects to read each model, hides Macs/iPads, marks the closest); connects to the chosen one, reads RSSI every 2 s, reconnects; tells `AppState` when it leaves |
@@ -218,11 +219,14 @@ serial queue and hop to the main actor in `AgentMonitor`; the process scan runs 
 | Signed builds keep the Apple-events entitlement and usage text, or jumping to a Terminal/iTerm2 tab silently fails | `Config/BRBuddy.entitlements`, `Config/Info.plist`, `Tools/build-app.sh` |
 
 ## Debug only
-Debug builds read three environment variables in `AppDelegate`: `BRBUDDY_START_AWAY=<seconds>` opens BRB that many
-seconds after launch,
-`BRBUDDY_SNAPSHOT_DIR` then saves PNGs of the main away window resting and unlocking (`AwayController`'s debug
-snapshot code), and `BRBUDDY_COMPANION_SHEET=<file.png>` renders every built-in companion in every mood
-(`CompanionContactSheet`). All are compiled out of release builds.
+Debug builds read these environment variables, all compiled out of release builds:
+- In `AppDelegate`: `BRBUDDY_START_AWAY=<seconds>` opens BRB that many seconds after launch, and
+  `BRBUDDY_SNAPSHOT_DIR` then saves PNGs of the main away window resting and unlocking (`AwayController`'s debug
+  snapshot code).
+- Rendered by `CompanionContactSheet`: `BRBUDDY_COMPANION_SHEET=<file.png>` (every built-in in every mood),
+  `BRBUDDY_MOUTH_SHEET`, `BRBUDDY_BOOP_SHEET`, `BRBUDDY_BATTERY_SHEET`, `BRBUDDY_STUDIO_SNAPSHOT=<dir>` and
+  `BRBUDDY_ICON_OPTIONS=<dir>` (the app icon candidates, `AppIconArt`).
+- `BRBUDDY_FAKE_BATTERY` (`BatteryMonitor`) and `BRBUDDY_SOCKET` (`AgentSocket`, used by the tests).
 
 ## Journeys (flow pages)
 | Page | Covers |
@@ -254,7 +258,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/CompanionStudio.swift`: Companion Studio window and its spritesheet renderer.
 - `BRBuddy/CompanionView.swift`: shows the chosen companion; sprite pack player.
 - `BRBuddy/CritterView.swift`: the six built-in critters and their shapes.
-- `BRBuddy/CompanionContactSheet.swift`: debug-only render of every critter and mood.
+- `BRBuddy/CompanionContactSheet.swift`: debug-only render of every critter and mood, and the app icon artwork.
 - `BRBuddy/TerminalMirror.swift`: picks and refreshes the terminal mirror's source.
 - `BRBuddy/TerminalMirrorView.swift`: draws the read-only terminal panel.
 - `BRBuddy/AccessibilityTerminalReader.swift`: reads terminal window text via Accessibility.

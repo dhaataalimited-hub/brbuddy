@@ -88,10 +88,23 @@ git tag v0.1.0 && git push origin v0.1.0
 ```
 
 3. Watch the **Release** workflow in GitHub Actions. It tests, builds a universal app, signs it (hardened runtime),
-   notarizes and staples the DMG, signs the appcast, and publishes the release.
+   notarizes and staples the app and then the DMG, signs the appcast, and publishes the release. The job runs in the
+   `release` environment, so it **waits for your approval** first: open the run and click **Review deployments →
+   Approve**. The signing secrets live in that environment, which only `v*` tags can use.
 4. Homebrew: download the `brbuddy-cask` artifact from the workflow run and commit it as `Casks/brbuddy.rb` in the
    `dhaataalimited-hub/homebrew-tap` repository. Users then install with `brew install dhaataalimited-hub/tap/brbuddy`.
    (homebrew/cask itself accepts the app once the repo is 30+ days old with 75+ stars, or 225+ if we submit it.)
+
+## App icon
+`Config/AppIcon.icns` is drawn by the app itself (`AppIconArt`, option "2-brb-bubble"). To change it, edit
+`AppIconArt`, then in a debug build:
+
+```bash
+BRBUDDY_ICON_OPTIONS=/tmp/icons .build/debug/BRBuddy
+```
+
+Quit it, keep the chosen 1024 px PNG as `Config/AppIcon-1024.png`, and rebuild the `.icns` from it (sizes 16 to 1024
+with `sips`, then `iconutil -c icns`).
 
 ## Releasing from a Mac instead of CI
 

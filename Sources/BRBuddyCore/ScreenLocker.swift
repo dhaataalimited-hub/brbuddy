@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// Locks the Mac with the real macOS lock screen.
@@ -18,6 +19,23 @@ public enum ScreenLocker {
 
     /// Whether the real lock call is available on this macOS. Checked by tests without locking anything.
     public static var canLockImmediately: Bool { lockFunction() != nil }
+
+    /// Whether the macOS lock screen is showing for this login session.
+    public static var isScreenLocked: Bool {
+        guard let session = CGSessionCopyCurrentDictionary() as? [String: Any] else { return false }
+        return (session["CGSSessionScreenIsLocked"] as? Bool) ?? ((session["CGSSessionScreenIsLocked"] as? Int) == 1)
+    }
+
+    /// Waits up to `timeout` for the lock screen to appear. BRB only comes down once this is true, so a lock call that
+    /// fails (or disappears in a future macOS) never uncovers the desktop.
+    public static func waitUntilLocked(timeout: Duration = .seconds(5)) async -> Bool {
+        let clock = ContinuousClock(), deadline = clock.now + timeout
+        while clock.now < deadline {
+            if isScreenLocked { return true }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        return isScreenLocked
+    }
 
     /// Shows the macOS lock screen now.
     public static func lockNow() {

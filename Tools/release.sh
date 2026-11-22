@@ -22,6 +22,7 @@ trap 'echo "error: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" failed" >&2' ERR
 
 version="${1:?usage: Tools/release.sh <version, e.g. 0.2.0>}"
 version="${version#v}"
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "error: version must look like 1.2.3, not '$version'" >&2; exit 1; }
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
@@ -37,24 +38,38 @@ mkdir -p "$out"
 VERSION="$version" UNIVERSAL=1 SIGN_IDENTITY="$SIGN_IDENTITY" SPARKLE_PUBLIC_KEY="$SPARKLE_PUBLIC_KEY" \
     Tools/build-app.sh release
 
-# 2. Disk image with the app and an Applications shortcut.
-dmg="$out/BRBuddy-$version.dmg"
-staging="$(mktemp -d)"
-trap 'rm -rf "$staging"' EXIT
-ditto build/BRBuddy.app "$staging/BRBuddy.app"
-ln -s /Applications "$staging/Applications"
-hdiutil create -volname "BRBuddy" -srcfolder "$staging" -ov -format UDZO "$dmg" >/dev/null
-codesign --force --timestamp --sign "$SIGN_IDENTITY" "$dmg"
-
-# 3. Notarize and staple (Apple scans the app inside too).
-if [ "${SKIP_NOTARIZE:-0}" != "1" ]; then
+# Sends a file to Apple's notary service and waits for the verdict.
+notarize() {
     if [ -n "${NOTARY_PROFILE:-}" ]; then
-        xcrun notarytool submit "$dmg" --keychain-profile "$NOTARY_PROFILE" --wait
+        xcrun notarytool submit "$1" --keychain-profile "$NOTARY_PROFILE" --wait
     else
         : "${NOTARY_KEY_PATH:?set NOTARY_PROFILE, or NOTARY_KEY_PATH + NOTARY_KEY_ID + NOTARY_ISSUER_ID}"
-        xcrun notarytool submit "$dmg" --key "$NOTARY_KEY_PATH" --key-id "$NOTARY_KEY_ID" \
+        xcrun notarytool submit "$1" --key "$NOTARY_KEY_PATH" --key-id "$NOTARY_KEY_ID" \
             --issuer "$NOTARY_ISSUER_ID" --wait
     fi
+}
+
+staging="$(mktemp -d)"
+trap 'rm -rf "$staging"' EXIT
+
+# 2. Notarize the app itself and staple its ticket, so a copy dragged out of the disk image opens even offline.
+if [ "${SKIP_NOTARIZE:-0}" != "1" ]; then
+    ditto -c -k --keepParent build/BRBuddy.app "$staging/BRBuddy.zip"
+    notarize "$staging/BRBuddy.zip"
+    rm "$staging/BRBuddy.zip"
+    xcrun stapler staple build/BRBuddy.app
+    xcrun stapler validate build/BRBuddy.app
+fi
+
+# 3. Disk image with the stapled app and an Applications shortcut, then notarize and staple the image too.
+dmg="$out/BRBuddy-$version.dmg"
+mkdir "$staging/dmg"
+ditto build/BRBuddy.app "$staging/dmg/BRBuddy.app"
+ln -s /Applications "$staging/dmg/Applications"
+hdiutil create -volname "BRBuddy" -srcfolder "$staging/dmg" -ov -format UDZO "$dmg" >/dev/null
+codesign --force --timestamp --sign "$SIGN_IDENTITY" "$dmg"
+if [ "${SKIP_NOTARIZE:-0}" != "1" ]; then
+    notarize "$dmg"
     xcrun stapler staple "$dmg"
     spctl --assess --type open --context context:primary-signature --verbose "$dmg"
 fi

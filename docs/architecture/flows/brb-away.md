@@ -53,8 +53,11 @@ companion shrinks and `TerminalMirrorView` sits below the text (see `flows/termi
 - Unlock prompt goes back to the resting companion after 30 seconds without input.
 - Touch ID failures that return "authentication failed" and wrong passwords both count as failed tries. Cancelled
   Touch ID doesn't count.
-- Escalation: shows the reason for 2 seconds, locks for real, waits 1.5 seconds, then removes the away screen so the
-  user lands on their desktop after unlocking macOS. Keep-awake drops back to its normal mode.
+- Escalation: shows the reason for 2 seconds, locks for real, then waits up to 5 seconds for `ScreenLocker` to report
+  the macOS lock screen is up. Only then does it remove the away screen, so the user lands on their desktop after
+  unlocking macOS; keep-awake drops back to its normal mode. If the lock never appears, BRB stays up (fail closed),
+  says "Couldn't lock the Mac, so BRB is staying up", still accepts Touch ID or the password, and tries escalating
+  again a minute later.
 - Can't be blocked: holding the power button, fast user switching. Stated in Settings.
 
 ## Gotchas

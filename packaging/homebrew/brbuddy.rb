@@ -6,7 +6,7 @@ cask "brbuddy" do
 
   url "https://github.com/dhaataalimited-hub/brbuddy/releases/download/v#{version}/BRBuddy-#{version}.dmg"
   name "BRBuddy"
-  desc "Keeps your Mac awake and guards the screen while your AI agent works"
+  desc "Keeps your Mac awake and covers the screen while your AI agent works"
   homepage "https://github.com/dhaataalimited-hub/brbuddy"
 
   auto_updates true

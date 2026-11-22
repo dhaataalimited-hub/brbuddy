@@ -38,13 +38,18 @@ sequenceDiagram
 - Payload keys differ per agent; `AgentEvent` tries `session_id`, `sessionId`, `conversation_id`,
   `conversationId` and `cwd`, `workspace_roots`, `workspaceRoot`, `workspacePaths`. No ID → one session per agent.
 - Timeouts (`AgentTracker`): working 30 min without events, waiting 4 h, finished/started 15 min. Pruned every 15 s.
+- The listener trusts nothing a client sends: each event is stamped with the time it arrived (a future date can't keep
+  a session "working" forever), every string is capped (`AgentEvent`), and reading one client stops after 1 s or
+  64 KB. The socket path override `BRBUDDY_SOCKET` only exists in debug builds (tests).
 - App not running: the helper's connect fails and it exits 0 at once. Agent never waits more than ~2 s (1 s stdin
   read limit, 1 s socket timeout).
 - Hook events registered per agent leave out blocking gates where an agent treats a failing hook as "deny" (Grok's
   PreToolUse). Our helper always exits 0, so it can't deny anything anyway.
 - Setup refuses a config file that isn't valid JSON and says so in the row. First change backs the file up as
-  `<file>.brbuddy-backup`. Files are rewritten with sorted keys and pretty printing.
-- Codex also gets `[features] hooks = true` in `~/.codex/config.toml` (only that line is touched).
+  `<file>.brbuddy-backup`. Files are rewritten with sorted keys and pretty printing. A config that's a symlink (a
+  dotfiles repo) is written through the link, which stays; files keep their permissions, and new ones are 0600.
+- Codex also gets `[features] hooks = true` in `~/.codex/config.toml` (only that line is touched; a `hooks` key in any
+  other table is left alone).
 - "Set up" is disabled when the agent's settings folder doesn't exist and it isn't running.
 - The helper is copied from the app bundle (`Contents/Helpers`) to Application Support on launch whenever it
   differs, so hooks keep working if the app moves.

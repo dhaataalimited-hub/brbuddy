@@ -2,29 +2,31 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key>
-    <string>BRBuddy</string>
-    <key>CFBundleDisplayName</key>
-    <string>BRBuddy</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.dhaataalimited.brbuddy</string>
-    <key>CFBundleExecutable</key>
-    <string>BRBuddy</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>BRBuddy uses Bluetooth to notice when your iPhone or Apple Watch moves away, so it can cover or lock your screen.</string>
-    <key>NSAppleEventsUsageDescription</key>
-    <string>BRBuddy switches Terminal or iTerm2 to the tab your agent is running in when you click it in the menu.</string>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSHumanReadableCopyright</key>
-    <string>MIT License. BRBuddy contributors.</string>
+	<key>CFBundleDisplayName</key>
+	<string>BRBuddy</string>
+	<key>CFBundleExecutable</key>
+	<string>BRBuddy</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.dhaataalimited.brbuddy</string>
+	<key>CFBundleName</key>
+	<string>BRBuddy</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>BRBuddy switches Terminal or iTerm2 to the tab your agent is running in when you click it in the menu.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>BRBuddy uses Bluetooth to notice when your iPhone or Apple Watch moves away, so it can cover or lock your screen.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>MIT License. BRBuddy contributors.</string>
 </dict>
 </plist>

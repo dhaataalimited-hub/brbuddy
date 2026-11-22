@@ -21,6 +21,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let path = ProcessInfo.processInfo.environment["BRBUDDY_BOOP_SHEET"] {
             CompanionContactSheet.renderBoops(to: URL(fileURLWithPath: path))
         }
+        if let path = ProcessInfo.processInfo.environment["BRBUDDY_ICON_OPTIONS"] {
+            CompanionContactSheet.renderIconOptions(to: URL(fileURLWithPath: path))
+        }
         if let path = ProcessInfo.processInfo.environment["BRBUDDY_BATTERY_SHEET"] {
             CompanionContactSheet.renderBattery(to: URL(fileURLWithPath: path))
         }

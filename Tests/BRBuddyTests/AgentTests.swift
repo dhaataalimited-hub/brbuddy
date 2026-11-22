@@ -109,6 +109,39 @@ struct AgentHookInstallerTests {
                 "model = \"o5\"\n[features]\nhooks = true\nfoo = 1")
         #expect(AgentHookInstaller.enableCodexHooks(in: "[features]\nhooks = false") == "[features]\nhooks = true")
         #expect(AgentHookInstaller.enableCodexHooks(in: "[features]\nhooks = true") == nil)
+        // A `hooks` key in another table is never touched.
+        #expect(AgentHookInstaller.enableCodexHooks(in: "[mcp_servers.x]\nhooks = false\n[features]\nfoo = 1") ==
+                "[mcp_servers.x]\nhooks = false\n[features]\nhooks = true\nfoo = 1")
+        #expect(AgentHookInstaller.enableCodexHooks(in: "[profiles.a]\nhooks = true") ==
+                "[profiles.a]\nhooks = true\n\n[features]\nhooks = true\n")
+        #expect(AgentHookInstaller.enableCodexHooks(in: "[features] # flags\nhooks = false") ==
+                "[features] # flags\nhooks = true")
+    }
+
+    @Test func writesThroughSymlinksAndKeepsPermissions() throws {
+        let fm = FileManager.default
+        let home = fm.temporaryDirectory.appending(path: "brb-link-\(UUID().uuidString)")
+        defer { try? fm.removeItem(at: home) }
+        let dotfiles = home.appending(path: "dotfiles/claude-settings.json")
+        try fm.createDirectory(at: dotfiles.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data(#"{"env":{"KEY":"x"}}"#.utf8).write(to: dotfiles)
+        try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: dotfiles.path)
+        let settings = home.appending(path: ".claude/settings.json")
+        try fm.createDirectory(at: settings.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try fm.createSymbolicLink(at: settings, withDestinationURL: dotfiles)
+
+        let disk = AgentHookInstaller(home: home, helperPath: "/x/brbuddy-hook")
+        try disk.install(.claude)
+        #expect(try fm.destinationOfSymbolicLink(atPath: settings.path) == dotfiles.path)  // still a link
+        #expect(disk.isInstalled(.claude))
+        let mode = try fm.attributesOfItem(atPath: dotfiles.path)[.posixPermissions] as? NSNumber
+        #expect(mode?.intValue == 0o600)
+        #expect(fm.fileExists(atPath: dotfiles.path + ".brbuddy-backup"))
+
+        // A brand-new config is private to the user.
+        try disk.install(.grok)
+        let fresh = try fm.attributesOfItem(atPath: disk.configURL(for: .grok).path)[.posixPermissions] as? NSNumber
+        #expect(fresh?.intValue == 0o600)
     }
 
     @Test func installsOnDiskWithBackupAndRefusesBrokenFiles() throws {
@@ -154,7 +187,23 @@ struct AgentSocketTests {
         let sent = AgentEvent(agent: .claude, event: "Stop", session: "s", cwd: nil, time: Date(timeIntervalSince1970: 1))
         #expect(AgentSocket.send(sent, path: path))
         var iterator = received.stream.makeAsyncIterator()
-        #expect(await iterator.next() == sent)
+        let got = await iterator.next()
+        // Same event, but stamped with when it arrived, not the time the sender claimed.
+        #expect(got?.session == sent.session && got?.event == sent.event && got?.agent == sent.agent)
+        #expect(abs((got?.time ?? .distantPast).timeIntervalSinceNow) < 5)
+    }
+
+    @Test func receivedEventsAreCappedAndRestamped() {
+        let long = String(repeating: "x", count: 5000)
+        let place = TerminalLocation(appPaths: Array(repeating: "/A.app", count: 20), tty: long)
+        let sent = AgentEvent(agent: .claude, event: long, session: long, cwd: long,
+                              time: Date(timeIntervalSince1970: 4_000_000_000), detail: long + "\n" + long, terminal: place)
+        let now = Date(timeIntervalSince1970: 1_000)
+        let got = sent.received(at: now)
+        #expect(got.time == now)
+        #expect(got.event.count == 64 && got.session.count == 128 && got.cwd?.count == 1024)
+        #expect(got.detail?.count == AgentEvent.maxDetailLength && got.detail?.contains("\n") == false)
+        #expect(got.terminal?.appPaths.count == 8 && got.terminal?.tty?.count == 64)
     }
 
     @Test func sendingWithNoAppRunningFailsQuietly() {

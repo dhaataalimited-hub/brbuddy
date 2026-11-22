@@ -26,6 +26,8 @@ final class AwayController {
     /// True for a few seconds after a failed unlock, so the companion can react.
     private(set) var recentFailure = false
     private var lastFailureAt: Date?
+    /// After a lock attempt that didn't take, escalation waits until this time before trying again.
+    private var escalationRetryAfter: Date?
     /// The Touch ID session shown inside the away window. Replaced each time unlocking starts.
     private(set) var authContext = LAContext()
 
@@ -72,6 +74,7 @@ final class AwayController {
         awaySince = Date()
         lastInput = Date()
         failedAttempts = 0
+        escalationRetryAfter = nil
         lastFailureMessage = nil
         recentFailure = false
 
@@ -217,19 +220,34 @@ final class AwayController {
         }
     }
 
+    /// The real lock screen didn't appear: keep BRB covering the Mac and let the owner unlock as usual.
+    private func lockDidNotTake() {
+        guard isAway else { return }
+        escalationRetryAfter = Date().addingTimeInterval(60)
+        authContext = LAContext()
+        lastFailureMessage = "Couldn't lock the Mac, so BRB is staying up"
+        phase = .resting
+    }
+
     private func checkEscalation() {
         if case .lockingForReal = phase { return }
+        if let retry = escalationRetryAfter, Date() < retry { return }
         let escalation = AwayPolicy.escalation(failedAttempts: failedAttempts,
                                                awayFor: Date().timeIntervalSince(awaySince), settings: settings)
         guard escalation != .none else { return }
         phase = .lockingForReal(escalation)
         authContext.invalidate()
-        // Show the message briefly, lock for real, then take the away screen down behind the lock screen.
+        // Show the message briefly, lock for real, and take the away screen down only once the lock screen is really
+        // up. If it never appears, BRB stays up (fail closed): unlocking still works, and escalation retries later.
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(2))
             ScreenLocker.lockNow()
-            try? await Task.sleep(for: .seconds(1.5))
-            self.stop(escalated: true)
+            if await ScreenLocker.waitUntilLocked() {
+                try? await Task.sleep(for: .seconds(0.5))
+                self.stop(escalated: true)
+            } else {
+                self.lockDidNotTake()
+            }
         }
     }
 }

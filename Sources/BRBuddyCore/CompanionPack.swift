@@ -94,9 +94,17 @@ public struct CompanionPack: Sendable, Identifiable {
     }
 
     /// Reads a Studio design file from inside the folder; `nil` if it's missing, outside the folder or not valid.
+    /// Whether a file named by a pack really lives inside the pack's folder, after following symlinks. Compared with a
+    /// trailing slash, so "../pebble-evil/x.png" can't pass as being inside "pebble".
+    static func isInside(_ url: URL, _ folder: URL) -> Bool {
+        let file = url.resolvingSymlinksInPath().standardizedFileURL.path
+        let root = folder.resolvingSymlinksInPath().standardizedFileURL.path
+        return file.hasPrefix(root.hasSuffix("/") ? root : root + "/")
+    }
+
     static func loadDesign(_ name: String, in folder: URL) -> StudioDesign? {
         let url = folder.appending(path: name).standardizedFileURL
-        guard url.path.hasPrefix(folder.standardizedFileURL.path),
+        guard isInside(url, folder),
               let data = try? Data(contentsOf: url), data.count < 64 * 1024 else { return nil }
         return try? JSONDecoder().decode(StudioDesign.self, from: data).tidied
     }
@@ -104,7 +112,7 @@ public struct CompanionPack: Sendable, Identifiable {
     /// Checks one spritesheet: inside the folder, not too big, a size we know. Returns its URL and sprite version.
     static func checkSheet(_ name: String, in folder: URL) throws -> (url: URL, version: Int) {
         let sheetURL = folder.appending(path: name).standardizedFileURL
-        guard sheetURL.path.hasPrefix(folder.standardizedFileURL.path),  // no "../" escapes
+        guard isInside(sheetURL, folder),  // no "../" or symlink escapes
               FileManager.default.fileExists(atPath: sheetURL.path) else { throw LoadError.missingSpritesheet(name) }
         let bytes = (try? FileManager.default.attributesOfItem(atPath: sheetURL.path)[.size] as? Int) ?? 0
         guard bytes <= maxBytes else { throw LoadError.tooLarge }

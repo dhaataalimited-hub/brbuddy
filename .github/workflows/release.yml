@@ -13,10 +13,19 @@ jobs:
   release:
     runs-on: macos-26
     timeout-minutes: 60
+    # The signing secrets live in this environment: a run waits for the maintainer's approval and only v* tags can use it.
+    environment: release
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
         with:
           fetch-depth: 0  # build number = commit count
+
+      - name: Check the tag is a version
+        run: |
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Tag $GITHUB_REF_NAME isn't vX.Y.Z"; exit 1; }
+
+      - name: Test (before any keys are on disk)
+        run: swift test
 
       - name: Import the Developer ID certificate into a temporary keychain
         env:
@@ -48,9 +57,6 @@ jobs:
           echo "NOTARY_KEY_PATH=$RUNNER_TEMP/notary.p8" >> "$GITHUB_ENV"
           echo "SPARKLE_PRIVATE_KEY_PATH=$RUNNER_TEMP/sparkle.key" >> "$GITHUB_ENV"
 
-      - name: Test
-        run: swift test
-
       - name: Build, sign, notarize and package
         env:
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
@@ -66,7 +72,7 @@ jobs:
             --title "BRBuddy ${GITHUB_REF_NAME#v}" --generate-notes
 
       - name: Keep the Homebrew cask
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: brbuddy-cask
           path: build/release/brbuddy.rb

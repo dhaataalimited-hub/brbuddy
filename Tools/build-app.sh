@@ -55,6 +55,8 @@ fi
 for bundle in "$binDir"/*.bundle; do
     if [ -e "$bundle" ]; then cp -R "$bundle" "$contents/Resources/"; fi
 done
+# App icon (Config/AppIcon.icns, built from Config/AppIcon-1024.png; see docs/releasing.md).
+cp Config/AppIcon.icns "$contents/Resources/AppIcon.icns"
 # Licences shipped with the app.
 cp LICENSE THIRD_PARTY_NOTICES.md "$contents/Resources/"
 

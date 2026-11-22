@@ -150,6 +150,22 @@ struct CompanionPackTests {
         #expect(throws: CompanionPack.LoadError.missingManifest) { try CompanionPack.load(from: empty) }
     }
 
+    @Test func packFilesMustReallyBeInsideThePack() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory.appending(path: "brb-inside-\(UUID().uuidString)")
+        defer { try? fm.removeItem(at: root) }
+        let pack = root.appending(path: "pebble"), sibling = root.appending(path: "pebble-evil")
+        try fm.createDirectory(at: pack, withIntermediateDirectories: true)
+        try fm.createDirectory(at: sibling, withIntermediateDirectories: true)
+        try Data("x".utf8).write(to: sibling.appending(path: "x.png"))
+        try Data("x".utf8).write(to: pack.appending(path: "ok.png"))
+        try fm.createSymbolicLink(at: pack.appending(path: "link.png"), withDestinationURL: sibling.appending(path: "x.png"))
+
+        #expect(CompanionPack.isInside(pack.appending(path: "ok.png").standardizedFileURL, pack))
+        #expect(!CompanionPack.isInside(pack.appending(path: "../pebble-evil/x.png").standardizedFileURL, pack))
+        #expect(!CompanionPack.isInside(pack.appending(path: "link.png"), pack))  // symlink out of the pack
+    }
+
     @Test func importsIntoTheLibraryAndScansIt() throws {
         let source = try makePack()
         let root = FileManager.default.temporaryDirectory.appending(path: "brb-lib-\(UUID().uuidString)")

@@ -224,7 +224,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
 <section id="nav" aria-labelledby="nav-h">
   <h2 id="nav-h">Menus and screens</h2>
   <p><b>Menu:</b> Keep Mac awake · "Kept awake while your agent works" · BRB now (⌃⌥⌘B) · "BRB starts after N min away" · "Walk-away: …" · agents list (up to six sessions; clicking one jumps to its Terminal/iTerm2 tab or app window) or "Set up agents…" · Settings… · Quit BRBuddy.</p>
-  <p><b>Away screen phases</b> (<code>AwayController.Phase</code>): resting → any key, click, scroll or mouse move → unlocking → back to resting after 30 s without input. Any phase → locking for real when <code>AwayPolicy</code> says so (3 failures or 60 min by default), which shows the reason for 2 s, calls the real lock, then takes the away screen down behind it.</p>
+  <p><b>Away screen phases</b> (<code>AwayController.Phase</code>): resting → any key, click, scroll or mouse move → unlocking → back to resting after 30 s without input. Any phase → locking for real when <code>AwayPolicy</code> says so (3 failures or 60 min by default), which shows the reason for 2 s, calls the real lock, and takes the away screen down only once <code>ScreenLocker</code> confirms the lock screen is up (otherwise BRB stays up and retries a minute later).</p>
 </section>
 
 <section id="journeys" aria-labelledby="journeys-h">
@@ -300,7 +300,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   <h3>Threads</h3>
   <p>Swift 6 language mode; app types are main-actor. Off the main thread: password checks, pack frame cutting, process scans, tmux and Accessibility capture, socket reads (own serial queue). Touch ID results are ignored if their <code>LAContext</code> has been replaced.</p>
   <h3>Debug only</h3>
-  <p><code>BRBUDDY_START_AWAY=&lt;seconds&gt;</code>, <code>BRBUDDY_SNAPSHOT_DIR</code> and <code>BRBUDDY_COMPANION_SHEET</code>, <code>BRBUDDY_BATTERY_SHEET</code>, <code>BRBUDDY_BOOP_SHEET</code>, <code>BRBUDDY_STUDIO_SNAPSHOT</code>, <code>BRBUDDY_MOUTH_SHEET</code> and <code>BRBUDDY_FAKE_BATTERY</code> in debug builds; compiled out of release.</p>
+  <p><code>BRBUDDY_START_AWAY=&lt;seconds&gt;</code>, <code>BRBUDDY_SNAPSHOT_DIR</code> and <code>BRBUDDY_COMPANION_SHEET</code>, <code>BRBUDDY_BATTERY_SHEET</code>, <code>BRBUDDY_BOOP_SHEET</code>, <code>BRBUDDY_STUDIO_SNAPSHOT</code>, <code>BRBUDDY_MOUTH_SHEET</code>, <code>BRBUDDY_ICON_OPTIONS</code> and <code>BRBUDDY_FAKE_BATTERY</code> in debug builds; compiled out of release.</p>
 </section>
 
 <section id="rules" aria-labelledby="rules-h">

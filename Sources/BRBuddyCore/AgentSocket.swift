@@ -3,9 +3,12 @@ import Foundation
 
 /// The local Unix socket between `brbuddy-hook` (run by agents) and the app. Only this user can connect (0600).
 public enum AgentSocket {
-    /// `~/Library/Application Support/BRBuddy/agents.sock`, or `BRBUDDY_SOCKET` if set (tests).
+    /// `~/Library/Application Support/BRBuddy/agents.sock`. Debug builds (tests) can override it with
+    /// `BRBUDDY_SOCKET`; release builds ignore it, so a project's environment can't redirect agent events elsewhere.
     public static var defaultPath: String {
+        #if DEBUG
         if let override = ProcessInfo.processInfo.environment["BRBUDDY_SOCKET"], !override.isEmpty { return override }
+        #endif
         return supportFolder.appending(path: "agents.sock").path
     }
 
@@ -86,7 +89,7 @@ public final class AgentEventListener: @unchecked Sendable {
             while true {
                 let client = accept(fd, nil, nil)
                 guard client >= 0 else { break }
-                Self.readEvents(from: client).forEach(onEvent)
+                Self.readEvents(from: client).forEach { onEvent($0.received(at: Date())) }
                 close(client)
             }
         }
@@ -109,7 +112,9 @@ public final class AgentEventListener: @unchecked Sendable {
         AgentSocket.setTimeout(client, SO_RCVTIMEO, seconds: 1)
         var data = Data()
         var buffer = [UInt8](repeating: 0, count: 4096)
-        while data.count < 64 * 1024 {
+        // One second in total, however slowly a client sends, so one client can't hold up the others.
+        let deadline = Date().addingTimeInterval(1)
+        while data.count < 64 * 1024, Date() < deadline {
             let count = read(client, &buffer, buffer.count)
             guard count > 0 else { break }
             data.append(buffer, count: count)
