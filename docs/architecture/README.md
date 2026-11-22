@@ -224,8 +224,9 @@ Debug builds read these environment variables, all compiled out of release build
   `BRBUDDY_SNAPSHOT_DIR` then saves PNGs of the main away window resting and unlocking (`AwayController`'s debug
   snapshot code).
 - Rendered by `CompanionContactSheet`: `BRBUDDY_COMPANION_SHEET=<file.png>` (every built-in in every mood),
-  `BRBUDDY_MOUTH_SHEET`, `BRBUDDY_BOOP_SHEET`, `BRBUDDY_BATTERY_SHEET`, `BRBUDDY_STUDIO_SNAPSHOT=<dir>` and
-  `BRBUDDY_ICON_OPTIONS=<dir>` (the app icon candidates, `AppIconArt`).
+  `BRBUDDY_MOUTH_SHEET`, `BRBUDDY_BOOP_SHEET`, `BRBUDDY_BATTERY_SHEET`, `BRBUDDY_STUDIO_SNAPSHOT=<dir>`,
+  `BRBUDDY_ICON_OPTIONS=<dir>` (the app icon candidates, `AppIconArt`) and `BRBUDDY_SITE_ART=<dir>` (the
+  website's companion images; see `site/README.md`).
 - `BRBUDDY_FAKE_BATTERY` (`BatteryMonitor`) and `BRBUDDY_SOCKET` (`AgentSocket`, used by the tests).
 
 ## Journeys (flow pages)

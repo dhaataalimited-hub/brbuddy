@@ -27,6 +27,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let path = ProcessInfo.processInfo.environment["BRBUDDY_BATTERY_SHEET"] {
             CompanionContactSheet.renderBattery(to: URL(fileURLWithPath: path))
         }
+        if let path = ProcessInfo.processInfo.environment["BRBUDDY_SITE_ART"] {
+            CompanionContactSheet.renderSiteArt(to: URL(fileURLWithPath: path))
+        }
         // BRBUDDY_START_AWAY=<seconds>: open BRB that many seconds after launch (1 = almost straight away).
         if let delay = ProcessInfo.processInfo.environment["BRBUDDY_START_AWAY"].flatMap(Double.init), delay > 0 {
             Task {

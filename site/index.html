@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRBuddy · BRB, my agent's got this</title>
+<meta name="description" content="A free, open-source Mac menu bar app for stepping away while your AI coding agent works. Keeps your Mac awake, covers the screen with a companion, and asks for Touch ID when you're back.">
+<meta name="theme-color" content="#120f1f">
+<link rel="icon" type="image/png" href="img/favicon-64.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<!-- Social previews. Change SITE_URL here once the domain is live (see site/README.md). -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="BRBuddy · BRB, my agent's got this">
+<meta property="og:description" content="Free Mac menu bar app: keeps your Mac awake while your AI agent works, covers the screen with a companion, unlocks with Touch ID.">
+<meta property="og:url" content="https://brbuddy.app/">
+<meta property="og:image" content="https://brbuddy.app/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root {
+  --night: #120f1f;
+  --night-2: #1b1529;
+  --night-3: #241b33;
+  --line: rgba(255, 255, 255, .09);
+  --card: rgba(255, 255, 255, .035);
+  --text: #f5f0fa;
+  --muted: rgba(245, 240, 250, .66);
+  --faint: rgba(245, 240, 250, .42);
+  --peach: #ffc78c;
+  --coral: #ed7385;
+  --amber: #ff9f43;
+  --mint: #7ee0a1;
+  --warm: linear-gradient(135deg, #ffc78c 0%, #ed7385 100%);
+  --rounded: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --radius: 22px;
+  --wrap: 1120px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--night); color: var(--text); font: 17px/1.6 var(--body);
+  -webkit-font-smoothing: antialiased; overflow-x: clip;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--peach); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--peach); outline-offset: 3px; border-radius: 6px; }
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+h1, h2, h3 { font-family: var(--rounded); line-height: 1.12; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: clamp(30px, 4.4vw, 46px); font-weight: 800; }
+h3 { font-size: 20px; font-weight: 700; }
+p { margin: 0; }
+.eyebrow { font: 700 13px/1 var(--rounded); letter-spacing: .14em; text-transform: uppercase; color: var(--peach); margin-bottom: 14px; }
+.lede { color: var(--muted); font-size: 19px; max-width: 640px; margin-top: 16px; }
+.center { text-align: center; }
+.center .lede { margin-left: auto; margin-right: auto; }
+section { padding: 110px 0; position: relative; }
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 16px; top: 16px; z-index: 99; background: var(--night-2); padding: 8px 14px; border-radius: 10px; }
+
+/* Nav */
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: saturate(160%) blur(18px); -webkit-backdrop-filter: saturate(160%) blur(18px);
+  background: rgba(18, 15, 31, .72); border-bottom: 1px solid transparent; transition: border-color .2s; }
+nav.scrolled { border-bottom-color: var(--line); }
+nav .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); font: 800 19px var(--rounded); }
+.brand:hover { text-decoration: none; }
+.brand img { width: 32px; height: 32px; }
+nav ul { display: flex; gap: 24px; list-style: none; margin: 0 0 0 auto; padding: 0; }
+nav ul a { color: var(--muted); font-size: 15px; font-weight: 500; }
+nav ul a:hover { color: var(--text); text-decoration: none; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border-radius: 999px; font: 700 16px var(--rounded);
+  padding: 14px 24px; border: 0; cursor: pointer; transition: transform .15s, box-shadow .15s, background .15s; white-space: nowrap; }
+.btn:hover { text-decoration: none; transform: translateY(-1px); }
+.btn-warm { background: var(--warm); color: #2a1520; box-shadow: 0 10px 30px -10px rgba(237, 115, 133, .7); }
+.btn-warm:hover { box-shadow: 0 14px 34px -10px rgba(237, 115, 133, .9); }
+.btn-ghost { background: rgba(255, 255, 255, .07); color: var(--text); border: 1px solid var(--line); }
+.btn-ghost:hover { background: rgba(255, 255, 255, .11); }
+.btn-sm { padding: 9px 16px; font-size: 14px; }
+.btn svg { width: 18px; height: 18px; }
+
+/* Hero */
+.hero { padding: 72px 0 40px; text-align: center; overflow: hidden; }
+.hero::before { content: ""; position: absolute; inset: -20% -10% auto; height: 760px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(237, 115, 133, .22), transparent 70%),
+              radial-gradient(closest-side at 70% 40%, rgba(255, 199, 140, .14), transparent 70%); filter: blur(10px); }
+.hero .wrap { position: relative; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--card); color: var(--muted); font-size: 14px; }
+.pill b { background: var(--warm); color: #2a1520; border-radius: 999px; padding: 2px 9px; font: 800 12px var(--rounded); }
+.hero h1 { font-size: clamp(44px, 8vw, 92px); font-weight: 900; margin-top: 24px; letter-spacing: -.025em; }
+.hero h1 .warm { background: var(--warm); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .lede { font-size: clamp(18px, 2.2vw, 21px); max-width: 700px; margin: 22px auto 0; }
+.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 34px; }
+.facts { display: flex; gap: 8px 22px; justify-content: center; flex-wrap: wrap; margin-top: 22px; color: var(--faint); font-size: 14px; }
+.facts span::before { content: "✓"; color: var(--mint); margin-right: 6px; font-weight: 700; }
+
+/* Mac mock */
+.stage { margin: 64px auto 0; max-width: 980px; }
+.mac { position: relative; border-radius: 22px; padding: 12px; background: linear-gradient(#2c2538, #1a1524);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 50px 120px -30px rgba(0, 0, 0, .8), 0 30px 80px -40px rgba(237, 115, 133, .35); }
+.screen { position: relative; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(#12101f, #21172a); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 4% 6%; container-type: inline-size; }
+.screen .badge { position: absolute; top: 5%; right: 4%; width: 21%; opacity: .95; }
+.critter { width: 30%; aspect-ratio: 260 / 240; position: relative; cursor: pointer; background: none; border: 0; padding: 0; }
+.critter img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transition: opacity .25s; }
+.critter.bob img.on { animation: bob 3.2s ease-in-out infinite; }
+.critter.squish { animation: squish .45s ease; }
+@keyframes bob { 50% { transform: translateY(-3%); } }
+@keyframes squish { 30% { transform: scale(1.12, .86); } 60% { transform: scale(.94, 1.06); } }
+.screen .title { font: 800 4.3cqw/1.1 var(--rounded); margin-top: 2.6cqw; }
+.screen .headline { font: 600 2.25cqw/1.3 var(--rounded); color: rgba(255, 255, 255, .8); margin-top: 1.6cqw; min-height: 1.3em; transition: color .2s; }
+.screen .headline.alert { color: var(--amber); }
+.screen .away { font: 500 1.85cqw var(--rounded); color: rgba(255, 255, 255, .55); margin-top: 1.4cqw; }
+.screen .foot { margin-top: 2.6cqw; min-height: 11cqw; font: 400 1.55cqw var(--rounded); color: rgba(255, 255, 255, .35); }
+.unlock { display: none; flex-direction: column; align-items: center; gap: 1.1cqw; color: rgba(255, 255, 255, .7); font-size: 1.55cqw; }
+.unlock .touch { width: 5.4cqw; height: 5.4cqw; border-radius: 50%; border: .25cqw solid rgba(255, 255, 255, .5); display: grid; place-items: center; }
+.unlock .touch svg { width: 60%; height: 60%; }
+.unlock .row { display: flex; gap: .8cqw; }
+.unlock .field { width: 20cqw; height: 2.6cqw; border-radius: .6cqw; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .15); }
+.unlock .go { padding: 0 1.4cqw; height: 2.6cqw; border-radius: .6cqw; background: rgba(255, 255, 255, .16); display: grid; place-items: center; font-size: 1.4cqw; color: rgba(255, 255, 255, .6); }
+.screen.unlocking .unlock { display: flex; }
+.screen.unlocking .press { display: none; }
+.tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 26px; }
+.tab { border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 999px; padding: 8px 16px;
+  font: 600 14px var(--rounded); cursor: pointer; transition: all .15s; }
+.tab:hover { color: var(--text); border-color: rgba(255, 255, 255, .2); }
+.tab[aria-pressed="true"] { background: var(--text); color: var(--night); border-color: var(--text); }
+.stage-note { color: var(--faint); font-size: 14px; margin-top: 14px; }
+
+/* Steps */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; counter-reset: step; }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 30px; position: relative; }
+.step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px;
+  background: var(--warm); color: #2a1520; font: 800 17px var(--rounded); margin-bottom: 20px; }
+.step p { color: var(--muted); margin-top: 8px; font-size: 16px; }
+kbd { font: 600 13px var(--mono); background: rgba(255, 255, 255, .08); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 1px 6px; color: var(--text); }
+
+/* Features */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 56px; }
+.feat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; transition: border-color .2s, transform .2s; }
+.feat:hover { border-color: rgba(255, 199, 140, .3); transform: translateY(-2px); }
+.feat .ico { width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; margin-bottom: 18px;
+  background: rgba(255, 199, 140, .1); color: var(--peach); }
+.feat .ico svg { width: 23px; height: 23px; }
+.feat p { color: var(--muted); font-size: 15.5px; margin-top: 8px; }
+.feat.wide { grid-column: span 2; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; }
+.feat.wide img { width: 220px; }
+
+/* Agents */
+.agents { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 34px; }
+.agent { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px 10px 10px; border-radius: 999px; background: var(--card);
+  border: 1px solid var(--line); font: 700 16px var(--rounded); }
+.agent img { width: 34px; height: 34px; object-fit: contain; }
+.fine { color: var(--faint); font-size: 13.5px; margin-top: 22px; }
+
+/* Companions */
+.companions { background: linear-gradient(180deg, transparent, rgba(237, 115, 133, .06) 30%, rgba(255, 199, 140, .05) 70%, transparent); }
+.lineup { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-top: 56px; }
+.buddy { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 14px 20px; text-align: center; cursor: pointer;
+  color: inherit; font: inherit; transition: transform .2s, border-color .2s; }
+.buddy:hover { transform: translateY(-4px); border-color: rgba(255, 199, 140, .35); }
+.buddy .pic { position: relative; aspect-ratio: 260 / 240; }
+.buddy .pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transition: opacity .2s; }
+.buddy .pic img + img { opacity: 0; }
+.buddy:hover .pic img + img, .buddy:focus-visible .pic img + img { opacity: 1; }
+.buddy:hover .pic img:first-child, .buddy:focus-visible .pic img:first-child { opacity: 0; }
+.buddy h3 { font-size: 18px; margin-top: 10px; }
+.buddy p { color: var(--faint); font-size: 13px; line-height: 1.4; margin-top: 4px; }
+.buddy .for { display: inline-block; margin-top: 10px; font: 700 11.5px var(--rounded); letter-spacing: .04em; color: var(--peach);
+  background: rgba(255, 199, 140, .09); border-radius: 999px; padding: 3px 10px; }
+.boops { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; margin-top: 90px; }
+.boop-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.boop-row figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 10px 6px 12px; text-align: center; }
+.boop-row figcaption { color: var(--faint); font: 600 13px var(--rounded); margin-top: 2px; }
+.make { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 56px; }
+.make .feat h3 { font-size: 18px; }
+.make code { font: 13px var(--mono); color: var(--peach); }
+
+/* Privacy */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 56px; }
+.panel { border-radius: var(--radius); padding: 34px; border: 1px solid var(--line); background: var(--card); }
+.panel ul { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.panel li { padding-left: 30px; position: relative; color: var(--muted); font-size: 16px; }
+.panel li::before { content: ""; position: absolute; left: 0; top: 4px; width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(126, 224, 161, .15) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%237ee0a1' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 10.5l3.2 3L15 7'/%3E%3C/svg%3E") center/12px no-repeat; }
+.panel.honest { background: linear-gradient(160deg, rgba(255, 159, 67, .09), rgba(255, 159, 67, .02)); border-color: rgba(255, 159, 67, .22); }
+.panel.honest li::before { background: rgba(255, 159, 67, .15) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23ff9f43' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M10 5.5v5.5M10 14.6v.1'/%3E%3C/svg%3E") center/12px no-repeat; }
+.panel b { color: var(--text); font-weight: 600; }
+
+/* Install */
+.install { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 56px; }
+.install .feat { display: flex; flex-direction: column; }
+.grid > *, .install > *, .make > *, .steps > *, .split > *, .lineup > *, .cmds, .cmd { min-width: 0; }
+.install .feat .btn { margin-top: auto; align-self: flex-start; }
+.install .feat p { margin-bottom: 22px; }
+.cmd { display: flex; align-items: center; gap: 8px; background: #0b0914; border: 1px solid var(--line); border-radius: 12px; padding: 10px 10px 10px 14px;
+  font: 13.5px/1.4 var(--mono); color: var(--text); margin-top: auto; }
+.cmd code { flex: 1; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+.cmd code::-webkit-scrollbar { display: none; }
+.cmd code::before { content: "$ "; color: var(--faint); }
+.copy { border: 0; background: rgba(255, 255, 255, .08); color: var(--muted); border-radius: 8px; padding: 6px 10px; font: 600 12px var(--rounded); cursor: pointer; flex: none; }
+.copy:hover { color: var(--text); background: rgba(255, 255, 255, .14); }
+.copy.done { color: var(--mint); }
+.cmds { display: grid; gap: 8px; margin-top: auto; }
+
+/* FAQ */
+.faq { max-width: 800px; margin: 56px auto 0; }
+details { border-bottom: 1px solid var(--line); }
+summary { list-style: none; cursor: pointer; padding: 22px 40px 22px 0; font: 700 18px var(--rounded); position: relative; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font: 400 26px var(--rounded); color: var(--faint); transition: transform .2s; }
+details[open] summary::after { transform: translateY(-50%) rotate(45deg); }
+details > div { color: var(--muted); padding: 0 0 24px; font-size: 16px; }
+details > div p + p { margin-top: 10px; }
+
+/* Final CTA */
+.final { text-align: center; padding: 120px 0; }
+.final img.icon { width: 132px; margin: 0 auto 28px; filter: drop-shadow(0 20px 40px rgba(237, 115, 133, .35)); }
+
+/* Footer */
+footer { border-top: 1px solid var(--line); padding: 44px 0 56px; color: var(--faint); font-size: 14px; }
+footer .wrap { display: grid; grid-template-columns: 1fr auto; gap: 24px; }
+footer ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 22px; justify-content: flex-end; }
+footer a { color: var(--muted); }
+footer .legal { grid-column: 1 / -1; font-size: 12.5px; line-height: 1.6; }
+
+/* Reveal on scroll */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .critter.bob img.on, .critter.squish { animation: none; }
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .grid, .install, .make { grid-template-columns: 1fr 1fr; }
+  .feat.wide { grid-column: span 2; }
+  .lineup { grid-template-columns: repeat(3, 1fr); }
+  .boops { grid-template-columns: 1fr; gap: 28px; }
+}
+@media (max-width: 720px) {
+  section { padding: 80px 0; }
+  .wrap { padding: 0 16px; }
+  nav ul { display: none; }
+  nav .btn { margin-left: auto; }
+  .hero { padding-top: 48px; }
+  .steps, .grid, .install, .make, .split { grid-template-columns: 1fr; }
+  .feat.wide { grid-column: auto; grid-template-columns: 1fr; }
+  .feat.wide img { width: 180px; }
+  .lineup { grid-template-columns: repeat(2, 1fr); }
+  .mac { padding: 6px; border-radius: 14px; }
+  .screen { border-radius: 9px; }
+  .stage { margin-top: 44px; }
+  footer .wrap { grid-template-columns: 1fr; }
+  footer ul { justify-content: flex-start; }
+  .cta .btn { width: 100%; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="BRBuddy home"><img src="img/icon-256.png" alt="" width="32" height="32">BRBuddy</a>
+    <ul>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#companions">Companions</a></li>
+      <li><a href="#privacy">Privacy</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a class="btn btn-warm btn-sm" href="#install">Download</a>
+  </div>
+</nav>
+
+<main id="main">
+<section class="hero" id="top">
+  <div class="wrap">
+    <a class="pill" href="https://github.com/dhaataalimited-hub/brbuddy/releases/latest"><b data-version>v0.1</b> Free and open source for macOS</a>
+    <h1>BRB, <span class="warm">my agent's got this.</span></h1>
+    <p class="lede">A menu bar app for stepping away while your AI coding agent works. BRBuddy keeps your Mac awake, covers the screen with a little companion that shows what your agent is up to, and asks for Touch ID when anyone comes back.</p>
+    <div class="cta">
+      <a class="btn btn-warm" href="https://github.com/dhaataalimited-hub/brbuddy/releases/latest">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.3.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.8-1.1-2.8-4.2zM13.9 5.1c.7-.9 1.2-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4z"/></svg>
+        Download for Mac
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/dhaataalimited-hub/brbuddy">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg>
+        View on GitHub
+      </a>
+    </div>
+    <div class="facts"><span>Free, MIT licence</span><span>macOS 14 or later</span><span>Signed and notarized by Apple</span><span>No account, no tracking</span></div>
+
+    <div class="stage">
+      <div class="mac">
+        <div class="screen" id="screen" aria-label="The BRBuddy away screen">
+          <img class="badge" src="img/battery-badge.png" alt="Battery badge: 72%, 4 h 10 min left" width="260">
+          <button class="critter bob" id="critter" type="button" aria-label="Boop the companion">
+            <img class="on" src="img/companions/ember-working.png" alt="" width="520" height="480">
+          </button>
+          <div class="title">BRB — my agent's got this.</div>
+          <div class="headline" id="headline">Claude Code is working on my-app</div>
+          <div class="away" id="away">Away for 12 minutes</div>
+          <div class="foot">
+            <div class="press">Press any key to unlock</div>
+            <div class="unlock" aria-hidden="true">
+              <div class="touch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7.5 19.5c1-1.6 1.5-3.6 1.5-6a3 3 0 0 1 6 0c0 1.4-.1 2.8-.4 4.1M12 13.5c0 3-1 5.6-2.4 7.6M17.7 17.4c.2-1.3.3-2.6.3-3.9a6 6 0 0 0-10.4-4M5.1 16.5c.6-.9.9-1.9.9-3 0-1 .2-1.9.6-2.7M16 5a8.5 8.5 0 0 0-11 3.5M19.6 9.5c.4.9.7 1.9.8 3"/></svg></div>
+              <div>Touch ID or enter your password</div>
+              <div class="row"><div class="field"></div><div class="go">Unlock</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabs" role="group" aria-label="Show the away screen when">
+        <button class="tab" type="button" data-state="resting" aria-pressed="false">Snoozing</button>
+        <button class="tab" type="button" data-state="working" aria-pressed="true">Agent working</button>
+        <button class="tab" type="button" data-state="waiting" aria-pressed="false">Needs you</button>
+        <button class="tab" type="button" data-state="finished" aria-pressed="false">All done</button>
+        <button class="tab" type="button" data-state="greeting" aria-pressed="false">You're back</button>
+      </div>
+      <p class="stage-note">The away screen, as it looks on your Mac. Tap the companion to boop it.</p>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap center">
+    <p class="eyebrow reveal">How it works</p>
+    <h2 class="reveal">Walk away. Your agent keeps going.</h2>
+    <p class="lede reveal">Long agent runs and a Mac that dozes off don't mix. Neither does leaving your screen open for anyone walking past.</p>
+    <div class="steps" style="text-align:left">
+      <div class="step reveal"><h3>Set it and walk away</h3><p>Connect your agents once in Settings. While one is working, BRBuddy keeps the Mac awake by itself and lets it rest again when the agent's done.</p></div>
+      <div class="step reveal"><h3>BRB covers the screen</h3><p>Three minutes after you stop typing, or straight away with <kbd>⌃⌥⌘B</kbd>, a companion covers every display and shows what your agent is doing.</p></div>
+      <div class="step reveal"><h3>Come back and unlock</h3><p>Press any key and use Touch ID or your password. Too many wrong tries, or an hour away, and it hands over to the real macOS lock screen.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow reveal">Features</p>
+      <h2 class="reveal">Small app. Thinks of the details.</h2>
+    </div>
+    <div class="grid">
+      <div class="feat reveal">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3 4.9 4.9M19.1 19.1l-1.4-1.4M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/><circle cx="12" cy="12" r="4"/></svg></div>
+        <h3>Keeps your Mac awake</h3>
+        <p>Only while an agent works or needs you, then lets the Mac sleep. Or flip it on yourself from the paw in the menu bar.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+        <h3>Covers every display</h3>
+        <p>App switching, Force Quit and quit shortcuts are blocked while BRB is up, so the keyboard does nothing until you unlock.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 19.5c1-1.6 1.5-3.6 1.5-6a3 3 0 0 1 6 0c0 1.4-.1 2.8-.4 4.1M12 13.5c0 3-1 5.6-2.4 7.6M17.7 17.4c.2-1.3.3-2.6.3-3.9a6 6 0 0 0-10.4-4M5.1 16.5c.6-.9.9-1.9.9-3M16 5a8.5 8.5 0 0 0-11 3.5"/></svg></div>
+        <h3>Touch ID or password</h3>
+        <p>Checked by macOS itself. BRBuddy never sees, stores or logs your password.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6-6-6M12 19h8"/></svg></div>
+        <h3>Knows your agent</h3>
+        <p>Working, needs you, or finished: the menu and the away screen keep you posted. Click an agent in the menu to jump to its terminal tab.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg></div>
+        <h3>Walk-away lock</h3>
+        <p>Pick your iPhone or Apple Watch. When it leaves the desk, the room or the building, BRBuddy starts BRB or locks the Mac.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></div>
+        <h3>Terminal on the away screen</h3>
+        <p>Optional and view-only: watch a tmux pane, a Terminal, iTerm2 or Ghostty window, or a feed of your agent's steps from across the room.</p>
+      </div>
+      <div class="feat wide reveal">
+        <div>
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2M6 10v4M9.5 10v4"/></svg></div>
+          <h3>Battery aware</h3>
+          <p>On a MacBook the away screen shows charge and time left. Your companion cheers when you plug in, sweats when the battery's low, moves in slow motion in Low Power Mode, and holds still on battery to save power.</p>
+        </div>
+        <img src="img/companions/ember-battery-pluggedIn.png" alt="Ember glowing with lightning bolts, saying yum!, after the charger is plugged in" width="520" height="480" loading="lazy">
+      </div>
+      <div class="feat reveal">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div>
+        <h3>Updates itself</h3>
+        <p>Signed and notarized releases, checked once a day. New versions are verified before they install.</p>
+      </div>
+    </div>
+
+    <div class="center" style="margin-top:96px">
+      <p class="eyebrow reveal">Works with</p>
+      <h2 class="reveal" style="font-size:clamp(26px,3.4vw,36px)">One click to connect your command-line agents</h2>
+      <div class="agents reveal">
+        <span class="agent"><img src="img/companions/ember-working.png" alt="" loading="lazy">Claude Code</span>
+        <span class="agent"><img src="img/companions/pebble-working.png" alt="" loading="lazy">Codex</span>
+        <span class="agent"><img src="img/companions/prism-working.png" alt="" loading="lazy">Cursor</span>
+        <span class="agent"><img src="img/companions/comet-working.png" alt="" loading="lazy">Gemini CLI</span>
+        <span class="agent"><img src="img/companions/drift-working.png" alt="" loading="lazy">Antigravity</span>
+        <span class="agent"><img src="img/companions/gremlin-working.png" alt="" loading="lazy">Grok</span>
+      </div>
+      <p class="fine reveal">Setup adds one small entry to the agent's own settings file and keeps a backup next to it. It only reports what the agent is doing, can't change anything it does, and never sends your prompts.<br>BRBuddy is an independent project, not affiliated with or endorsed by Anthropic, OpenAI, Anysphere, Google or xAI.</p>
+    </div>
+  </div>
+</section>
+
+<section class="companions" id="companions">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow reveal">Companions</p>
+      <h2 class="reveal">Someone to watch the desk.</h2>
+      <p class="lede reveal">Six original critters, one for each agent's vibe. Pick a favourite, let it match your agent, or shuffle for a new one every time. Hover to see them react.</p>
+    </div>
+    <div class="lineup" id="lineup"></div>
+
+    <div class="boops">
+      <div>
+        <p class="eyebrow reveal">Boop them</p>
+        <h2 class="reveal" style="font-size:clamp(28px,3.6vw,40px)">Go on. Click it.</h2>
+        <p class="lede reveal">Every companion reacts with a squish, a giggle, a spin, heart eyes, or a grumpy face if you click too fast. Each one also has a move and a sound of its own. Sounds can be switched off.</p>
+      </div>
+      <div class="boop-row reveal">
+        <figure><img src="img/companions/ember-boop-squish.png" alt="Ember squished with eyes shut tight, saying boop!" loading="lazy" width="520" height="480"><figcaption>squish</figcaption></figure>
+        <figure><img src="img/companions/ember-boop-love.png" alt="Ember with heart eyes and floating hearts" loading="lazy" width="520" height="480"><figcaption>heart eyes</figcaption></figure>
+        <figure><img src="img/companions/ember-boop-spin.png" alt="Ember dizzy from a spin, saying wheee" loading="lazy" width="520" height="480"><figcaption>spin</figcaption></figure>
+        <figure><img src="img/companions/ember-boop-giggle.png" alt="Ember giggling, saying hehe, with music notes" loading="lazy" width="520" height="480"><figcaption>giggle</figcaption></figure>
+        <figure><img src="img/companions/ember-boop-grumpy.png" alt="Ember frowning under a little cloud, saying hey!" loading="lazy" width="520" height="480"><figcaption>grumpy</figcaption></figure>
+        <figure><img src="img/companions/ember-boop-signature.png" alt="Ember with star eyes in a ring of sparkles" loading="lazy" width="520" height="480"><figcaption>its own move</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="make">
+      <div class="feat reveal">
+        <h3>Companion Studio</h3>
+        <p>Build your own critter: shape, colours, ears, extras, face, blush, mouth, plus its own boop sound and catchphrase. Save it and it's yours.</p>
+      </div>
+      <div class="feat reveal">
+        <h3>Bring any Codex pet</h3>
+        <p>Already have a Codex pet? Add its folder with <code>pet.json</code> and a spritesheet and it moves in.</p>
+      </div>
+      <div class="feat reveal">
+        <h3>Make one with any AI</h3>
+        <p>Paste <a href="https://github.com/dhaataalimited-hub/brbuddy/blob/main/docs/making-a-companion.md">our prompt</a> into the AI you like and it builds a pack you can add in Settings.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow reveal">Privacy</p>
+      <h2 class="reveal">Nothing leaves your Mac.</h2>
+    </div>
+    <div class="split">
+      <div class="panel reveal">
+        <h3>What BRBuddy does with your data</h3>
+        <ul>
+          <li><b>Collects nothing.</b> No account, no analytics, no server. The only thing it fetches is the update feed.</li>
+          <li>Your password is checked by macOS. BRBuddy never stores or logs it.</li>
+          <li>Permissions are asked for only when you turn on the feature that needs them: Accessibility for the terminal view, Bluetooth for the walk-away lock.</li>
+          <li>The terminal view is off by default, because anyone at your Mac can read it.</li>
+          <li>Open source under the MIT licence. <a href="https://github.com/dhaataalimited-hub/brbuddy">Read every line.</a></li>
+        </ul>
+      </div>
+      <div class="panel honest reveal">
+        <h3>What it isn't</h3>
+        <ul>
+          <li><b>A privacy screen, not a lock.</b> It keeps passers-by off your keyboard and screen.</li>
+          <li>Anything running as you, including your agent, can close it, and a restart ends it. Holding the power button still restarts the Mac.</li>
+          <li>When you need real security, lock the Mac, or leave “Locking for real” on so BRBuddy hands over to the macOS lock screen.</li>
+          <li>Closing the lid on battery still sleeps the Mac. That's macOS.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow reveal">Install</p>
+      <h2 class="reveal">Get BRBuddy</h2>
+      <p class="lede reveal">Free forever. Needs macOS 14 Sonoma or later, on Apple silicon or Intel.</p>
+    </div>
+    <div class="install">
+      <div class="feat reveal">
+        <h3>Download</h3>
+        <p>Open the disk image and drag BRBuddy to Applications. Signed and notarized by Apple, and it keeps itself up to date.</p>
+        <a class="btn btn-warm" href="https://github.com/dhaataalimited-hub/brbuddy/releases/latest">Download the latest release</a>
+      </div>
+      <div class="feat reveal">
+        <h3>Homebrew</h3>
+        <p>Prefer the command line? It's in our own tap.</p>
+        <div class="cmd"><code>brew install dhaataalimited-hub/tap/brbuddy</code><button class="copy" type="button">Copy</button></div>
+      </div>
+      <div class="feat reveal">
+        <h3>Build it yourself</h3>
+        <p>Xcode 16 or later (Swift 6). Builds from source don't update themselves.</p>
+        <div class="cmds">
+          <div class="cmd"><code>git clone https://github.com/dhaataalimited-hub/brbuddy</code><button class="copy" type="button">Copy</button></div>
+          <div class="cmd"><code>cd brbuddy && Tools/build-app.sh</code><button class="copy" type="button">Copy</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow reveal">FAQ</p>
+      <h2 class="reveal">Questions</h2>
+    </div>
+    <div class="faq reveal">
+      <details><summary>Is it really free?</summary><div><p>Yes. No subscription, no in-app purchase, no account. It's open source under the MIT licence.</p></div></details>
+      <details><summary>Do I need an AI agent to use it?</summary><div><p>No. Turn on <b>Keep Mac awake</b> from the paw in the menu bar and use BRB whenever you step away. Agents just make it smarter about when to stay awake.</p></div></details>
+      <details><summary>Which agents does it work with?</summary><div><p>Claude Code, Codex, Cursor, Gemini CLI, Antigravity and Grok, each set up with one button in Settings. Desktop chat apps can't report their status; their command-line agents can.</p></div></details>
+      <details><summary>Is it secure?</summary><div><p>It's a privacy screen: it stops someone at your desk from using your keyboard or reading your screen, and unlocking needs Touch ID or your password. It isn't a replacement for the macOS lock screen, so it hands over to that after too many wrong tries or an hour away (you can change both).</p></div></details>
+      <details><summary>My Mac still went to sleep. Why?</summary><div><p>Check the paw in the menu bar is filled in, and that your agent is set up in Settings → Agents. Closing the lid on battery always sleeps the Mac; that's macOS.</p></div></details>
+      <details><summary>Will it slow my Mac down or drain the battery?</summary><div><p>It's a small native app. On battery the companion's body holds still and only its face moves, and it slows right down in Low Power Mode.</p></div></details>
+      <details><summary>How do I uninstall it?</summary><div><p>First press <b>Remove</b> next to each agent in Settings → Agents (a backup of each agent's original settings stays next to it). Then quit BRBuddy and drag it to the Bin. With Homebrew: <code>brew uninstall --zap brbuddy</code>.</p></div></details>
+      <details><summary>Where do I report a bug or ask for a feature?</summary><div><p><a href="https://github.com/dhaataalimited-hub/brbuddy/issues">GitHub Issues</a>. Anything else: <a href="mailto:hello@dhaataa.com">hello@dhaataa.com</a>. Security problems: please report them privately (see <a href="https://github.com/dhaataalimited-hub/brbuddy/blob/main/SECURITY.md">SECURITY.md</a>).</p></div></details>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <img class="icon reveal" src="img/icon-512.png" alt="The BRBuddy app icon: Ember with a BRB speech bubble" width="512" height="512" loading="lazy">
+    <h2 class="reveal">Go get a coffee.</h2>
+    <p class="lede reveal">Your agent's got this. BRBuddy's got your Mac.</p>
+    <div class="cta reveal">
+      <a class="btn btn-warm" href="https://github.com/dhaataalimited-hub/brbuddy/releases/latest">Download for Mac</a>
+      <a class="btn btn-ghost" href="#install">Other ways to install</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div><a class="brand" href="#top" style="font-size:16px"><img src="img/icon-256.png" alt="" width="26" height="26" style="width:26px;height:26px">BRBuddy</a>
+      <p style="margin-top:10px">Made by <a href="https://dhaataa.com">dhaataa</a>. Free and open source.</p></div>
+    <ul>
+      <li><a href="https://github.com/dhaataalimited-hub/brbuddy">GitHub</a></li>
+      <li><a href="https://github.com/dhaataalimited-hub/brbuddy/releases">Releases</a></li>
+      <li><a href="https://github.com/dhaataalimited-hub/brbuddy/issues">Issues</a></li>
+      <li><a href="https://github.com/dhaataalimited-hub/brbuddy/blob/main/SECURITY.md">Security</a></li>
+      <li><a href="mailto:hello@dhaataa.com">hello@dhaataa.com</a></li>
+    </ul>
+    <p class="legal">MIT licence. BRBuddy is an independent project. It isn't affiliated with or endorsed by Anthropic, OpenAI, Anysphere, Google or xAI, and uses none of their logos or mascots; product names belong to their owners. Mac, macOS and Touch ID are trademarks of Apple Inc.</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const buddies = [
+    { id: 'ember', name: 'Ember', agent: 'Claude Code', blurb: 'A warm, round little bear who naps on the job' },
+    { id: 'pebble', name: 'Pebble', agent: 'Codex', blurb: 'Calm, smooth, unbothered. Has a sprout' },
+    { id: 'prism', name: 'Prism', agent: 'Cursor', blurb: 'Sharp-eared and quick, glows when busy' },
+    { id: 'comet', name: 'Comet', agent: 'Gemini CLI', blurb: 'Deep-space blue with star freckles' },
+    { id: 'drift', name: 'Drift', agent: 'Antigravity', blurb: 'A cloud that never quite touches the ground' },
+    { id: 'gremlin', name: 'Gremlin', agent: 'Grok', blurb: 'Spiky, lopsided, chaotic grin' },
+  ];
+  const art = (id, mood) => `img/companions/${id}-${mood}.png`;
+
+  // Companion lineup: resting by default, a happier mood on hover.
+  const hoverMood = ['finished', 'greeting', 'working', 'finished', 'greeting', 'oops'];
+  const lineup = document.getElementById('lineup');
+  buddies.forEach((b, i) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'buddy reveal';
+    el.setAttribute('aria-label', `Show ${b.name} on the away screen`);
+    el.innerHTML = `<div class="pic"><img src="${art(b.id, 'resting')}" alt="${b.name} snoozing" loading="lazy" width="520" height="480"><img src="${art(b.id, hoverMood[i])}" alt="" loading="lazy" width="520" height="480"></div>
+      <h3>${b.name}</h3><p>${b.blurb}</p><span class="for">${b.agent}</span>`;
+    el.addEventListener('click', () => { pick(i); stopAuto(); document.getElementById('top').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); });
+    lineup.appendChild(el);
+  });
+
+  // The away-screen mock.
+  const screen = document.getElementById('screen');
+  const critter = document.getElementById('critter');
+  const headline = document.getElementById('headline');
+  const away = document.getElementById('away');
+  const tabs = [...document.querySelectorAll('.tab')];
+  let buddy = 0, state = 'working', auto = null;
+  const headlines = {
+    resting: () => '',
+    working: a => `${a} is working on my-app`,
+    waiting: a => `${a} needs you in my-app`,
+    finished: a => `${a} finished my-app`,
+    greeting: a => `${a} is working on my-app`,
+  };
+  const awayText = { resting: 'Away for 3 minutes', working: 'Away for 12 minutes', waiting: 'Away for 26 minutes', finished: 'Away for 41 minutes', greeting: 'Away for 41 minutes' };
+  // Preload every mood so switching never flashes.
+  buddies.forEach(b => ['resting', 'working', 'waiting', 'finished', 'greeting', 'oops'].forEach(m => { const i = new Image(); i.src = art(b.id, m); }));
+
+  function setImage(src) {
+    const cur = critter.querySelector('img.on');
+    if (cur && cur.getAttribute('src') === src) return;
+    const next = document.createElement('img');
+    next.src = src; next.alt = ''; next.style.opacity = 0; next.className = 'on';
+    critter.appendChild(next);
+    requestAnimationFrame(() => { next.style.opacity = 1; if (cur) { cur.classList.remove('on'); cur.style.opacity = 0; setTimeout(() => cur.remove(), 300); } });
+  }
+  function render() {
+    const b = buddies[buddy];
+    setImage(art(b.id, state));
+    const text = headlines[state](b.agent);
+    headline.textContent = text;
+    headline.style.visibility = text ? 'visible' : 'hidden';
+    headline.classList.toggle('alert', state === 'waiting');
+    away.textContent = awayText[state];
+    screen.classList.toggle('unlocking', state === 'greeting');
+    tabs.forEach(t => t.setAttribute('aria-pressed', String(t.dataset.state === state)));
+  }
+  function pick(i) { buddy = i; render(); }
+  tabs.forEach(t => t.addEventListener('click', () => { state = t.dataset.state; stopAuto(); render(); }));
+
+  // Boop: a squish, plus Ember's real boop faces.
+  const emberBoops = ['squish', 'giggle', 'spin', 'love', 'signature'];
+  let lastBoop = 0;
+  critter.addEventListener('click', () => {
+    stopAuto();
+    const now = Date.now();
+    const fast = now - lastBoop < 450; lastBoop = now;
+    critter.classList.remove('squish'); void critter.offsetWidth; critter.classList.add('squish');
+    if (buddies[buddy].id === 'ember') {
+      const kind = fast ? 'grumpy' : emberBoops[Math.floor(Math.random() * emberBoops.length)];
+      setImage(`img/companions/ember-boop-${kind}.png`);
+    } else {
+      setImage(art(buddies[buddy].id, fast ? 'oops' : 'greeting'));
+    }
+    clearTimeout(critter._t);
+    critter._t = setTimeout(render, 1400);
+  });
+
+  // Gently cycle through the story until someone interacts.
+  const story = ['working', 'waiting', 'finished', 'greeting', 'resting'];
+  function stopAuto() { if (auto) { clearInterval(auto); auto = null; } }
+  if (!reduce) {
+    let step = 0;
+    auto = setInterval(() => {
+      if (document.hidden) return;
+      step = (step + 1) % story.length;
+      state = story[step];
+      if (step === 0) buddy = (buddy + 1) % buddies.length;
+      render();
+    }, 3200);
+  }
+  render();
+
+  // Copy buttons.
+  document.querySelectorAll('.copy').forEach(btn => btn.addEventListener('click', async () => {
+    const text = btn.previousElementSibling.textContent;
+    try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied'; btn.classList.add('done'); }
+    catch { btn.textContent = 'Select it'; }
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1600);
+  }));
+
+  // Nav border once scrolled, and reveal-on-scroll.
+  const nav = document.getElementById('nav');
+  addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 8), { passive: true });
+  if ('IntersectionObserver' in window && !reduce) {
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  } else {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+  }
+})();
+</script>
+</body>
+</html>

@@ -171,6 +171,35 @@ enum CompanionContactSheet {
         }
     }
 
+    /// Art for the website (site/): every built-in companion in every mood as its own transparent PNG,
+    /// `<id>-<mood>.png`, plus Ember's battery and boop moments. Built-ins only, never the user's packs.
+    /// `BRBUDDY_SITE_ART=<dir>`.
+    static func renderSiteArt(to folder: URL) {
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for critter in CompanionCatalog.builtIns {
+            for mood in CompanionMood.allCases {
+                save(CritterView(design: .design(for: critter.id), mood: mood, fixedTime: 41).frame(width: 260, height: 240),
+                     to: folder.appending(path: "\(critter.id)-\(mood.rawValue).png"))
+            }
+        }
+        let ember = CritterDesign.design(for: "ember")
+        for reaction in [BatteryReaction.pluggedIn, .low, .lowPower] {
+            save(ZStack {
+                CritterView(design: ember, mood: reaction.moodOverride ?? .resting, battery: reaction, quiet: true, fixedTime: 41)
+                BatteryFlair(reaction: reaction, talks: true)
+            }.frame(width: 260, height: 240), to: folder.appending(path: "ember-battery-\(reaction).png"))
+        }
+        for boop in Boop.allCases {
+            save(ZStack {
+                CritterView(design: ember, mood: .greeting, quiet: true, boop: boop, fixedTime: 41)
+                    .boopMotion(boop, progress: boop == .spin ? 0.75 : 0.35)
+                BoopFlair(boop: boop, progress: 0.35)
+            }.frame(width: 260, height: 240), to: folder.appending(path: "ember-boop-\(boop.rawValue).png"))
+        }
+        save(BatteryBadge(status: BatteryStatus(percent: 72, isPluggedIn: false, isCharging: false, minutesRemaining: 250),
+                          reaction: .none), to: folder.appending(path: "battery-badge.png"))
+    }
+
     private static func save(_ view: some View, to url: URL) {
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2
