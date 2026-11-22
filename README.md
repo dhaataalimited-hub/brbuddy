@@ -74,6 +74,10 @@ in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 | [LUCE](https://github.com/arinltte/LUCE) | Input blocking while away (planned) | MIT |
 | The Codex pet format, as documented by [awesome-codex-pet](https://github.com/legeling/awesome-codex-pet) | Companion pack format (format only; no art) | MIT (docs/code) |
 
+## Support
+Bugs and feature ideas: [GitHub Issues](https://github.com/dhaataalimited-hub/brbuddy/issues). Anything else:
+[hello@dhaataa.com](mailto:hello@dhaataa.com). Security problems: see [SECURITY.md](SECURITY.md).
+
 ## Contributing
 Contributions and companion packs are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 

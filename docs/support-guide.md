@@ -1,8 +1,8 @@
 # BRBuddy support guide
 
 Plain-English answers about what BRBuddy does and how to help someone using it. Everything above "For the team
-(internal)" avoids internal detail and can be shared as is. BRBuddy is free and open source; questions and bug
-reports go to the project's GitHub Issues page.
+(internal)" avoids internal detail and can be shared as is. BRBuddy is free and open source; bug reports and feature
+ideas go to the project's GitHub Issues page, and anything else to hello@dhaataa.com.
 
 ## What BRBuddy is
 BRBuddy is a free menu bar app for Mac. When you step away while an AI coding agent (Claude Code, Codex, Cursor,
