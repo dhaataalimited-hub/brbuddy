@@ -13,6 +13,7 @@
 #                       without it (local builds) there's no updater at all.
 #   SPARKLE_FEED_URL    default: the appcast attached to the latest GitHub release.
 set -euo pipefail
+trap 'echo "error: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" failed" >&2' ERR
 
 config="${1:-release}"
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -52,7 +53,7 @@ fi
 
 # Dependencies' resource bundles (KeyboardShortcuts' translations) go in Resources, where Bundle.module finds them.
 for bundle in "$binDir"/*.bundle; do
-    [ -e "$bundle" ] && cp -R "$bundle" "$contents/Resources/"
+    if [ -e "$bundle" ]; then cp -R "$bundle" "$contents/Resources/"; fi
 done
 # Licences shipped with the app.
 cp LICENSE THIRD_PARTY_NOTICES.md "$contents/Resources/"
@@ -61,7 +62,8 @@ cp LICENSE THIRD_PARTY_NOTICES.md "$contents/Resources/"
 ditto "$binDir/Sparkle.framework" "$contents/Frameworks/Sparkle.framework"
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$contents/MacOS/BRBuddy"
 # Drop build-machine-only search paths (the Xcode toolchain) from the shipped binary.
-otool -l "$contents/MacOS/BRBuddy" | awk '/LC_RPATH/{getline; getline; print $2}' | grep '^/Applications/Xcode' | sort -u |
+# (grep finds nothing on some build machines; that's fine, so it mustn't fail the pipeline.)
+otool -l "$contents/MacOS/BRBuddy" | awk '/LC_RPATH/{getline; getline; print $2}' | { grep '^/Applications/Xcode' || true; } | sort -u |
     while read -r path; do install_name_tool -delete_rpath "$path" "$contents/MacOS/BRBuddy" 2>/dev/null || true; done
 
 # Sign inside out: Sparkle's helpers, the framework, our helper, then the app.

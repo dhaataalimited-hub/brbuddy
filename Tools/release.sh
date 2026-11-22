@@ -18,6 +18,7 @@
 #   SPARKLE_TOOLS        folder with Sparkle's bin/generate_appcast (default: the copy SwiftPM fetched and checksum-
 #                        verified with the Sparkle dependency, .build/artifacts/sparkle/Sparkle)
 set -euo pipefail
+trap 'echo "error: ${BASH_SOURCE[0]}:$LINENO: \"$BASH_COMMAND\" failed" >&2' ERR
 
 version="${1:?usage: Tools/release.sh <version, e.g. 0.2.0>}"
 version="${version#v}"
