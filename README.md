@@ -85,4 +85,5 @@ Bugs and feature ideas: [GitHub Issues](https://github.com/dhaataalimited-hub/br
 Contributions and companion packs are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
-[MIT](LICENSE)
+Code: [MIT](LICENSE). The name "BRBuddy" and the app icon aren't covered by the licence: forks are welcome,
+but please ship yours under its own name and icon. See [TRADEMARKS.md](TRADEMARKS.md).

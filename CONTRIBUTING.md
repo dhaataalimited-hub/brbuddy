@@ -2,6 +2,14 @@
 
 Thanks for helping. Issues, fixes and companion packs are all welcome.
 
+BRBuddy is a side project kept up by one person, so a few expectations:
+- **Small fixes** (bugs, typos, docs) are welcome as pull requests straight away.
+- **Bigger changes or new features:** open an issue first so we can agree on the idea before you spend time on it.
+  Not everything will fit, and a "no thanks" isn't a judgement on your work.
+- Replies can take a while. There's no guaranteed support or timeline.
+- **Security problems:** report them privately, never in a public issue. See [SECURITY.md](SECURITY.md).
+- Forking to make your own version is fine too; please give it its own name and icon ([TRADEMARKS.md](TRADEMARKS.md)).
+
 ## Code
 - Build with `Tools/build-app.sh`, test with `swift test`. Tests must pass before a pull request is merged.
 - Read `docs/architecture/README.md` first: it says where things live. If you add, move or rename a source file,
