@@ -6,6 +6,8 @@ BRBuddy is a free, open-source Mac menu bar app for when you step away while an 
 Mac awake, covers the screen with a cute companion (and, if you want, a read-only view of your terminal), and asks
 for Touch ID or your password when someone touches the keyboard.
 
+Website: **[brbuddy.app](https://brbuddy.app)**
+
 > **Status: early (v0.1).** Keep-awake, BRB (Away mode), agent status, companions, the terminal mirror and the
 > walk-away lock work. See [ROADMAP.md](ROADMAP.md).
 
