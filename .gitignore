@@ -4,3 +4,12 @@ build/
 .swiftpm/
 *.xcodeproj/xcuserdata/
 DerivedData/
+
+# Signing and release secrets: never commit (keep them in the vault)
+ExcludeFolder/
+*.p8
+*.p12
+*.pem
+*.keyx
+sparkle-private-key.txt
+.env

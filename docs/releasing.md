@@ -26,7 +26,8 @@ lose it and existing users can never be updated again.**
 Tools/release-tools.sh
 ```
 
-That downloads Sparkle's tools into `build/sparkle-tools`. Then create the key pair (the private key goes into your
+That links Sparkle's tools into `build/sparkle-tools`, from the copy SwiftPM downloaded and checksum-verified with
+the Sparkle dependency. Then create the key pair (the private key goes into your
 login keychain and the public key is printed):
 
 ```bash

@@ -15,7 +15,8 @@
 #                              the key in this Mac's keychain (local)
 # Optional:
 #   SKIP_NOTARIZE=1      sign and package only (dry runs)
-#   SPARKLE_TOOLS        folder with Sparkle's generate_appcast (default: downloaded into build/sparkle-tools)
+#   SPARKLE_TOOLS        folder with Sparkle's bin/generate_appcast (default: the copy SwiftPM fetched and checksum-
+#                        verified with the Sparkle dependency, .build/artifacts/sparkle/Sparkle)
 set -euo pipefail
 
 version="${1:?usage: Tools/release.sh <version, e.g. 0.2.0>}"
@@ -26,7 +27,6 @@ cd "$root"
 : "${SIGN_IDENTITY:?set SIGN_IDENTITY to your Developer ID Application identity}"
 : "${SPARKLE_PUBLIC_KEY:?set SPARKLE_PUBLIC_KEY}"
 repo_url="https://github.com/dhaataalimited-hub/brbuddy"
-sparkle_version="2.10.1"
 
 out="build/release"
 rm -rf "$out"
@@ -59,11 +59,12 @@ if [ "${SKIP_NOTARIZE:-0}" != "1" ]; then
 fi
 
 # 4. Sparkle appcast pointing at this release's download.
-tools="${SPARKLE_TOOLS:-build/sparkle-tools}"
+# The tools come from the Sparkle binary artifact SwiftPM already downloaded and checked against the checksum pinned in
+# Sparkle's package manifest: nothing unverified runs while the signing keys are loaded.
+tools="${SPARKLE_TOOLS:-.build/artifacts/sparkle/Sparkle}"
 if [ ! -x "$tools/bin/generate_appcast" ]; then
-    mkdir -p "$tools"
-    curl -fsSL "https://github.com/sparkle-project/Sparkle/releases/download/$sparkle_version/Sparkle-$sparkle_version.tar.xz" \
-        | tar -xJ -C "$tools"
+    echo "error: $tools/bin/generate_appcast not found; run swift build first" >&2
+    exit 1
 fi
 key_args=()
 if [ -n "${SPARKLE_PRIVATE_KEY_PATH:-}" ]; then key_args=(--ed-key-file "$SPARKLE_PRIVATE_KEY_PATH"); fi
