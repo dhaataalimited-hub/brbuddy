@@ -19,7 +19,8 @@ BRBuddy is a side project kept up by one person, so a few expectations:
 ## Companion packs
 The quickest way to make one is [docs/making-a-companion.md](docs/making-a-companion.md): a prompt you paste into
 any AI that builds the whole pack. To share one, use the **Share a companion** form (it's on
-[brbuddy.app/gallery](https://brbuddy.app/gallery/#share)); reviewed packs go up in the gallery, added with
+[brbuddy.app/gallery](https://brbuddy.app/gallery/#share)), or with no GitHub account, email the zip to
+hello@dhaataa.com using the template the page's **No GitHub? Email it** button opens; reviewed packs go up in the gallery, added with
 `Tools/gallery/gallery.py`. The details:
 
 Packs use the Codex pet format, so they work in other pet apps too: a folder with `pet.json` and an 8-column
