@@ -105,3 +105,33 @@ Three steps, smallest first. No server and no money: sharing goes through GitHub
      through the same checks as **Add companion pack…**, with downloads pinned to reviewed commits.
    - Not planned: a paid marketplace (needs a server, payments, moderation at scale). Revisit if the gallery takes
      off.
+
+## Phase 8: Desktop companion (planned 2026-11-23)
+The companion can come out of the away screen and live on the unlocked desktop, as a small live status light you can
+see from any app. **Off by default**: you add it to the screen, or take it away, from the menu bar menu.
+
+- **The window:** a small, frameless, see-through window about one sprite cell in size. It floats above other apps
+  and shows on every Space. It never takes keyboard focus, and clicks go through it, so it never blocks what's
+  underneath. Hold ⌥ and drag to move it; ⌥-click to boop it. It draws with the same code as the
+  away screen (`CompanionView`), so every pack works, gallery ones included.
+- **Modes**, picked from the menu bar menu:
+  - **Go for a wander:** it walks back and forth along the top of the Dock (running row, flipped for direction),
+    stopping now and then to idle. It follows the Dock to the bottom, left or right edge, and stays still if the Dock
+    is hidden.
+  - **Party mode:** it dances (jumping and waving rows on a beat-like bob) with headphones on. The headphones are
+    drawn over the companion, so they fit any pack, not only Studio ones.
+  - **Naughty corner:** it sits in a corner you pick and stays there.
+- **Its own sound**, separate from the system volume: an on/off switch (and volume) in the menu bar menu and
+  Settings, used for boops and reactions. Off never mutes anything else.
+- **Feedback it gives:**
+  - **Your agent (Claude and others):** runs while the agent works, waves when it's done, looks worried when
+    something fails, waits when the agent needs you. Uses the agent events BRBuddy already receives.
+  - **Battery:** the same reactions the away screen uses for low battery and charging.
+  - **Drive space:** it gets fatter as the startup drive fills up, in a few steps (say 70%, 85%, 95% full), drawn as
+    a sideways stretch so it works on any pack. Back to normal when space is freed. Hovering (with ⌥) shows how much
+    space is left.
+- **Staying out of the way:** hides while a full-screen app or video call is in front, and is left out of screen
+  sharing and recordings (so it never shows up in someone's meeting). Pauses its animation on
+  battery power when nothing is happening; about 8 frames a second when it moves.
+- **Still to decide:** with more than one display, which screen it lives on (probably the one with the Dock);
+  whether it should show only while an agent is working.
