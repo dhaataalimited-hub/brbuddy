@@ -27,7 +27,7 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 | Shuffle companions | Settings → Companion → Shuffle (a new one each BRB) | Each time BRB starts you get a different companion, built-ins and packs alike, all of them before any repeats. Next companion skips ahead |
 | Companion Studio | Settings → Companion → Companion Studio… | Build your own critter: shape, colours, ears, extras, face (including blush colour), mouth (six styles and a size), its own boop sound and line. Save makes it your companion; Show in Finder gives you the folder to share |
 | Make your own companion | brbuddy.app/gallery (Make your own) | A prompt with a Copy button to paste into any AI; it builds a pack you then add with Add companion pack… The full guide is docs/making-a-companion.md in the project |
-| Companion gallery | brbuddy.app/gallery | Companions other people made: download one, unzip it, then Add companion pack… To share one, zip its folder (Show companions folder, then Compress) and use the Share a companion form linked on the page; a person reviews each one first |
+| Companion gallery | brbuddy.app/gallery | Companions other people made: download one, unzip it, then Add companion pack… To share one, zip its folder (Show companions folder, then Compress) and use the Share a companion form linked on the page, or the No GitHub? Email it button (email to hello@dhaataa.com with the zip attached); a person reviews each one first |
 | Battery on the away screen | Settings → Away Screen → Battery | On by default on MacBooks. Shows charge and time left; the companion cheers when you plug in, sweats when the battery's low and moves in slow motion in Low Power Mode. On battery its body holds still to save power and only its face moves |
 | Terminal on the away screen | Settings → Away Screen | Off by default. Shows a tmux pane, a Terminal/iTerm2/Ghostty window, or a feed of what your agent is doing. View-only |
 | Walk-away lock | Settings → Walk-away | Pair your iPhone with the Mac, then pick it; when it moves away, BRBuddy starts BRB or locks the Mac |
@@ -157,9 +157,10 @@ under System Settings → Privacy & Security → Bluetooth. After resetting or r
   "lock for real" hand-off on macOS 14 and 15.
 - Files to ask a user for: `~/Library/Application Support/BRBuddy/` (hook helper, socket, companion packs) and the
   agent settings file plus its `.brbuddy-backup` when setup misbehaves.
-- Gallery submissions arrive as GitHub issues labelled "companion submission". Check the art is original (no
+- Gallery submissions arrive as GitHub issues labelled "companion submission", or as emails to hello@dhaataa.com
+  with the subject "Companion: …" (check the sender wrote YES to all three rules). Check the art is original (no
   logos, mascots, real people or existing characters), then run `Tools/gallery/gallery.py add <folder> --creator
-  "<name>" --made studio|ai|hand --license CC-BY-4.0|CC0-1.0 --submission <issue>`, commit, push, and reply on the
-  issue. Takedown requests (by email or issue): `Tools/gallery/gallery.py remove <id>`, push, and reply.
+  "<name>" --made studio|ai|hand --license CC-BY-4.0|CC0-1.0 --submission <issue>` (leave it out for an email), commit, push, and reply on the
+  issue or email. Takedown requests (by email or issue): `Tools/gallery/gallery.py remove <id>`, push, and reply.
 - Escalate first: anything that damaged an agent's settings file (restore from the backup), or the away screen not
   unlocking with the correct password (force quit isn't possible; restart the Mac).
