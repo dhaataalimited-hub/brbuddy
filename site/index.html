@@ -89,6 +89,7 @@ nav ul a:hover { color: var(--text); text-decoration: none; }
 .hero .wrap { position: relative; }
 .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: 999px; border: 1px solid var(--line);
   background: var(--card); color: var(--muted); font-size: 14px; }
+.pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .pill b { background: var(--warm); color: #2a1520; border-radius: 999px; padding: 2px 9px; font: 800 12px var(--rounded); }
 .hero h1 { font-size: clamp(44px, 8vw, 92px); font-weight: 900; margin-top: 24px; letter-spacing: -.025em; }
 .hero h1 .warm { background: var(--warm); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -296,7 +297,10 @@ footer .legal { grid-column: 1 / -1; font-size: 12.5px; line-height: 1.6; }
 <main id="main">
 <section class="hero" id="top">
   <div class="wrap">
-    <a class="pill" href="https://github.com/dhaataalimited-hub/brbuddy/releases/latest"><b data-version>v0.1</b> Free and open source for macOS</a>
+    <div class="pills">
+      <a class="pill" href="https://github.com/dhaataalimited-hub/brbuddy/releases/latest"><b data-version>v0.1</b> Free and open source for macOS</a>
+      <a class="pill" href="gallery/"><b>New</b> Companion gallery: download one or share yours &rarr;</a>
+    </div>
     <h1>BRB, <span class="warm">my agent's got this.</span></h1>
     <p class="lede">A menu bar app for stepping away while your AI coding agent works. BRBuddy keeps your Mac awake, covers the screen with a little companion that shows what your agent is up to, and asks for Touch ID when anyone comes back.</p>
     <div class="cta">
