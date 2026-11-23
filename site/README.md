@@ -18,6 +18,24 @@ Then open http://127.0.0.1:8765.
 - `img/icon-*.png`, `img/favicon-64.png`, `img/apple-touch-icon.png`: `sips -Z <size> Config/AppIcon-1024.png`.
 - `img/og.png`: the 1200×630 link preview, a headless-Chrome screenshot of a small card page.
 
+## Promo film
+The hero plays `img/promo-wide.mp4` (phones: `img/promo-tall.mp4`) muted and looping, like a GIF but about a tenth
+of the size; the button turns the sound on. To remake them after changing the film (`PromoFilm.swift`):
+
+```bash
+Tools/promo/make-promo.sh
+```
+
+Then make the web copies (720p, smaller) and posters from `build/promo/frames`:
+
+```bash
+F=build/promo/frames
+ffmpeg -y -framerate 30 -i $F/wide/%04d.png -i $F/soundtrack.wav -vf scale=1280:720:flags=lanczos -c:v libx264 -preset slow -crf 24 -pix_fmt yuv420p -c:a aac -b:a 96k -shortest -movflags +faststart site/img/promo-wide.mp4
+ffmpeg -y -framerate 30 -i $F/tall/%04d.png -i $F/soundtrack.wav -vf scale=720:1280:flags=lanczos -c:v libx264 -preset slow -crf 24 -pix_fmt yuv420p -c:a aac -b:a 96k -shortest -movflags +faststart site/img/promo-tall.mp4
+ffmpeg -y -i $F/wide/0540.png -vf scale=1280:720 -q:v 4 site/img/promo-poster-wide.jpg
+ffmpeg -y -i $F/tall/0540.png -vf scale=720:1280 -q:v 4 site/img/promo-poster-tall.jpg
+```
+
 ## Going live (once)
 1. Repo Settings → Pages → Build and deployment → Source: **GitHub Actions**.
 2. Merge to main (or run the **Website** workflow by hand). The site appears at

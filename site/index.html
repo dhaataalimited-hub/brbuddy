@@ -98,7 +98,20 @@ nav ul a:hover { color: var(--text); text-decoration: none; }
 .facts span::before { content: "✓"; color: var(--mint); margin-right: 6px; font-weight: 700; }
 
 /* Mac mock */
-.stage { margin: 64px auto 0; max-width: 980px; }
+.film { position: relative; margin: 64px auto 0; max-width: 1000px; aspect-ratio: 16 / 9; border-radius: 22px;
+  overflow: hidden; border: 1px solid var(--line); background: var(--night-2);
+  box-shadow: 0 40px 120px -30px rgba(237, 115, 133, .35), 0 20px 60px -20px rgba(0, 0, 0, .6); }
+.film video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.film .sound { position: absolute; right: 14px; bottom: 14px; display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .18); background: rgba(18, 15, 31, .62);
+  color: var(--text); font: 600 14px var(--rounded); cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.film .sound:hover { background: rgba(18, 15, 31, .8); }
+.film .sound svg { width: 18px; height: 18px; }
+.film .sound .wave { display: none; }
+.film .sound[aria-pressed="true"] .wave { display: inline; }
+.film .sound[aria-pressed="true"] .mute { display: none; }
+@media (max-width: 600px) { .film { aspect-ratio: 9 / 16; max-width: 420px; margin-top: 44px; border-radius: 18px; } }
+.stage { margin: 48px auto 0; max-width: 980px; }
 .mac { position: relative; border-radius: 22px; padding: 12px; background: linear-gradient(#2c2538, #1a1524);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 50px 120px -30px rgba(0, 0, 0, .8), 0 30px 80px -40px rgba(237, 115, 133, .35); }
 .screen { position: relative; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden;
@@ -297,7 +310,25 @@ footer .legal { grid-column: 1 / -1; font-size: 12.5px; line-height: 1.6; }
     </div>
     <div class="facts"><span>Free, MIT licence</span><span>macOS 14 or later</span><span>Signed and notarized by Apple</span><span>No account, no tracking</span></div>
 
-    <div class="stage">
+    <div class="film">
+      <video id="promo" autoplay muted loop playsinline preload="auto" poster="img/promo-poster-wide.jpg"
+             aria-label="A 30-second film: BRBuddy covers the screen while your agent works, its companions show the agent's status and react to boops, and Touch ID lets you back in.">
+        <source src="img/promo-tall.mp4" type="video/mp4" media="(max-width: 600px)">
+        <source src="img/promo-wide.mp4" type="video/mp4">
+      </video>
+      <button class="sound" id="promo-sound" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="mute" d="m22 9-6 6M16 9l6 6"/></svg>
+        <span>Sound on</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<section id="try">
+  <div class="wrap center">
+    <p class="eyebrow reveal">Have a play</p>
+    <h2 class="reveal">Try the away screen.</h2>
+    <div class="stage reveal">
       <div class="mac">
         <div class="screen" id="screen" aria-label="The BRBuddy away screen">
           <img class="badge" src="img/battery-badge.png" alt="Battery badge: 72%, 4 h 10 min left" width="260">
@@ -561,6 +592,20 @@ footer .legal { grid-column: 1 / -1; font-size: 12.5px; line-height: 1.6; }
 
 <script>
 (() => {
+  // Promo film: plays muted like a GIF; the button turns the sound on. Reduced motion: no autoplay.
+  const promo = document.getElementById('promo');
+  const sound = document.getElementById('promo-sound');
+  if (promo) {
+    if (matchMedia('(max-width: 600px)').matches) promo.poster = 'img/promo-poster-tall.jpg';
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { promo.removeAttribute('autoplay'); promo.pause(); promo.controls = true; }
+    sound.addEventListener('click', () => {
+      const on = promo.muted;
+      promo.muted = !on;
+      if (on) { promo.currentTime = 0; promo.play(); }
+      sound.setAttribute('aria-pressed', String(on));
+      sound.querySelector('span').textContent = on ? 'Sound off' : 'Sound on';
+    });
+  }
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const buddies = [
     { id: 'ember', name: 'Ember', agent: 'Claude Code', blurb: 'A warm, round little bear who naps on the job' },
