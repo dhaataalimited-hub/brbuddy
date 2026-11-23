@@ -321,6 +321,8 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
   reviewed pack against the pack spec and publishes its preview sheet and zip, `remove` takes one down, `prompt`
   copies the AI prompt from `docs/making-a-companion.md` for the page. Submissions come in through the
   **Share a companion** issue form (`.github/ISSUE_TEMPLATE/share-a-companion.yml`). Not part of the app.
+- `Tools/gallery/originals/draw.py` draws BRBuddy's own gallery companions (Pip, Glorp, Nova, Dot, Scoot, Momo) in
+  Pillow, straight to the pack spec, and checks the top-right corner and cell edges stay empty.
 
 ## Keeping this map current
 - **When you add, move, rename or rewire a type:** update this file (file index, owners table) and the flow page it
