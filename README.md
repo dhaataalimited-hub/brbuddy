@@ -89,3 +89,7 @@ Contributions and companion packs are welcome. See [CONTRIBUTING.md](CONTRIBUTIN
 ## License
 Code: [MIT](LICENSE). The name "BRBuddy" and the app icon aren't covered by the licence: forks are welcome,
 but please ship yours under its own name and icon. See [TRADEMARKS.md](TRADEMARKS.md).
+
+**Using BRBuddy at work?** Go for it: the MIT licence covers companies too, free. If your team relies on it, we'd
+love to hear from you at hello@dhaataa.com, whether that's feedback, a feature your team needs, or support for
+keeping it going.
