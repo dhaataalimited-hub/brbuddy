@@ -1,5 +1,71 @@
 [
   {
+    "id": "pip",
+    "name": "Pip",
+    "description": "A tiny 8-bit knight who's been grinding XP since 1986.",
+    "creator": "BRBuddy",
+    "made": "Made with AI",
+    "boop": "level up!",
+    "license": "CC-BY-4.0",
+    "rows": 9,
+    "added": "2026-11-23"
+  },
+  {
+    "id": "glorp",
+    "name": "Glorp",
+    "description": "A dungeon slime who swallowed the key. It isn't giving it back.",
+    "creator": "BRBuddy",
+    "made": "Made with AI",
+    "boop": "blorp!",
+    "license": "CC-BY-4.0",
+    "rows": 9,
+    "added": "2026-11-23"
+  },
+  {
+    "id": "nova",
+    "name": "Nova",
+    "description": "A pocket arcade spaceship, fully fuelled and slightly over-excited.",
+    "creator": "BRBuddy",
+    "made": "Made with AI",
+    "boop": "pew pew!",
+    "license": "CC-BY-4.0",
+    "rows": 9,
+    "added": "2026-11-23"
+  },
+  {
+    "id": "dot",
+    "name": "Dot",
+    "description": "A rubber-hose cartoon bean, fresh out of a 1930s reel.",
+    "creator": "BRBuddy",
+    "made": "Made with AI",
+    "boop": "hot dog!",
+    "license": "CC-BY-4.0",
+    "rows": 9,
+    "added": "2026-11-23"
+  },
+  {
+    "id": "scoot",
+    "name": "Scoot",
+    "description": "A Saturday-morning alley cat. The bandage is from a long story.",
+    "creator": "BRBuddy",
+    "made": "Made with AI",
+    "boop": "meep!",
+    "license": "CC-BY-4.0",
+    "rows": 9,
+    "added": "2026-11-23"
+  },
+  {
+    "id": "momo",
+    "name": "Momo",
+    "description": "A rice ball with a seaweed wrap and a very soft heart.",
+    "creator": "BRBuddy",
+    "made": "Made with AI",
+    "boop": "mochi!",
+    "license": "CC-BY-4.0",
+    "rows": 9,
+    "added": "2026-11-23"
+  },
+  {
     "id": "blip",
     "name": "Blip",
     "description": "Made in BRBuddy Companion Studio",
