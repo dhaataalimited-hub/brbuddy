@@ -133,5 +133,7 @@ see from any app. **Off by default**: you add it to the screen, or take it away,
 - **Staying out of the way:** hides while a full-screen app or video call is in front, and is left out of screen
   sharing and recordings (so it never shows up in someone's meeting). Pauses its animation on
   battery power when nothing is happening; about 8 frames a second when it moves.
-- **Still to decide:** with more than one display, which screen it lives on (probably the one with the Dock);
-  whether it should show only while an agent is working.
+- **Which display:** with more than one, you pick its screen in the menu bar menu (the one with the Dock until
+  you choose). If that display is unplugged, it moves to the main one and goes back when it returns.
+- **Only while an agent is working:** an option in Settings, off by default. When it's on, the companion appears
+  when an agent starts work and leaves a little after it finishes (after its wave or worried look).
