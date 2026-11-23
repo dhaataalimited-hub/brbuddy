@@ -1,0 +1,77 @@
+name: Share a companion
+description: Put a companion you made in the gallery on brbuddy.app
+title: "Companion: "
+labels: ["companion submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing! Every companion is looked at by a person before it goes up on
+        [brbuddy.app/gallery](https://brbuddy.app/gallery/), usually within a week.
+
+        **How to get your pack:** in BRBuddy, open Settings → Companion and click **Show companions folder**. Find your
+        companion's folder, right-click it and choose **Compress**, then drag the `.zip` into the box below.
+  - type: input
+    id: name
+    attributes:
+      label: Companion's name
+      placeholder: Kiwi
+    validations:
+      required: true
+  - type: input
+    id: creator
+    attributes:
+      label: Credit me as
+      description: The name shown under your companion. A nickname is fine.
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link (optional)
+      description: Your own site or profile, if you want the credit to link somewhere.
+  - type: dropdown
+    id: made
+    attributes:
+      label: How did you make it?
+      options:
+        - Companion Studio
+        - With an AI, using the BRBuddy prompt
+        - I drew it myself
+    validations:
+      required: true
+  - type: textarea
+    id: about
+    attributes:
+      label: Tell us about it
+      description: One or two lines for the gallery card.
+    validations:
+      required: true
+  - type: textarea
+    id: pack
+    attributes:
+      label: The pack
+      description: Drag your zipped companion folder here (pet.json and both spritesheets inside). A screenshot is welcome too.
+    validations:
+      required: true
+  - type: dropdown
+    id: license
+    attributes:
+      label: How can people use it?
+      description: CC BY 4.0 means anyone can use and share it as long as they credit you. CC0 means no strings at all.
+      options:
+        - CC BY 4.0 (credit me)
+        - CC0 (no credit needed)
+    validations:
+      required: true
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: The small print
+      options:
+        - label: I made this companion myself (or with an AI working from my own idea), and I'm allowed to share it.
+          required: true
+        - label: It has no company logos or mascots, no real people, and no characters from films, games, shows or brands.
+          required: true
+        - label: I'm happy for it to be shown on brbuddy.app and downloaded under the licence I picked.
+          required: true

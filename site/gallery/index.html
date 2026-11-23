@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Companion gallery · BRBuddy</title>
+<meta name="description" content="Companions made by BRBuddy fans. Download one for your away screen, make your own with Companion Studio or any AI, and share it here.">
+<meta name="theme-color" content="#120f1f">
+<link rel="icon" type="image/png" href="../img/favicon-64.png">
+<link rel="apple-touch-icon" href="../img/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="BRBuddy companion gallery">
+<meta property="og:description" content="Companions made by BRBuddy fans. Download one, make your own, share it.">
+<meta property="og:url" content="https://brbuddy.app/gallery/">
+<meta property="og:image" content="https://brbuddy.app/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root {
+  --night: #120f1f;
+  --night-2: #1b1529;
+  --stage: #17121f;
+  --line: rgba(255, 255, 255, .09);
+  --card: rgba(255, 255, 255, .035);
+  --text: #f5f0fa;
+  --muted: rgba(245, 240, 250, .66);
+  --faint: rgba(245, 240, 250, .42);
+  --peach: #ffc78c;
+  --coral: #ed7385;
+  --mint: #7ee0a1;
+  --warm: linear-gradient(135deg, #ffc78c 0%, #ed7385 100%);
+  --rounded: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --radius: 22px;
+  --wrap: 1120px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--night); color: var(--text); font: 17px/1.6 var(--body); -webkit-font-smoothing: antialiased; overflow-x: clip; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--peach); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--peach); outline-offset: 3px; border-radius: 6px; }
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+h1, h2, h3 { font-family: var(--rounded); line-height: 1.12; margin: 0; letter-spacing: -.01em; }
+h1 { font-size: clamp(38px, 6vw, 64px); font-weight: 800; }
+h2 { font-size: clamp(28px, 4vw, 42px); font-weight: 800; }
+h3 { font-size: 20px; font-weight: 700; }
+p { margin: 0; }
+.eyebrow { font: 700 13px/1 var(--rounded); letter-spacing: .14em; text-transform: uppercase; color: var(--peach); margin-bottom: 14px; }
+.lede { color: var(--muted); font-size: 19px; max-width: 640px; margin: 16px auto 0; }
+.grad { background: var(--warm); -webkit-background-clip: text; background-clip: text; color: transparent; }
+section { padding: 90px 0; }
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 16px; top: 16px; z-index: 99; background: var(--night-2); padding: 8px 14px; }
+
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: saturate(160%) blur(18px); -webkit-backdrop-filter: saturate(160%) blur(18px);
+  background: rgba(18, 15, 31, .72); border-bottom: 1px solid var(--line); }
+nav .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); font: 800 19px var(--rounded); }
+.brand:hover { text-decoration: none; }
+.brand img { width: 32px; height: 32px; }
+nav ul { display: flex; gap: 24px; list-style: none; margin: 0 0 0 auto; padding: 0; }
+nav ul a { color: var(--muted); font-size: 15px; font-weight: 500; }
+nav ul a:hover, nav ul a[aria-current] { color: var(--text); text-decoration: none; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border-radius: 999px; font: 700 16px var(--rounded);
+  padding: 14px 24px; border: 0; cursor: pointer; transition: transform .15s, box-shadow .15s, background .15s; white-space: nowrap; }
+.btn:hover { text-decoration: none; transform: translateY(-1px); }
+.btn-warm { background: var(--warm); color: #2a1520; box-shadow: 0 10px 30px -10px rgba(237, 115, 133, .7); }
+.btn-ghost { background: rgba(255, 255, 255, .07); color: var(--text); border: 1px solid var(--line); }
+.btn-ghost:hover { background: rgba(255, 255, 255, .11); }
+.btn-sm { padding: 9px 16px; font-size: 14px; }
+.btn svg { width: 18px; height: 18px; }
+
+.hero { padding: 70px 0 30px; text-align: center; position: relative; overflow: hidden; }
+.hero::before { content: ""; position: absolute; inset: -30% -10% auto; height: 620px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(237, 115, 133, .2), transparent 70%),
+              radial-gradient(closest-side at 70% 40%, rgba(255, 199, 140, .13), transparent 70%); filter: blur(10px); }
+.hero .wrap { position: relative; }
+.hero .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
+
+/* Gallery cards */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-top: 20px; }
+.pack { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 14px 20px; display: flex; flex-direction: column; }
+.stage { position: relative; background: var(--stage); border-radius: 16px; height: 190px; display: grid; place-items: center; cursor: pointer;
+  border: 0; width: 100%; padding: 0; }
+.sprite { width: 144px; height: 156px; background-repeat: no-repeat; background-size: 1152px calc(var(--rows, 9) * 156px);
+  background-position: 0 calc(var(--row, 0) * -156px); animation: play 1s steps(8) infinite; }
+.stage:hover .sprite, .stage:focus-visible .sprite { --row: 4; }
+.stage.booped .sprite { --row: 3; }
+@keyframes play { to { background-position-x: -1152px; } }
+.bubble { position: absolute; top: 14px; right: 14px; background: #fff; color: #2a1520; font: 800 14px var(--rounded); padding: 5px 11px;
+  border-radius: 14px; opacity: 0; transform: scale(.6); transition: opacity .15s, transform .2s cubic-bezier(.3, 1.6, .5, 1); pointer-events: none; }
+.stage.booped .bubble { opacity: 1; transform: none; }
+.pack h3 { margin-top: 16px; padding: 0 6px; }
+.pack .by { color: var(--faint); font-size: 14px; padding: 0 6px; margin-top: 2px; }
+.pack .by a { color: var(--muted); }
+.pack .about { color: var(--muted); font-size: 15px; padding: 0 6px; margin-top: 8px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 6px; margin: 12px 0 16px; }
+.tag { font: 700 11.5px var(--rounded); letter-spacing: .03em; color: var(--peach); background: rgba(255, 199, 140, .09); border-radius: 999px; padding: 3px 10px; }
+.tag.mint { color: var(--mint); background: rgba(126, 224, 161, .09); }
+.pack .btn { margin: auto 6px 0; align-self: flex-start; }
+.empty { text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--radius); padding: 50px 20px; }
+.hint { color: var(--faint); font-size: 14px; text-align: center; margin-top: 26px; }
+
+/* Make and share */
+.center { text-align: center; }
+.ways { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 44px; }
+.way { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
+.way p, .way li { color: var(--muted); font-size: 15.5px; }
+.way p { margin-top: 8px; }
+.way ol { margin: 14px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.way .num { font: 800 13px var(--rounded); color: var(--peach); letter-spacing: .1em; text-transform: uppercase; }
+.way h3 { margin-top: 6px; }
+kbd, code { font: 13px var(--mono); color: var(--peach); }
+.prompt { margin-top: 18px; }
+.prompt-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--night-2);
+  border: 1px solid var(--line); border-bottom: 0; border-radius: 14px 14px 0 0; padding: 8px 8px 8px 16px; color: var(--faint); font-size: 13px; }
+.prompt pre { margin: 0; max-height: 300px; overflow: auto; background: #0d0b17; border: 1px solid var(--line); border-radius: 0 0 14px 14px;
+  padding: 16px; font: 12.5px/1.55 var(--mono); color: var(--muted); white-space: pre-wrap; word-break: break-word; }
+.share { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 44px; }
+.share .way h3 { font-size: 18px; }
+.cta { text-align: center; margin-top: 36px; }
+.cta p { color: var(--faint); font-size: 14px; margin-top: 14px; }
+
+footer { border-top: 1px solid var(--line); padding: 40px 0 52px; color: var(--faint); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 18px; }
+footer a { color: var(--muted); }
+
+@media (max-width: 860px) {
+  nav ul { display: none; }
+  nav .btn { margin-left: auto; }
+  .ways, .share { grid-template-columns: 1fr; }
+  section { padding: 70px 0; }
+}
+@media (max-width: 600px) {
+  .wrap { padding: 0 16px; }
+  .grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stage { height: 150px; }
+  .sprite { transform: scale(.8); }
+  .pack { padding: 10px 10px 16px; }
+  .pack h3 { font-size: 17px; }
+  .pack .about { font-size: 14px; }
+}
+@media (max-width: 380px) { .grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) {
+  .sprite { animation: none; }
+  .btn:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="BRBuddy home"><img src="../img/icon-256.png" alt="" width="32" height="32">BRBuddy</a>
+    <ul>
+      <li><a href="#gallery" aria-current="page">Gallery</a></li>
+      <li><a href="#make">Make your own</a></li>
+      <li><a href="#share">Share yours</a></li>
+    </ul>
+    <a class="btn btn-warm btn-sm" href="../#install">Download BRBuddy</a>
+  </div>
+</nav>
+
+<main id="main">
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Companion gallery</p>
+    <h1>Made by <span class="grad">BRBuddy fans.</span></h1>
+    <p class="lede">Companions people have built for their away screens. Download one to keep you company, make your own, and share it here.</p>
+    <div class="actions">
+      <a class="btn btn-warm" href="#make">Make your own</a>
+      <a class="btn btn-ghost" href="#share">Share yours</a>
+    </div>
+  </div>
+</section>
+
+<section id="gallery" style="padding-top:30px">
+  <div class="wrap">
+    <div class="grid" id="packs" aria-live="polite"></div>
+    <p class="hint" id="hint" hidden>Hover to cheer them on. Click to boop.</p>
+  </div>
+</section>
+
+<section id="add" style="padding-top:0">
+  <div class="wrap">
+    <div class="way" style="max-width:760px;margin:0 auto">
+      <p class="num">Got one you like?</p>
+      <h3>Add it to BRBuddy</h3>
+      <ol>
+        <li>Download it and double-click the <code>.zip</code> to unzip it.</li>
+        <li>In BRBuddy, open <strong>Settings → Companion → Add companion pack…</strong> and pick the folder.</li>
+        <li>Choose it in the Companion picker. Click it to boop it.</li>
+      </ol>
+      <p style="margin-top:14px;font-size:14px;color:var(--faint)">Made in Companion Studio? Open Studio and click <strong>Edit</strong> to remix it into something of your own.</p>
+    </div>
+  </div>
+</section>
+
+<section id="make" style="background:linear-gradient(180deg, transparent, rgba(255,255,255,.02))">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow">Make your own</p>
+      <h2>Two ways to build a companion.</h2>
+      <p class="lede">No drawing skills needed for either.</p>
+    </div>
+    <div class="ways">
+      <div class="way">
+        <p class="num">The easy way</p>
+        <h3>Companion Studio</h3>
+        <p>Built into BRBuddy. Pick a body, colours, ears, extras, a face, blush and a mouth, then its own boop sound and catchphrase. It reacts in a live preview while you build.</p>
+        <ol>
+          <li>Open <strong>Settings → Companion → Companion Studio…</strong></li>
+          <li>Build your critter and boop it to test it.</li>
+          <li>Click <strong>Save as pack</strong>. It's yours.</li>
+        </ol>
+      </div>
+      <div class="way">
+        <p class="num">Anything you can imagine</p>
+        <h3>Ask any AI</h3>
+        <p>A toaster, a cactus, a sleepy moon. Copy our prompt, fill in the three lines under <strong>MY CHARACTER</strong>, and paste it into an AI that can run code and make files (Claude, ChatGPT or Gemini). It hands you a pack folder to add.</p>
+        <div class="prompt">
+          <div class="prompt-bar"><span>The creator prompt</span><button class="btn btn-warm btn-sm" id="copy" type="button">Copy prompt</button></div>
+          <pre id="prompt-text">Loading the prompt…</pre>
+        </div>
+        <p style="font-size:14px;color:var(--faint)">Stuck? The <a href="https://github.com/dhaataalimited-hub/brbuddy/blob/main/docs/making-a-companion.md">full guide</a> has the signature sounds and fixes for packs that won't load.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="share">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow">Share yours</p>
+      <h2>Put your companion in the gallery.</h2>
+      <p class="lede">Made something you love? Send it in and it could keep someone else company while their agent works.</p>
+    </div>
+    <div class="share">
+      <div class="way">
+        <p class="num">Step 1</p>
+        <h3>Zip it up</h3>
+        <p>In BRBuddy's Companion settings, click <strong>Show companions folder</strong>. Right-click your companion's folder and choose <strong>Compress</strong>.</p>
+      </div>
+      <div class="way">
+        <p class="num">Step 2</p>
+        <h3>Send it in</h3>
+        <p>Fill in the short form on GitHub: its name, how to credit you, and the zip. You'll need a free GitHub account.</p>
+      </div>
+      <div class="way">
+        <p class="num">Step 3</p>
+        <h3>We put it up</h3>
+        <p>A person checks every companion before it goes live, usually within a week. We'll reply on your submission when it's up.</p>
+      </div>
+    </div>
+    <div class="cta">
+      <a class="btn btn-warm" href="https://github.com/dhaataalimited-hub/brbuddy/issues/new?template=share-a-companion.yml">Share your companion</a>
+      <p>Original characters only: no company logos or mascots, real people, or characters from films, games, shows or brands.<br>
+        Companions are shared under CC BY 4.0 or CC0, the creator's choice. Something here that shouldn't be? Email <a href="mailto:hello@dhaataa.com">hello@dhaataa.com</a>.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><a href="../">BRBuddy</a> · Made by <a href="https://dhaataa.com">dhaataa</a>. Free and open source.</span>
+    <span>Companions belong to their creators and are shared under the licence shown on each.</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const grid = document.getElementById('packs');
+  const LICENCES = { 'CC-BY-4.0': 'CC BY 4.0', 'CC0-1.0': 'CC0' };
+  const el = (tag, props = {}, kids = []) => {
+    const node = Object.assign(document.createElement(tag), props);
+    node.append(...kids);
+    return node;
+  };
+
+  const card = (pack) => {
+    const base = `packs/${encodeURIComponent(pack.id)}/`;
+    const sprite = el('div', { className: 'sprite' });
+    sprite.style.backgroundImage = `url("${base}preview.webp")`;
+    sprite.style.setProperty('--rows', pack.rows === 11 ? 11 : 9);
+    const stage = el('button', { className: 'stage', type: 'button', title: `Boop ${pack.name}` }, [sprite, el('span', { className: 'bubble', textContent: pack.boop })]);
+    stage.setAttribute('aria-label', `Boop ${pack.name}`);
+    let timer;
+    stage.addEventListener('click', () => {
+      stage.classList.add('booped');
+      clearTimeout(timer);
+      timer = setTimeout(() => stage.classList.remove('booped'), 1600);
+    });
+    const by = el('p', { className: 'by' }, ['by ']);
+    if (pack.link && /^https:\/\//.test(pack.link)) by.append(el('a', { href: pack.link, rel: 'nofollow noopener', textContent: pack.creator }));
+    else by.append(pack.creator);
+    const kids = [stage, el('h3', { textContent: pack.name }), by];
+    if (pack.description && pack.description !== 'Made in BRBuddy Companion Studio') kids.push(el('p', { className: 'about', textContent: pack.description }));
+    kids.push(el('div', { className: 'tags' }, [
+      el('span', { className: 'tag', textContent: pack.made }),
+      el('span', { className: 'tag mint', textContent: LICENCES[pack.license] || pack.license }),
+    ]));
+    const download = el('a', { className: 'btn btn-ghost btn-sm', href: `${base}${encodeURIComponent(pack.id)}.zip`, textContent: 'Download' });
+    download.setAttribute('download', '');
+    kids.push(download);
+    return el('article', { className: 'pack' }, kids);
+  };
+
+  fetch('packs.json', { cache: 'no-cache' })
+    .then((r) => r.ok ? r.json() : [])
+    .catch(() => [])
+    .then((packs) => {
+      grid.replaceChildren();
+      if (!packs.length) {
+        grid.append(el('div', { className: 'empty', style: 'grid-column:1/-1' }, [
+          el('h3', { textContent: 'Nobody here yet.' }),
+          el('p', { textContent: 'Be the first: make a companion and share it below.', style: 'margin-top:8px' }),
+        ]));
+        return;
+      }
+      packs.forEach((pack) => grid.append(card(pack)));
+      document.getElementById('hint').hidden = false;
+    });
+
+  const promptText = document.getElementById('prompt-text');
+  const copy = document.getElementById('copy');
+  fetch('prompt.txt', { cache: 'no-cache' })
+    .then((r) => r.ok ? r.text() : Promise.reject())
+    .then((text) => { promptText.textContent = text; })
+    .catch(() => {
+      promptText.textContent = 'Couldn\'t load the prompt here. It\'s in the full guide linked below.';
+      copy.hidden = true;
+    });
+  copy.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(promptText.textContent);
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(promptText);
+      getSelection().removeAllRanges();
+      getSelection().addRange(range);
+      document.execCommand('copy');
+    }
+    copy.textContent = 'Copied!';
+    setTimeout(() => { copy.textContent = 'Copy prompt'; }, 1800);
+  });
+})();
+</script>
+</body>
+</html>
