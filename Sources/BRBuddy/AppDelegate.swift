@@ -30,6 +30,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let path = ProcessInfo.processInfo.environment["BRBUDDY_SITE_ART"] {
             CompanionContactSheet.renderSiteArt(to: URL(fileURLWithPath: path))
         }
+        // BRBUDDY_PROMO=<dir>: render the promo film's frames and sounds (Tools/promo/make-promo.sh), then quit.
+        if let path = ProcessInfo.processInfo.environment["BRBUDDY_PROMO"] {
+            PromoFilm.render(to: URL(fileURLWithPath: path))
+            exit(0)
+        }
         // BRBUDDY_START_AWAY=<seconds>: open BRB that many seconds after launch (1 = almost straight away).
         if let delay = ProcessInfo.processInfo.environment["BRBUDDY_START_AWAY"].flatMap(Double.init), delay > 0 {
             Task {

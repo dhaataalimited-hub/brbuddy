@@ -126,6 +126,7 @@ automatic updates; both are used only by the app target.
 | `CompanionStudioView`, `StudioSheetRenderer` | `BRBuddy/CompanionStudio.swift` | `BRBuddyApp`'s Window scene | Main actor; sheets rendered on the main actor, yielding between rows | Companion Studio: edits a `StudioDesign` with a live, boopable preview; renders the pack's two spritesheets from `CritterView`; saves through `StudioPackWriter` and picks it |
 | `CompanionContactSheet` | `BRBuddy/CompanionContactSheet.swift` | `AppDelegate` (debug only) | Main actor | Renders every built-in in every mood to a PNG, and the app icon options |
 | `AppIconArt` | `BRBuddy/CompanionContactSheet.swift` | `CompanionContactSheet` (debug only) | Main actor | The app icon artwork, drawn with `CritterView`; option 2 ("BRB bubble") is `Config/AppIcon.icns` |
+| `PromoFilm` | `BRBuddy/PromoFilm.swift` | `AppDelegate` (debug only) | Main actor | Draws the promo film frame by frame with `CritterView`, `BoopFlair` and `AppIconArt` |
 | `TerminalMirror` | `BRBuddy/TerminalMirror.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; capture on a detached task | Picks a source per `TerminalMirrorMode`, refreshes every second while retained (BRB up or Settings open) |
 | `TerminalMirrorView` | `BRBuddy/TerminalMirrorView.swift` | `AwayView`, Settings | Main actor (view) | Draws styled lines, latest that fit; no input path |
 | `ProximityMonitor` | `BRBuddy/ProximityMonitor.swift` | `AppState`, app lifetime; Bluetooth manager created only when walk-away is on or the picker is open | `@MainActor`, `@Observable`; CoreBluetooth on the main queue | Lists nearby iPhones and Watches (filters accessories by Continuity type, briefly connects to read each model, hides Macs/iPads, marks the closest); connects to the chosen one, reads RSSI every 2 s, reconnects; tells `AppState` when it leaves |
@@ -227,6 +228,8 @@ Debug builds read these environment variables, all compiled out of release build
   `BRBUDDY_MOUTH_SHEET`, `BRBUDDY_BOOP_SHEET`, `BRBUDDY_BATTERY_SHEET`, `BRBUDDY_STUDIO_SNAPSHOT=<dir>`,
   `BRBUDDY_ICON_OPTIONS=<dir>` (the app icon candidates, `AppIconArt`) and `BRBUDDY_SITE_ART=<dir>` (the
   website's companion images; see `site/README.md`).
+- `BRBUDDY_PROMO=<dir>` (`PromoFilm`): the 30-second promo film's frames (wide and tall) and boop sounds, then quits;
+  `BRBUDDY_PROMO_ONLY=<seconds,...>` renders just those moments. `Tools/promo/make-promo.sh` turns them into MP4s.
 - `BRBUDDY_FAKE_BATTERY` (`BatteryMonitor`) and `BRBUDDY_SOCKET` (`AgentSocket`, used by the tests).
 
 ## Journeys (flow pages)
@@ -260,6 +263,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/CompanionView.swift`: shows the chosen companion; sprite pack player.
 - `BRBuddy/CritterView.swift`: the six built-in critters and their shapes.
 - `BRBuddy/CompanionContactSheet.swift`: debug-only render of every critter and mood, and the app icon artwork.
+- `BRBuddy/PromoFilm.swift`: debug-only promo film renderer (frames and boop sounds for `Tools/promo/make-promo.sh`).
 - `BRBuddy/TerminalMirror.swift`: picks and refreshes the terminal mirror's source.
 - `BRBuddy/TerminalMirrorView.swift`: draws the read-only terminal panel.
 - `BRBuddy/AccessibilityTerminalReader.swift`: reads terminal window text via Accessibility.
@@ -311,6 +315,8 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - Update feed: `https://github.com/dhaataalimited-hub/brbuddy/releases/latest/download/appcast.xml` (needs the
   repository public). Never publish an unsigned appcast: Sparkle ignores it and users silently stop updating
   (`Tools/release.sh` refuses).
+- `Tools/promo/make-promo.sh` makes the promo videos in `build/promo/` from the debug app's `PromoFilm` frames and
+  the soundtrack `Tools/promo/music.py` synthesises (needs ffmpeg and numpy).
 
 ## Keeping this map current
 - **When you add, move, rename or rewire a type:** update this file (file index, owners table) and the flow page it
