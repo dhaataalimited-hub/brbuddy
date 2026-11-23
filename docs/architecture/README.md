@@ -317,6 +317,10 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
   (`Tools/release.sh` refuses).
 - `Tools/promo/make-promo.sh` makes the promo videos in `build/promo/` from the debug app's `PromoFilm` frames and
   the soundtrack `Tools/promo/music.py` synthesises (needs ffmpeg and numpy).
+- `Tools/gallery/gallery.py` looks after the companion gallery on the website (`site/gallery/`): `add` checks a
+  reviewed pack against the pack spec and publishes its preview sheet and zip, `remove` takes one down, `prompt`
+  copies the AI prompt from `docs/making-a-companion.md` for the page. Submissions come in through the
+  **Share a companion** issue form (`.github/ISSUE_TEMPLATE/share-a-companion.yml`). Not part of the app.
 
 ## Keeping this map current
 - **When you add, move, rename or rewire a type:** update this file (file index, owners table) and the flow page it

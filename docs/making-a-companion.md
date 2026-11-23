@@ -14,6 +14,9 @@ load: a folder with `pet.json` and two spritesheets.
    the folder.
 5. Choose it in the Companion picker and click the preview to boop it.
 
+The same prompt, with a Copy button, is on the [companion gallery](https://brbuddy.app/gallery/#make). Made one you
+love? [Share it in the gallery](https://brbuddy.app/gallery/#share).
+
 Use only art you made or are allowed to use. Packs you share must follow [CONTRIBUTING.md](../CONTRIBUTING.md): no
 company logos, mascots or other people's characters.
 

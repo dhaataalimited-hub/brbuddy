@@ -6,7 +6,7 @@ BRBuddy is a free, open-source Mac menu bar app for when you step away while an 
 Mac awake, covers the screen with a cute companion (and, if you want, a read-only view of your terminal), and asks
 for Touch ID or your password when someone touches the keyboard.
 
-Website: **[brbuddy.app](https://brbuddy.app)**
+Website: **[brbuddy.app](https://brbuddy.app)** · Companion gallery: **[brbuddy.app/gallery](https://brbuddy.app/gallery/)**
 
 > **Status: early (v0.1).** Keep-awake, BRB (Away mode), agent status, companions, the terminal mirror and the
 > walk-away lock work. See [ROADMAP.md](ROADMAP.md).
@@ -23,7 +23,8 @@ Website: **[brbuddy.app](https://brbuddy.app)**
   you (including your agent) can close it, and a restart ends it. When you need real security, lock the Mac (or let
   BRBuddy hand off to the macOS lock screen).
 - Pick a companion in **Settings…**: six original critters (one per agent's vibe), or add any Codex pet with
-  **Add companion pack…** (or make your own with any AI: [docs/making-a-companion.md](docs/making-a-companion.md)).
+  **Add companion pack…** (or make your own with any AI: [docs/making-a-companion.md](docs/making-a-companion.md)). Download
+  ones other people made, and share yours, in the [companion gallery](https://brbuddy.app/gallery/).
   Change everything else there too.
 - Want to see your agent from across the room? Turn on **Terminal on the away screen**: a read-only view of the
   tmux pane or Terminal window your agent runs in, or a feed of what it's doing. Off by default, since anyone at

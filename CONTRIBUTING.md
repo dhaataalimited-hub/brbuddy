@@ -18,7 +18,9 @@ BRBuddy is a side project kept up by one person, so a few expectations:
 
 ## Companion packs
 The quickest way to make one is [docs/making-a-companion.md](docs/making-a-companion.md): a prompt you paste into
-any AI that builds the whole pack. The details:
+any AI that builds the whole pack. To share one, use the **Share a companion** form (it's on
+[brbuddy.app/gallery](https://brbuddy.app/gallery/#share)); reviewed packs go up in the gallery, added with
+`Tools/gallery/gallery.py`. The details:
 
 Packs use the Codex pet format, so they work in other pet apps too: a folder with `pet.json` and an 8-column
 spritesheet of 192×208 cells, 1536×1872 (v1, 9 rows) or 1536×2288 (v2, 11 rows, `"spriteVersionNumber": 2`). Rows:

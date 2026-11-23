@@ -1,0 +1,35 @@
+[
+  {
+    "id": "blip",
+    "name": "Blip",
+    "description": "Made in BRBuddy Companion Studio",
+    "creator": "BRBuddy",
+    "made": "Companion Studio",
+    "boop": "yay!",
+    "license": "CC-BY-4.0",
+    "rows": 9,
+    "added": "2026-11-23"
+  },
+  {
+    "id": "kiwi",
+    "name": "Kiwi",
+    "description": "Made in BRBuddy Companion Studio",
+    "creator": "BRBuddy",
+    "made": "Companion Studio",
+    "boop": "yo!",
+    "license": "CC-BY-4.0",
+    "rows": 9,
+    "added": "2026-11-23"
+  },
+  {
+    "id": "sprocket",
+    "name": "Sprocket",
+    "description": "Made in BRBuddy Companion Studio",
+    "creator": "BRBuddy",
+    "made": "Companion Studio",
+    "boop": "yay!",
+    "license": "CC-BY-4.0",
+    "rows": 9,
+    "added": "2026-11-23"
+  }
+]
