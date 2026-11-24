@@ -1,6 +1,7 @@
 # Releasing BRBuddy
 
-A release is a signed, notarized `BRBuddy-<version>.dmg` on GitHub Releases, plus `appcast.xml` (the Sparkle update
+A release is a signed, notarized `BRBuddy-<version>.dmg` on GitHub Releases, plus the same image as `BRBuddy.dmg` (a fixed
+name, so the website's Download buttons can link `releases/latest/download/BRBuddy.dmg`), `appcast.xml` (the Sparkle update
 feed that installed copies check) and a Homebrew cask. Pushing a `vX.Y.Z` tag does it all in GitHub Actions
 (`.github/workflows/release.yml`, which runs `Tools/release.sh`).
 
@@ -116,7 +117,7 @@ and the Sparkle private key in your keychain:
 SIGN_IDENTITY="Developer ID Application: YOUR NAME (TEAMID)" SPARKLE_PUBLIC_KEY="PUBLIC_KEY" NOTARY_PROFILE=brbuddy-notary Tools/release.sh 0.1.0
 ```
 
-Then upload `build/release/BRBuddy-0.1.0.dmg` and `build/release/appcast.xml` to a GitHub release named `v0.1.0`.
+Then upload `build/release/BRBuddy-0.1.0.dmg`, a copy of it named `BRBuddy.dmg`, and `build/release/appcast.xml` to a GitHub release named `v0.1.0`.
 
 ## Dry run (no certificate needed)
 
