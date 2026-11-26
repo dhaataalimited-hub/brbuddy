@@ -28,6 +28,8 @@ final class AppState {
     /// Keep-awake switched on by hand from the menu.
     private(set) var manualKeepAwake = false
     private(set) var launchAtLoginError: String?
+    /// Called after BRB ends (the first-launch tour picks up again after its BRB demo).
+    var onAwayEnded: (() -> Void)?
 
     var settings: AwaySettings {
         didSet {
@@ -46,7 +48,10 @@ final class AppState {
         away.battery = battery
         mirror.agents = agents
         proximity.onLeft = { [weak self] in self?.deviceLeft() }
-        away.onEnded = { [weak self] _ in self?.applyKeepAwakeMode() }
+        away.onEnded = { [weak self] _ in
+            self?.applyKeepAwakeMode()
+            self?.onAwayEnded?()
+        }
         agents.onChange = { [weak self] in self?.applyKeepAwakeMode() }
         KeyboardShortcuts.onKeyUp(for: .brbNow) { [weak self] in self?.startAway() }
         idleTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
@@ -106,14 +111,28 @@ final class AppState {
 
     // MARK: Launch at login
 
-    var launchesAtLogin: Bool { SMAppService.mainApp.status == .enabled }
+    /// Kept here (not read from macOS on every draw) so views redraw when it changes. macOS can also change it (the
+    /// user approves or removes BRBuddy in Login Items), so views showing it call `refreshLaunchAtLogin` when they open.
+    private(set) var launchAtLoginStatus = SMAppService.mainApp.status
+
+    /// On, or registered and waiting for the user's OK in System Settings.
+    var launchesAtLogin: Bool { launchAtLoginStatus == .enabled || launchAtLoginStatus == .requiresApproval }
+    var launchAtLoginNeedsApproval: Bool { launchAtLoginStatus == .requiresApproval }
+
+    func refreshLaunchAtLogin() {
+        launchAtLoginStatus = SMAppService.mainApp.status
+    }
 
     func setLaunchesAtLogin(_ on: Bool) {
+        refreshLaunchAtLogin()
+        // Registering again while already registered adds another Login Items entry on some macOS versions.
+        guard on != launchesAtLogin else { return }
         do {
             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
             launchAtLoginError = nil
         } catch {
             launchAtLoginError = error.localizedDescription
         }
+        refreshLaunchAtLogin()
     }
 }
