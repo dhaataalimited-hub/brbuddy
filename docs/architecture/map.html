@@ -197,7 +197,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   <p><code>AppState</code> is passed to views by initializer; controllers are reached through it. There are no singletons. <code>AwayController</code> tells <code>AppState</code> that BRB ended through a callback, so keep-awake can change mode.</p>
   <div class="tablebox"><table>
     <tr><th>Type</th><th>File</th><th>Created by · lifetime</th><th>Thread</th><th>Job</th></tr>
-    <tr><td><code>AppDelegate</code></td><td class="mono">BRBuddy/AppDelegate.swift</td><td>SwiftUI adaptor · app</td><td>Main</td><td>Owns <code>AppState</code> and <code>UpdateController</code>; refuses to quit while BRB is up; debug launch hooks</td></tr>
+    <tr><td><code>AppDelegate</code></td><td class="mono">BRBuddy/AppDelegate.swift</td><td>SwiftUI adaptor · app</td><td>Main</td><td>Owns <code>AppState</code>, <code>UpdateController</code> and <code>TourController</code>; opens the tour on first launch; refuses to quit while BRB is up; debug launch hooks</td></tr>
     <tr><td><code>UpdateController</code></td><td class="mono">BRBuddy/UpdateController.swift</td><td><code>AppDelegate</code> · app</td><td>Main</td><td>Sparkle updates and Check for Updates…; only in release builds that carry a feed and public key</td></tr>
     <tr><td><code>AppState</code></td><td class="mono">BRBuddy/AppState.swift</td><td><code>AppDelegate</code> · app</td><td>Main, observable</td><td>Keep-awake decision, 5 s idle check, global shortcut, launch at login, walk-away action</td></tr>
     <tr><td><code>AwayController</code></td><td class="mono">BRBuddy/AwayController.swift</td><td><code>AppState</code> · app</td><td>Main, observable</td><td>Windows, locked-down presentation options, focus guard, unlock, failures, escalation</td></tr>
@@ -210,6 +210,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><td><code>BoopPlayer</code>, <code>BoopFlair</code></td><td class="mono">BRBuddy/BoopView.swift</td><td><code>CompanionView</code></td><td>Main</td><td>Plays boop sounds; boop motion, effects and bubble</td></tr>
     <tr><td><code>BatteryMonitor</code></td><td class="mono">BRBuddy/BatteryMonitor.swift</td><td><code>AppState</code> · app</td><td>Main; 1 s timer while BRB is up</td><td>Reads the battery while retained by <code>AwayController</code>; notices plug and unplug (<code>BatteryWatch</code>)</td></tr>
     <tr><td><code>BatteryBadge</code>, <code>BatteryFlair</code></td><td class="mono">BRBuddy/BatteryView.swift</td><td><code>AwayView</code>, <code>CompanionView</code></td><td>Main (views)</td><td>The away screen's battery pill; the companion's battery props and speech bubble</td></tr>
+    <tr><td><code>TourController</code></td><td class="mono">BRBuddy/TourController.swift</td><td><code>AppDelegate</code> · app</td><td>Main, observable</td><td>First-launch tour: the hanging companion and tour panels, placed under the menu bar item (or mid-screen); resumes after its BRB demo</td></tr>
+    <tr><td><code>HangingBuddyView</code>, <code>TourView</code></td><td class="mono">BRBuddy/TourView.swift</td><td>The tour's panels</td><td>Main (views)</td><td>The swaying companion on its string with a bubble; the four tour steps and the closing screen</td></tr>
+    <tr><td><code>FirstLaunchTour</code></td><td class="mono">BRBuddyCore/FirstLaunchTour.swift</td><td>Static</td><td>Pure</td><td>Tour steps, the seen flag, panel placement</td></tr>
     <tr><td><code>BatteryStatus</code>, <code>BatteryReaction</code></td><td class="mono">BRBuddyCore/Battery.swift</td><td>Values in <code>BatteryMonitor</code></td><td>Pure (+ IOKit read)</td><td>Battery from IOKit power sources; which reaction to show</td></tr>
     <tr><td><code>ProximityMonitor</code></td><td class="mono">BRBuddy/ProximityMonitor.swift</td><td><code>AppState</code> · app</td><td>Main (CoreBluetooth queue)</td><td>Device picker (accessories filtered, models read, closest marked); test mode (live signal, no BRB); only paired iPhones (<code>WalkAwayPairing</code>, <code>PairedDevices</code>); connects, reads signal every 2 s, reports departure</td></tr>
     <tr><td><code>AppleDeviceInfo</code></td><td class="mono">BRBuddyCore/AppleDeviceInfo.swift</td><td>Static</td><td>Pure</td><td>Continuity message types; model number → iPhone / Watch / iPad / Mac</td></tr>
@@ -223,7 +226,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
 
 <section id="nav" aria-labelledby="nav-h">
   <h2 id="nav-h">Menus and screens</h2>
-  <p><b>Menu:</b> Keep Mac awake · "Kept awake while your agent works" · BRB now (⌃⌥⌘B) · "BRB starts after N min away" · "Walk-away: …" · agents list (up to six sessions; clicking one jumps to its Terminal/iTerm2 tab or app window) or "Set up agents…" · Settings… · Quit BRBuddy.</p>
+  <p><b>Menu:</b> Keep Mac awake · "Kept awake while your agent works" · BRB now (⌃⌥⌘B) · "BRB starts after N min away" · "Walk-away: …" · agents list (up to six sessions; clicking one jumps to its Terminal/iTerm2 tab or app window) or "Set up agents…" · Settings… · Show tour again · Quit BRBuddy.</p>
   <p><b>Away screen phases</b> (<code>AwayController.Phase</code>): resting → any key, click, scroll or mouse move → unlocking → back to resting after 30 s without input. Any phase → locking for real when <code>AwayPolicy</code> says so (3 failures or 60 min by default), which shows the reason for 2 s, calls the real lock, and takes the away screen down only once <code>ScreenLocker</code> confirms the lock screen is up (otherwise BRB stays up and retries a minute later).</p>
 </section>
 
@@ -279,6 +282,12 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
       <ul><li>Read once a second, only while BRB is up; desktop Macs show nothing.</li><li>Plug-in cheers and unplug surprise last 6 s and change the mood; low (≤20%) sweats, critical (≤10%) wobbles, Low Power Mode plays in slow motion.</li><li>Agent waiting or someone unlocking keeps the speech bubble.</li><li>On battery the body holds still and only the face moves; packs can ship a still sheet (<code>stillSpritesheetPath</code>).</li></ul>
       <div class="files">BRBuddyCore/Battery.swift · BRBuddy/BatteryMonitor.swift · BRBuddy/BatteryView.swift · BRBuddy/CritterView.swift · BRBuddy/CompanionView.swift · BRBuddy/AwayView.swift</div>
     </article>
+    <article class="card" id="j-tour">
+      <h3>First-launch tour</h3>
+      <div class="chain"><b>AppDelegate</b> → <b>TourController</b> (<b>FirstLaunchTour</b>: seen?) → <b>HangingBuddyView</b> panel → click → <b>TourView</b> panel → <b>AgentMonitor</b> / <b>AppState</b> / <b>CompanionLibrary</b></div>
+      <ul><li>First launch only: the companion hangs on a string under the paw, then a four-step tour (connect agents, try BRB, pick a companion, extras).</li><li>Try BRB now starts real BRB; after unlocking, <code>AppState</code>'s away-ended callback brings the tour back at step 3.</li><li>Seen once finished, skipped or closed; Show tour again in the menu reruns it.</li><li>Menu bar item hidden (notch, organiser) or not found: both panels go mid-screen.</li></ul>
+      <div class="files">BRBuddyCore/FirstLaunchTour.swift · BRBuddy/TourController.swift · BRBuddy/TourView.swift · BRBuddy/AppDelegate.swift · BRBuddy/AppState.swift · BRBuddy/MenuContent.swift</div>
+    </article>
   </div>
 </section>
 
@@ -289,6 +298,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><th>Keys</th><th>Holds</th></tr>
     <tr><td class="mono">away.*</td><td>Auto-start, idle minutes (1–120, default 3), failed tries (1–10, default 3), minutes before real lock (0 = never, default 60)</td></tr>
     <tr><td class="mono">away.showBattery</td><td>Battery badge on the away screen (default on)</td></tr>
+    <tr><td class="mono">tour.seen</td><td>The first-launch tour was finished, skipped or closed</td></tr>
     <tr><td class="mono">companion.boopSounds</td><td>Sound when the companion is clicked (default on)</td></tr>
     <tr><td class="mono">agents.keepAwake</td><td>Keep awake while an agent works (default on)</td></tr>
     <tr><td class="mono">companion.choice</td><td><code>auto</code>, <code>builtin:&lt;id&gt;</code> or <code>pack:&lt;folder&gt;</code></td></tr>
@@ -330,6 +340,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <dt>The menu doesn't show my agent.</dt><dd>Press Set up in Settings → Agents, then start a new agent session. Desktop apps can't report status.</dd>
     <dt>The terminal panel says "Nothing to show".</dt><dd>It lists why: tmux missing or not running, Accessibility not allowed, or no agent events yet.</dd>
     <dt>Accessibility was forgotten after an update.</dt><dd>Ad-hoc builds change signature each build; toggle BRBuddy off and on in Privacy &amp; Security → Accessibility. Developer ID builds fix this.</dd>
+    <dt>I can't tell BRBuddy is running.</dt><dd>It lives in the menu bar as a paw (no Dock icon). On first launch its companion hangs under the paw to point it out; Show tour again in the menu replays that tour.</dd>
     <dt>The away screen doesn't show the battery.</dt><dd>Check Settings → Away Screen → Battery; it applies next time BRB starts. Desktop Macs have no battery.</dd>
     <dt>Walk-away fires too early or late.</dt><dd>Change "Away means" (Near / Room / Far) and test a few times; thresholds aren't tuned on real devices yet.</dd>
   </dl>
@@ -351,5 +362,5 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   </dl>
 </section>
 
-<footer>Generated 2026-11-23 from docs/architecture after adding the companion gallery (branch gallery). The markdown is the source; regenerate this page after changes.</footer>
+<footer>Generated 2026-11-26 from docs/architecture after adding the first-launch tour (branch first-launch-tour). The markdown is the source; regenerate this page after changes.</footer>
 </div>

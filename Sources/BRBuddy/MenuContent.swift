@@ -7,6 +7,7 @@ import SwiftUI
 struct MenuContent: View {
     let state: AppState
     let updates: UpdateController
+    let tour: TourController
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
@@ -36,6 +37,8 @@ struct MenuContent: View {
 
         Button("Settings…") { showSettings() }
             .keyboardShortcut(",")
+
+        Button("Show tour again") { tour.show() }
 
         if updates.isAvailable {
             Button("Check for Updates…") { updates.checkForUpdates() }

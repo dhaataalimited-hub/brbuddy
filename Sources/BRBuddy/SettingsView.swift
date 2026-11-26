@@ -1,6 +1,7 @@
 import AppKit
 import BRBuddyCore
 import KeyboardShortcuts
+import ServiceManagement
 import SwiftUI
 
 /// The Settings window, in tabs so it fits small screens: General (when BRB starts and when it hands off to the real
@@ -80,13 +81,7 @@ struct SettingsView: View {
         }
 
         Section("General") {
-            Toggle("Open BRBuddy at login", isOn: Binding(
-                get: { state.launchesAtLogin },
-                set: { state.setLaunchesAtLogin($0) }
-            ))
-            if let error = state.launchAtLoginError {
-                Text(error).font(.caption).foregroundStyle(.orange)
-            }
+            LaunchAtLoginToggle(state: state, label: "Open BRBuddy at login")
         }
 
         Section {
@@ -448,6 +443,35 @@ private struct SignalBars: View {
             }
         }
         .help("Signal \(rssi) dBm")
+    }
+}
+
+/// The launch-at-login switch, in Settings → General and the first-launch tour. Shows when macOS is waiting for the
+/// user to allow BRBuddy in Login Items, with a button that opens it.
+struct LaunchAtLoginToggle: View {
+    let state: AppState
+    let label: String
+
+    var body: some View {
+        Toggle(label, isOn: Binding(
+            get: { state.launchesAtLogin },
+            set: { state.setLaunchesAtLogin($0) }))
+            .onAppear { state.refreshLaunchAtLogin() }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                state.refreshLaunchAtLogin()
+            }
+        if state.launchAtLoginNeedsApproval {
+            HStack {
+                Text("macOS needs your OK: turn BRBuddy on in Login Items.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
+                    .controlSize(.small)
+            }
+        }
+        if let error = state.launchAtLoginError {
+            Text(error).font(.caption).foregroundStyle(.orange)
+        }
     }
 }
 

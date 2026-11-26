@@ -138,15 +138,18 @@ see from any app. **Off by default**: you add it to the screen, or take it away,
 - **Only while an agent is working:** an option in Settings, off by default. When it's on, the companion appears
   when an agent starts work and leaves a little after it finishes (after its wave or worried look).
 
-## Phase 9: First-launch tour (planned 2026-11-26; ships first, on its own)
+## Phase 9: First-launch tour ✅ built 2026-11-26 (ships first, on its own)
 A new install is hard to spot: BRBuddy only has a menu bar icon. On **first launch only**, the buddy hangs on a little
 string just under the BRBuddy icon and says "I live up here. Click me." Clicking it starts a short tour, every step
 skippable:
 
 1. **Connect your agent:** installs the hooks for the agents it finds.
-2. **Try BRB now:** a 5-second demo of the away screen, then back.
+2. **Try BRB now:** starts BRB for real, so the user also learns how to come back (Touch ID or password); the tour
+   picks up again after unlocking. (Planned as a 5-second demo; a real BRB avoids adding a way to end BRB without
+   unlocking.)
 3. **Pick a companion:** the built-ins, Companion Studio, and a link to the gallery.
-4. **Optional extras:** the desktop companion (Phase 8) and the walk-away lock (Phase 6).
+4. **Optional extras:** launch at login, keep awake while an agent works, and the walk-away lock (Phase 6). The
+   desktop companion joins this step when Phase 8 is built.
 
 - **Show tour again** in the menu bar menu brings it back.
 - If the icon is hidden (behind the notch, or by a menu bar organiser), the buddy and the tour show in the middle of
