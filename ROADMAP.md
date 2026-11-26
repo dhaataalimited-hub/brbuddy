@@ -137,3 +137,37 @@ see from any app. **Off by default**: you add it to the screen, or take it away,
   you choose). If that display is unplugged, it moves to the main one and goes back when it returns.
 - **Only while an agent is working:** an option in Settings, off by default. When it's on, the companion appears
   when an agent starts work and leaves a little after it finishes (after its wave or worried look).
+
+## Phase 9: First-launch tour (planned 2026-11-26; ships first, on its own)
+A new install is hard to spot: BRBuddy only has a menu bar icon. On **first launch only**, the buddy hangs on a little
+string just under the BRBuddy icon and says "I live up here. Click me." Clicking it starts a short tour, every step
+skippable:
+
+1. **Connect your agent:** installs the hooks for the agents it finds.
+2. **Try BRB now:** a 5-second demo of the away screen, then back.
+3. **Pick a companion:** the built-ins, Companion Studio, and a link to the gallery.
+4. **Optional extras:** the desktop companion (Phase 8) and the walk-away lock (Phase 6).
+
+- **Show tour again** in the menu bar menu brings it back.
+- If the icon is hidden (behind the notch, or by a menu bar organiser), the buddy and the tour show in the middle of
+  the screen instead.
+- Permissions (Accessibility, Bluetooth) are asked for only at the step that needs them.
+- The hanging buddy is drawn over any pack (string and swing added on top), and is the same piece Phase 8's
+  **Hang out** mode uses.
+
+Phase 8 gains a fourth mode, **Hang out:** the buddy dangles under its menu bar icon, sways when the mouse comes near,
+drops down to wave when the agent finishes, and climbs back up.
+
+## Phase 10: Token usage (planned 2026-11-26)
+How many tokens your agents are using, read **on the Mac** from the agents' own logs (nothing is sent anywhere).
+**Claude Code** first (its session logs record input, output and cache tokens per reply, with the model), then
+**Codex** (its session logs).
+
+- **Tokens and an estimated cost** at each model's API prices, labelled as an estimate (on a subscription plan the
+  real cost is the plan). Plan limits (Claude's 5-hour and weekly windows) aren't in the logs, so they're not shown.
+- **Menu bar:** the day's total next to the icon (e.g. "1.2M"), on by default with a switch to hide it. The menu gets
+  a Usage section: today and this week, by agent and model, with a small chart.
+- **The buddy:** it munches while tokens are flowing, and you can set a **daily budget**: it gets full and sleepy as
+  you near it, and does a little "whoa" at a big burst. (Fatter stays reserved for drive space.)
+- **Away screen:** a card when you come back: "While you were away: 840K tokens over 23 minutes, 3 tasks finished."
+- Not possible: drawing on the macOS lock screen. BRBuddy's away screen is where it shows instead.
