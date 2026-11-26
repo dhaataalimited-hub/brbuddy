@@ -113,7 +113,7 @@ automatic updates; both are used only by the app target.
 | Type | File | Created by / lifetime | Isolation / thread | Job |
 |---|---|---|---|---|
 | `BRBuddyApp` | `BRBuddy/BRBuddyApp.swift` | System, app lifetime | Main actor | Entry point: the SwiftUI app lifecycle, with one scene that never shows (an uninserted menu bar extra); its ⌘, command opens `AppWindows`' Settings |
-| `StatusItemController` | `BRBuddy/StatusItemController.swift` | `AppDelegate` (lazily, at launch), app lifetime | Main actor | The paw `NSStatusItem` and its `NSMenu`, rebuilt each time it opens; the icon follows keep-awake through observation; tells the tour where the paw is (`FirstLaunchTour` checks it's on screen and not behind the notch) |
+| `StatusItemController` | `BRBuddy/StatusItemController.swift` | `AppDelegate` (lazily, at launch), app lifetime | Main actor | The paw `NSStatusItem` and its `NSMenu`, rebuilt each time it opens, ending with the version (`AppVersion`); the icon follows keep-awake through observation; tells the tour where the paw is (`FirstLaunchTour` checks it's on screen and not behind the notch) |
 | `AppWindows` | `BRBuddy/AppWindows.swift` | `AppDelegate`, app lifetime | Main actor | Opens the Settings window (an `NSTabViewController` with a toolbar tab per `SettingsTab`, each hosting `SettingsView`) at any tab, and the Companion Studio window |
 | `AppDelegate` | `BRBuddy/AppDelegate.swift` | SwiftUI delegate adaptor, app lifetime | Main actor | Owns `AppState`, `UpdateController` and `TourController`; opens the tour on first launch; refuses to quit while BRB is up; debug-only launch hooks |
 | `UpdateController` | `BRBuddy/UpdateController.swift` | `AppDelegate`, app lifetime | Main actor | Sparkle updater; exists only when the build's Info.plist has a feed URL and public key (release builds) |
@@ -160,6 +160,7 @@ automatic updates; both are used only by the app target.
 | `Boop`, `BoopEvent`, `BoopPicker`, `BoopSignature`, `BoopSound` | `BRBuddyCore/Boop.swift` | Values, `BoopPicker` held by `CompanionView` | Pure | The six click reactions (five shared, one signature); which comes next; each companion's signature; their synthesised WAV sounds |
 | `FirstLaunchTour` | `BRBuddyCore/FirstLaunchTour.swift` | Static namespace | Any | The tour's steps and order, whether it has been seen, where its panels go under the menu bar item (or the middle of the screen when the item is hidden) |
 | `BatteryStatus`, `BatteryReaction`, `BatteryWatch` | `BRBuddyCore/Battery.swift` | Values, held by `BatteryMonitor` | Value types; `read` on the main actor | The internal battery from IOKit power sources; which reaction to show; noticing plug and unplug |
+| `AppVersion` | `BRBuddyCore/AppVersion.swift` | Static namespace | Any | The version shown at the bottom of the paw menu and in Settings → General, from the Info.plist; "Development build" for a `swift run` copy |
 | `CompanionCatalog`, `CompanionShuffle` | `BRBuddyCore/CompanionCatalog.swift` | Static namespace; value held by `CompanionLibrary` | Pure | Built-in list and agent matches; stored `Choice`; resolving a choice to a companion; Shuffle's running order |
 | `CompanionPack`, `CompanionPackLibrary` | `BRBuddyCore/CompanionPack.swift` | Values / static namespace | Load anywhere; cut frames off the main thread | Validates a Codex pet folder, cuts frames per mood (and from an optional still sheet, shown on battery), scans and imports packs |
 | `ANSIParser`, `TerminalColor`, `TerminalStyle`, `TerminalRun` | `BRBuddyCore/TerminalText.swift` | Static namespace / values | Pure | Colour-coded text → styled lines; drops every non-colour escape; xterm palette |
@@ -306,6 +307,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddyCore/TerminalLocation.swift`: which app and terminal tab a hook ran from.
 - `BRBuddyCore/Boop.swift`: click reactions, the picker and their synthesised sounds.
 - `BRBuddyCore/Battery.swift`: battery status from IOKit, battery reactions, plug/unplug watch.
+- `BRBuddyCore/AppVersion.swift`: the version label for the menu and Settings.
 - `BRBuddyCore/FirstLaunchTour.swift`: the tour's steps, seen flag and panel placement.
 - `BRBuddyCore/StudioDesign.swift`: Companion Studio designs and writing them as packs.
 - `BRBuddyCore/CompanionMood.swift`: companion moods and their spritesheet rows.

@@ -216,6 +216,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><td><code>HangingBuddyView</code>, <code>TourView</code></td><td class="mono">BRBuddy/TourView.swift</td><td>The tour's panels</td><td>Main (views)</td><td>The swaying companion on its string with a bubble; the four tour steps</td></tr>
     <tr><td><code>FirstLaunchTour</code></td><td class="mono">BRBuddyCore/FirstLaunchTour.swift</td><td>Static</td><td>Pure</td><td>Tour steps, the seen flag, panel placement</td></tr>
     <tr><td><code>BatteryStatus</code>, <code>BatteryReaction</code></td><td class="mono">BRBuddyCore/Battery.swift</td><td>Values in <code>BatteryMonitor</code></td><td>Pure (+ IOKit read)</td><td>Battery from IOKit power sources; which reaction to show</td></tr>
+    <tr><td><code>AppVersion</code></td><td class="mono">BRBuddyCore/AppVersion.swift</td><td>Static</td><td>Pure</td><td>The version at the bottom of the paw menu and in Settings → General; "Development build" for a source copy</td></tr>
     <tr><td><code>ProximityMonitor</code></td><td class="mono">BRBuddy/ProximityMonitor.swift</td><td><code>AppState</code> · app</td><td>Main (CoreBluetooth queue)</td><td>Device picker (accessories filtered, models read, closest marked); test mode (live signal, no BRB); only paired iPhones (<code>WalkAwayPairing</code>, <code>PairedDevices</code>); connects, reads signal every 2 s, reports departure</td></tr>
     <tr><td><code>AppleDeviceInfo</code></td><td class="mono">BRBuddyCore/AppleDeviceInfo.swift</td><td>Static</td><td>Pure</td><td>Continuity message types; model number → iPhone / Watch / iPad / Mac</td></tr>
     <tr><td><code>KeepAwake</code></td><td class="mono">BRBuddyCore/KeepAwake.swift</td><td><code>AppState</code> · app</td><td>Main</td><td>At most one IOKit power assertion; released on quit</td></tr>
@@ -364,5 +365,5 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   </dl>
 </section>
 
-<footer>Generated 2026-11-26 from docs/architecture after moving the menu bar item and windows to AppKit (branch own-status-item). The markdown is the source; regenerate this page after changes.</footer>
+<footer>Generated 2026-11-26 from docs/architecture after adding the version to the menu and Settings (branch show-version). The markdown is the source; regenerate this page after changes.</footer>
 </div>
