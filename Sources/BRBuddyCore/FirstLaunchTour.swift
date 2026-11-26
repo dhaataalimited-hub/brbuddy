@@ -30,6 +30,10 @@ public enum FirstLaunchTour {
 
     static let seenKey = "tour.seen"
 
+    /// How long the companion hangs under the menu bar waiting for a click before it climbs back up by itself.
+    /// Closing this way counts as seen, like skipping, so it doesn't come back at every launch.
+    public static let hangSeconds: Double = 15
+
     /// Whether the tour should open by itself at launch: only until it has been finished, skipped or closed once.
     public static func shouldShowAtLaunch(store: UserDefaults = .standard) -> Bool {
         !store.bool(forKey: seenKey)

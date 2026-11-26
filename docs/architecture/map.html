@@ -212,7 +212,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><td><code>BoopPlayer</code>, <code>BoopFlair</code></td><td class="mono">BRBuddy/BoopView.swift</td><td><code>CompanionView</code></td><td>Main</td><td>Plays boop sounds; boop motion, effects and bubble</td></tr>
     <tr><td><code>BatteryMonitor</code></td><td class="mono">BRBuddy/BatteryMonitor.swift</td><td><code>AppState</code> · app</td><td>Main; 1 s timer while BRB is up</td><td>Reads the battery while retained by <code>AwayController</code>; notices plug and unplug (<code>BatteryWatch</code>)</td></tr>
     <tr><td><code>BatteryBadge</code>, <code>BatteryFlair</code></td><td class="mono">BRBuddy/BatteryView.swift</td><td><code>AwayView</code>, <code>CompanionView</code></td><td>Main (views)</td><td>The away screen's battery pill; the companion's battery props and speech bubble</td></tr>
-    <tr><td><code>TourController</code></td><td class="mono">BRBuddy/TourController.swift</td><td><code>AppDelegate</code> · app</td><td>Main, observable</td><td>First-launch tour: the hanging companion and tour panels, placed under the menu bar item (or mid-screen); its last step ends the tour, then starts BRB</td></tr>
+    <tr><td><code>TourController</code></td><td class="mono">BRBuddy/TourController.swift</td><td><code>AppDelegate</code> · app</td><td>Main, observable</td><td>First-launch tour: the hanging companion and tour panels, placed under the menu bar item (or mid-screen); the companion takes the first click and climbs away after 15 s unclicked; its last step ends the tour, then starts BRB</td></tr>
     <tr><td><code>HangingBuddyView</code>, <code>TourView</code></td><td class="mono">BRBuddy/TourView.swift</td><td>The tour's panels</td><td>Main (views)</td><td>The swaying companion on its string with a bubble; the four tour steps</td></tr>
     <tr><td><code>FirstLaunchTour</code></td><td class="mono">BRBuddyCore/FirstLaunchTour.swift</td><td>Static</td><td>Pure</td><td>Tour steps, the seen flag, panel placement</td></tr>
     <tr><td><code>BatteryStatus</code>, <code>BatteryReaction</code></td><td class="mono">BRBuddyCore/Battery.swift</td><td>Values in <code>BatteryMonitor</code></td><td>Pure (+ IOKit read)</td><td>Battery from IOKit power sources; which reaction to show</td></tr>
@@ -365,5 +365,5 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   </dl>
 </section>
 
-<footer>Generated 2026-11-26 from docs/architecture after adding the version to the menu and Settings (branch show-version). The markdown is the source; regenerate this page after changes.</footer>
+<footer>Generated 2026-11-26 from docs/architecture after fixing the hanging companion's click and adding its 15-second close (branch tour-click-fix). The markdown is the source; regenerate this page after changes.</footer>
 </div>
