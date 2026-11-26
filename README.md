@@ -19,7 +19,7 @@ Website: **[brbuddy.app](https://brbuddy.app)** · Companion gallery: **[brbuddy
   **BRB now** or **⌃⌥⌘B**.
 - Come back, press any key, and unlock with Touch ID or your password.
 - Three wrong tries, or an hour away, and BRBuddy hands off to the real macOS lock screen. Your agent keeps running.
-- BRB is a **privacy screen, not a lock**: it keeps passers-by off your keyboard and screen, but anything running as
+- BRB is an **away screen, not a lock**: it keeps passers-by off your keyboard and screen, but anything running as
   you (including your agent) can close it, and a restart ends it. When you need real security, lock the Mac (or let
   BRBuddy hand off to the macOS lock screen).
 - Pick a companion in **Settings…**: six original critters (one per agent's vibe), or add any Codex pet with
