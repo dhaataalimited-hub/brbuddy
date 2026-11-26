@@ -62,12 +62,14 @@ final class TourController {
         hangTimeout = Task { [weak self] in
             try? await Task.sleep(for: .seconds(FirstLaunchTour.hangSeconds))
             guard !Task.isCancelled, let self, self.isOpen, !self.isTouring, !self.isLeaving else { return }
+            AppLog.info(.tour, "Not clicked in \(Int(FirstLaunchTour.hangSeconds)) s; climbing away")
             self.finish()
         }
     }
 
     /// Opens the tour panel (clicking the hanging companion does this).
     func startTour() {
+        AppLog.info(.tour, "Companion clicked; opening the tour")
         hangTimeout?.cancel()
         isTouring = true
         bubble = nil
@@ -75,21 +77,26 @@ final class TourController {
         showTourPanel()
     }
 
-    func go(to next: FirstLaunchTour.Step) { step = next }
+    func go(to next: FirstLaunchTour.Step) {
+        if next != step { AppLog.info(.tour, "Step \(next.rawValue + 1): \(next.title)") }
+        step = next
+    }
 
     /// The tour's last step: ends the tour, then covers the screen for real so the user sees BRB and how to come
     /// back. Nothing reopens afterwards, so the panels never have to find the paw again.
     func tryBRB() {
+        AppLog.info(.tour, "Try BRB now; tour done")
         FirstLaunchTour.markSeen()
         closeAll()
         Task {
             try? await Task.sleep(for: .seconds(0.3))
-            state.startAway()
+            state.startAway("tour")
         }
     }
 
     /// Ends the tour for good: the companion says goodbye and climbs back up to the menu bar.
     func finish() {
+        AppLog.info(.tour, "Tour closed at step \(step.rawValue + 1)\(isTouring ? "" : " (before it opened)")")
         FirstLaunchTour.markSeen()
         removeCloseObserver()
         tourPanel?.orderOut(nil)
@@ -133,6 +140,7 @@ final class TourController {
         let (anchor, visible) = place ?? findPlace()
         panel.setFrameOrigin(FirstLaunchTour.origin(size: Self.buddySize, anchor: anchor, visible: visible))
         panel.orderFrontRegardless()
+        AppLog.info(.tour, "Companion hanging: paw \(AppLog.describe(anchor)), screen area \(AppLog.describe(visible)), panel \(AppLog.describe(panel.frame)), on screen \(panel.isVisible)")
     }
 
     private func showTourPanel() {
@@ -144,6 +152,7 @@ final class TourController {
                                                     below: Self.buddySize.height - 92))
         NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
+        AppLog.info(.tour, "Tour panel \(AppLog.describe(panel.frame)), key \(panel.isKeyWindow), app active \(NSApp.isActive)")
     }
 
     private func closeAll() {
@@ -212,4 +221,11 @@ private final class HangingPanel: NSPanel {
 /// Takes the first click even when its window isn't key, so clicking the companion works straight away.
 private final class FirstClickHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    // Logged so a report shows whether clicks reach the companion at all (on Tahoe they once fell through).
+    override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        AppLog.info(.tour, "Click reached the companion panel at \(Int(point.x)), \(Int(point.y)); app active \(NSApp.isActive)")
+        super.mouseDown(with: event)
+    }
 }

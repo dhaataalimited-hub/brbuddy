@@ -1,4 +1,5 @@
 import AppKit
+import BRBuddyCore
 
 /// Owns `AppState`, the menu bar item (`StatusItemController`), BRBuddy's windows (`AppWindows`) and the first-launch
 /// tour (`TourController`), and refuses to quit while BRB is up, so ⌘Q or a script can't take the away screen down.
@@ -13,6 +14,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) lazy var tour: TourController = TourController(state: state, windows: windows) { [unowned self] in statusItem.place() }
 
     func applicationDidFinishLaunching(_: Notification) {
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        AppLog.info(.app, "Launched BRBuddy \(AppVersion.label()) on macOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion), \(NSScreen.screens.count) screen(s)")
         _ = statusItem
         tour.showAtLaunchIfNew()
         #if DEBUG
@@ -50,6 +53,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let tab = ProcessInfo.processInfo.environment["BRBUDDY_OPEN_SETTINGS"].flatMap(Int.init).flatMap(SettingsTab.init) {
             windows.showSettings(tab)
         }
+        // BRBUDDY_SEND_LOGS=1: open the Send Logs window.
+        if ProcessInfo.processInfo.environment["BRBUDDY_SEND_LOGS"] == "1" { windows.showSendLogs() }
         // BRBUDDY_TOUR=1: show the first-launch tour even if it has been seen.
         if ProcessInfo.processInfo.environment["BRBUDDY_TOUR"] == "1" {
             Task {
@@ -74,6 +79,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_: NSApplication) -> NSApplication.TerminateReply {
-        state.away.isAway ? .terminateCancel : .terminateNow
+        if state.away.isAway {
+            AppLog.info(.app, "Quit refused: BRB is up")
+            return .terminateCancel
+        }
+        AppLog.info(.app, "Quitting")
+        return .terminateNow
     }
 }

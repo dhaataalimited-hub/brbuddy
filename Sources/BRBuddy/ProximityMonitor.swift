@@ -224,6 +224,7 @@ final class ProximityMonitor: NSObject {
     }
 
     private func handle(_ state: ProximityTracker.State) {
+        AppLog.info(.walkAway, "Device is now \(state)\(test != nil ? " (test)" : "")")
         if state == .away, settings.isActive, test == nil, chosenPairing == .paired { onLeft?() }
     }
 }
@@ -232,6 +233,7 @@ extension ProximityMonitor: CBCentralManagerDelegate, CBPeripheralDelegate {
     nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
         let state = central.state
         MainActor.assumeIsolated {
+            AppLog.info(.walkAway, "Bluetooth state \(state.rawValue)")
             bluetoothState = state
             update()
         }

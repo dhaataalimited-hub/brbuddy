@@ -199,7 +199,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><th>Type</th><th>File</th><th>Created by · lifetime</th><th>Thread</th><th>Job</th></tr>
     <tr><td><code>AppDelegate</code></td><td class="mono">BRBuddy/AppDelegate.swift</td><td>SwiftUI adaptor · app</td><td>Main</td><td>Owns <code>AppState</code>, <code>UpdateController</code> and <code>TourController</code>; opens the tour on first launch; refuses to quit while BRB is up; debug launch hooks</td></tr>
     <tr><td><code>StatusItemController</code></td><td class="mono">BRBuddy/StatusItemController.swift</td><td><code>AppDelegate</code> · app</td><td>Main</td><td>The paw <code>NSStatusItem</code> and its menu (rebuilt on open); says where the paw is, for the tour</td></tr>
-    <tr><td><code>AppWindows</code></td><td class="mono">BRBuddy/AppWindows.swift</td><td><code>AppDelegate</code> · app</td><td>Main</td><td>Opens Settings (toolbar tabs, any tab) and Companion Studio</td></tr>
+    <tr><td><code>AppWindows</code></td><td class="mono">BRBuddy/AppWindows.swift</td><td><code>AppDelegate</code> · app</td><td>Main</td><td>Opens Settings (toolbar tabs, any tab), Companion Studio and Send Logs</td></tr>
+    <tr><td><code>AppLog</code></td><td class="mono">BRBuddy/AppLog.swift</td><td>Static, called across the app</td><td>Any</td><td>Writes a line to the unified log and <code>DiagnosticLog</code>; builds the report header (version, macOS, Mac, screens)</td></tr>
+    <tr><td><code>SendLogsView</code></td><td class="mono">BRBuddy/SendLogsView.swift</td><td><code>AppWindows</code></td><td>Main</td><td>Shows the whole report, then Email to BRBuddy (attached), Save for GitHub, Copy, Clear Log</td></tr>
     <tr><td><code>UpdateController</code></td><td class="mono">BRBuddy/UpdateController.swift</td><td><code>AppDelegate</code> · app</td><td>Main</td><td>Sparkle updates and Check for Updates…; only in release builds that carry a feed and public key</td></tr>
     <tr><td><code>AppState</code></td><td class="mono">BRBuddy/AppState.swift</td><td><code>AppDelegate</code> · app</td><td>Main, observable</td><td>Keep-awake decision, 5 s idle check, global shortcut, launch at login, walk-away action</td></tr>
     <tr><td><code>AwayController</code></td><td class="mono">BRBuddy/AwayController.swift</td><td><code>AppState</code> · app</td><td>Main, observable</td><td>Windows, locked-down presentation options, focus guard, unlock, failures, escalation</td></tr>
@@ -216,6 +218,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <tr><td><code>HangingBuddyView</code>, <code>TourView</code></td><td class="mono">BRBuddy/TourView.swift</td><td>The tour's panels</td><td>Main (views)</td><td>The swaying companion on its string with a bubble; the four tour steps</td></tr>
     <tr><td><code>FirstLaunchTour</code></td><td class="mono">BRBuddyCore/FirstLaunchTour.swift</td><td>Static</td><td>Pure</td><td>Tour steps, the seen flag, panel placement</td></tr>
     <tr><td><code>BatteryStatus</code>, <code>BatteryReaction</code></td><td class="mono">BRBuddyCore/Battery.swift</td><td>Values in <code>BatteryMonitor</code></td><td>Pure (+ IOKit read)</td><td>Battery from IOKit power sources; which reaction to show</td></tr>
+    <tr><td><code>DiagnosticLog</code>, <code>LogRedaction</code>, <code>DiagnosticReport</code></td><td class="mono">BRBuddyCore/DiagnosticLog.swift</td><td><code>DiagnosticLog.shared</code> · app</td><td>Any (locked writes)</td><td>Rolling log files (4 × 512 KB); strips home paths, other users' paths and emails; the report text</td></tr>
     <tr><td><code>AppVersion</code></td><td class="mono">BRBuddyCore/AppVersion.swift</td><td>Static</td><td>Pure</td><td>The version at the bottom of the paw menu and in Settings → General; "Development build" for a source copy</td></tr>
     <tr><td><code>ProximityMonitor</code></td><td class="mono">BRBuddy/ProximityMonitor.swift</td><td><code>AppState</code> · app</td><td>Main (CoreBluetooth queue)</td><td>Device picker (accessories filtered, models read, closest marked); test mode (live signal, no BRB); only paired iPhones (<code>WalkAwayPairing</code>, <code>PairedDevices</code>); connects, reads signal every 2 s, reports departure</td></tr>
     <tr><td><code>AppleDeviceInfo</code></td><td class="mono">BRBuddyCore/AppleDeviceInfo.swift</td><td>Static</td><td>Pure</td><td>Continuity message types; model number → iPhone / Watch / iPad / Mac</td></tr>
@@ -291,6 +294,12 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
       <ul><li>First launch only: the companion hangs on a string under the paw, then a four-step tour (connect agents, pick a companion, extras, try BRB).</li><li>Try BRB now is last: it ends the tour, then starts real BRB, so nothing has to reappear and find the paw afterwards.</li><li>Seen once finished, skipped or closed; Show tour again in the menu reruns it.</li><li>Menu bar item hidden (notch, organiser) or not found: both panels go mid-screen.</li></ul>
       <div class="files">BRBuddyCore/FirstLaunchTour.swift · BRBuddy/TourController.swift · BRBuddy/TourView.swift · BRBuddy/AppDelegate.swift · BRBuddy/AppState.swift · BRBuddy/StatusItemController.swift</div>
     </article>
+    <article class="card" id="j-logs">
+      <h3>Send logs</h3>
+      <div class="chain">App code → <b>AppLog</b> → unified log + <b>DiagnosticLog</b> (<b>LogRedaction</b>) · <b>StatusItemController</b> / <b>SettingsView</b> → <b>AppWindows</b> → <b>SendLogsView</b> → <b>DiagnosticReport</b> → Mail / Finder / clipboard</div>
+      <ul><li>Logs the tour (paw, screen and panel positions, whether clicks arrive), menu choices, windows, BRB start and end and why, failed unlocks, agent activity changes, walk-away, updates and keep-awake.</li><li>Never passwords, typed text, terminal or mirror text, notes, project names or folders; redaction strips home paths and emails as a backstop.</li><li>The window shows the whole report before anything is sent; Email attaches it to a new email to hello@dhaataa.com.</li><li>Four 512 KB files at most; Clear Log deletes them.</li></ul>
+      <div class="files">BRBuddyCore/DiagnosticLog.swift · BRBuddy/AppLog.swift · BRBuddy/SendLogsView.swift · BRBuddy/AppWindows.swift · BRBuddy/StatusItemController.swift · BRBuddy/SettingsView.swift</div>
+    </article>
   </div>
 </section>
 
@@ -365,5 +374,5 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   </dl>
 </section>
 
-<footer>Generated 2026-11-27 from docs/architecture after making the hanging companion take clicks outright (branch tour-click-through). The markdown is the source; regenerate this page after changes.</footer>
+<footer>Generated 2026-11-27 from docs/architecture after adding Send Logs (branch send-logs). The markdown is the source; regenerate this page after changes.</footer>
 </div>

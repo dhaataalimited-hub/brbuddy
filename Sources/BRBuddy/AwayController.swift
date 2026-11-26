@@ -116,6 +116,7 @@ final class AwayController {
         NSApp.presentationOptions = []
         isAway = false
         phase = .resting
+        AppLog.info(.away, escalated ? "BRB ended: handed off to the macOS lock screen" : "BRB ended: unlocked")
         onEnded?(escalated)
     }
 
@@ -179,6 +180,7 @@ final class AwayController {
 
     private func recordFailure(_ message: String) {
         failedAttempts += 1
+        AppLog.info(.away, "Unlock failed (\(message)), attempt \(failedAttempts)")
         lastFailureMessage = message
         lastFailureAt = Date()
         recentFailure = true
@@ -224,6 +226,7 @@ final class AwayController {
     private func lockDidNotTake() {
         guard isAway else { return }
         escalationRetryAfter = Date().addingTimeInterval(60)
+        AppLog.error(.away, "The macOS lock screen didn't appear; BRB stays up")
         authContext = LAContext()
         lastFailureMessage = "Couldn't lock the Mac, so BRB is staying up"
         phase = .resting
@@ -235,6 +238,7 @@ final class AwayController {
         let escalation = AwayPolicy.escalation(failedAttempts: failedAttempts,
                                                awayFor: Date().timeIntervalSince(awaySince), settings: settings)
         guard escalation != .none else { return }
+        AppLog.info(.away, "Locking for real: \(escalation)")
         phase = .lockingForReal(escalation)
         authContext.invalidate()
         // Show the message briefly, lock for real, and take the away screen down only once the lock screen is really

@@ -48,7 +48,7 @@ final class AppState {
         proximity.onLeft = { [weak self] in self?.deviceLeft() }
         away.onEnded = { [weak self] _ in self?.applyKeepAwakeMode() }
         agents.onChange = { [weak self] in self?.applyKeepAwakeMode() }
-        KeyboardShortcuts.onKeyUp(for: .brbNow) { [weak self] in self?.startAway() }
+        KeyboardShortcuts.onKeyUp(for: .brbNow) { [weak self] in self?.startAway("shortcut") }
         idleTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkIdle() }
         }
@@ -62,6 +62,7 @@ final class AppState {
     var isKeepingAwakeForAgent: Bool { settings.keepAwakeForAgents && agents.summary.isActive }
 
     func setKeepingAwake(_ on: Bool) {
+        AppLog.info(.keepAwake, "Keep Mac awake turned \(on ? "on" : "off")")
         manualKeepAwake = on
         applyKeepAwakeMode()
     }
@@ -74,7 +75,10 @@ final class AppState {
             let reason = isKeepingAwakeForAgent && !manualKeepAwake
                 ? "BRBuddy is keeping your Mac awake while an agent works"
                 : "BRBuddy is keeping your Mac awake"
-            if !keepAwake.activate(mode, reason: reason) { manualKeepAwake = false }
+            if !keepAwake.activate(mode, reason: reason) {
+                AppLog.error(.keepAwake, "macOS refused the keep-awake assertion")
+                manualKeepAwake = false
+            }
         } else {
             keepAwake.release()
         }
@@ -82,8 +86,10 @@ final class AppState {
 
     // MARK: BRB
 
-    func startAway() {
+    /// Covers the screen. `reason` (menu, shortcut, idle, walk-away, tour) goes in the log.
+    func startAway(_ reason: String = "menu") {
         guard !away.isAway else { return }
+        AppLog.info(.away, "BRB starting (\(reason))")
         companions.shuffleNext()  // Shuffle mode: a new companion each time
         away.start(settings: settings)
         applyKeepAwakeMode()
@@ -92,15 +98,18 @@ final class AppState {
     /// The user's phone or watch walked away (walk-away lock).
     private func deviceLeft() {
         switch proximity.settings.action {
-        case .startBRB: startAway()
-        case .lockMac: if !away.isAway { ScreenLocker.lockNow() }
+        case .startBRB: startAway("walk-away")
+        case .lockMac:
+            guard !away.isAway else { return }
+            AppLog.info(.walkAway, "Locking the Mac (walk-away)")
+            ScreenLocker.lockNow()
         }
     }
 
     private func checkIdle() {
         if AwayPolicy.shouldAutoStart(idleSeconds: IdleMonitor.secondsSinceLastInput(), keepAwakeOn: isKeepingAwake,
                                       isAway: away.isAway, settings: settings) {
-            startAway()
+            startAway("idle")
         }
     }
 
@@ -127,7 +136,9 @@ final class AppState {
             launchAtLoginError = nil
         } catch {
             launchAtLoginError = error.localizedDescription
+            AppLog.error(.app, "Open at login \(on ? "on" : "off") failed: \(error.localizedDescription)")
         }
         refreshLaunchAtLogin()
+        AppLog.info(.app, "Open at login turned \(on ? "on" : "off"); macOS status \(launchAtLoginStatus.rawValue)")
     }
 }

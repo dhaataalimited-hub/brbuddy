@@ -36,6 +36,7 @@ struct SettingsView: View {
     let tab: SettingsTab
     /// Opens Companion Studio (from the Companion tab).
     let openStudio: () -> Void
+    var openSendLogs: () -> Void = {}
 
     /// Fits a 13-inch screen; each tab scrolls if its content is taller.
     static let size = CGSize(width: 540, height: 430)
@@ -101,6 +102,9 @@ struct SettingsView: View {
         Section("General") {
             LaunchAtLoginToggle(state: state, label: "Open BRBuddy at login")
             LabeledContent("Version", value: AppVersion.label())
+            LabeledContent("Something not working?") {
+                Button("Send Logs…", action: openSendLogs)
+            }
         }
 
         Section {

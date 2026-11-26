@@ -162,19 +162,19 @@ skippable:
   judged its see-through panel per pixel. The panel now takes mouse events outright. (0.1.5 let it take the first
   click and added the 15-second climb-away, which wasn't enough on its own.)
 
-## Phase 11: Send logs (planned 2026-11-27, next up)
+## Phase 11: Send logs ✅ built 2026-11-27
 Bugs on other people's Macs (like the Tahoe tour click) can't be seen from here. BRBuddy should keep a log a user can
 send in a couple of clicks.
 
 - **What's logged:** BRBuddy's own events through `os.Logger`, also written to a small rolling file in
-  `~/Library/Application Support/BRBuddy/Logs` (kept to a few days and a few MB) so earlier runs are there too. The
+  `~/Library/Application Support/BRBuddy/Logs` (four files of 512 KB at most) so earlier runs are there too. The
   tour, menu bar item and panels (frames, screen, notch, whether a click arrived), BRB starting and ending, agent
   events, walk-away, updates and errors, with the macOS version, Mac model and BRBuddy version at the top.
 - **Never logged:** passwords, typed text, terminal or mirror contents, notes, and full file paths (project names
   only where the menu already shows them).
 - **Send logs…** in the paw menu and Settings → General: shows what will be sent, then opens an email to
   hello@dhaataa.com with the log attached, or reveals the file to attach to a GitHub issue. Nothing is sent by
-  itself.
+  itself. (Built as described, plus Copy and Clear Log.)
 
 ## Phase 10: Token usage (planned 2026-11-26)
 How many tokens your agents are using, read **on the Mac** from the agents' own logs (nothing is sent anywhere).

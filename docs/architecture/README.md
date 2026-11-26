@@ -58,7 +58,8 @@ flowchart LR
 | Menu bar item | Paw icon (filled while keeping awake): keep-awake toggle, BRB now, Settings, Show tour again, Quit. BRBuddy's own `NSStatusItem`, so it knows where the paw is | `StatusItemController`, made by `AppDelegate` |
 | First-launch tour | The companion hanging on a string under the menu bar icon (a clear borderless panel), and a four-step tour panel under it; first launch only, or from Show tour again | `TourController` hosting `HangingBuddyView` and `TourView` |
 | Companion Studio window | Build a critter from parts, preview and boop it, save it as a pack; opened from Settings → Companion and the tour | `AppWindows` hosting `CompanionStudioView` |
-| Settings window | Tabs: General (when BRB starts, when it locks for real, shortcut, launch at login), Agents, Companion, Away Screen (terminal mirror), Walk-away; each tab 540×430 and scrolls; can open at any tab | `AppWindows`: a toolbar `NSTabViewController` hosting `SettingsView` per `SettingsTab` |
+| Send Logs window | The diagnostic report in full, then Email to BRBuddy…, Save for GitHub…, Copy, Clear Log | `AppWindows` hosting `SendLogsView` |
+| Settings window | Tabs: General (when BRB starts, when it locks for real, shortcut, launch at login, version, Send Logs…), Agents, Companion, Away Screen (terminal mirror), Walk-away; each tab 540×430 and scrolls; can open at any tab | `AppWindows`: a toolbar `NSTabViewController` hosting `SettingsView` per `SettingsTab` |
 | Away windows | One borderless window per display at screen-saver level, on every Space | `AwayController` makes `AwayWindow`s hosting `AwayView` |
 | Companion | Animated character on the away screen and in Settings' preview | `CompanionView` (built-in `CritterView` or pack `SpritePackView`) |
 | Terminal mirror | Read-only panel on the away screen and in Settings' preview | `TerminalMirrorView` showing `TerminalMirror`'s snapshot |
@@ -114,7 +115,7 @@ automatic updates; both are used only by the app target.
 |---|---|---|---|---|
 | `BRBuddyApp` | `BRBuddy/BRBuddyApp.swift` | System, app lifetime | Main actor | Entry point: the SwiftUI app lifecycle, with one scene that never shows (an uninserted menu bar extra); its ⌘, command opens `AppWindows`' Settings |
 | `StatusItemController` | `BRBuddy/StatusItemController.swift` | `AppDelegate` (lazily, at launch), app lifetime | Main actor | The paw `NSStatusItem` and its `NSMenu`, rebuilt each time it opens, ending with the version (`AppVersion`); the icon follows keep-awake through observation; tells the tour where the paw is (`FirstLaunchTour` checks it's on screen and not behind the notch) |
-| `AppWindows` | `BRBuddy/AppWindows.swift` | `AppDelegate`, app lifetime | Main actor | Opens the Settings window (an `NSTabViewController` with a toolbar tab per `SettingsTab`, each hosting `SettingsView`) at any tab, and the Companion Studio window |
+| `AppWindows` | `BRBuddy/AppWindows.swift` | `AppDelegate`, app lifetime | Main actor | Opens the Settings window (an `NSTabViewController` with a toolbar tab per `SettingsTab`, each hosting `SettingsView`) at any tab, the Companion Studio window and the Send Logs window |
 | `AppDelegate` | `BRBuddy/AppDelegate.swift` | SwiftUI delegate adaptor, app lifetime | Main actor | Owns `AppState`, `UpdateController` and `TourController`; opens the tour on first launch; refuses to quit while BRB is up; debug-only launch hooks |
 | `UpdateController` | `BRBuddy/UpdateController.swift` | `AppDelegate`, app lifetime | Main actor | Sparkle updater; exists only when the build's Info.plist has a feed URL and public key (release builds) |
 | `AppState` | `BRBuddy/AppState.swift` | `AppDelegate`, app lifetime | `@MainActor`, `@Observable` | Owns `KeepAwake`, `AgentMonitor`, `AwayController`, settings, the 5-second idle check, the global shortcut, launch at login; decides keep-awake (by hand or for an agent) |
@@ -141,8 +142,11 @@ automatic updates; both are used only by the app target.
 | `PairedDevices` | `BRBuddy/PairedDevices.swift` | Static namespace | Main actor in practice | Names of phones paired in System Settings → Bluetooth (IOBluetooth); the Bluetooth settings link |
 | `AccessibilityTerminalReader` | `BRBuddy/AccessibilityTerminalReader.swift` | Static namespace | Running apps on main; AX reads off main | Text of a Terminal/iTerm2/Ghostty window; Accessibility permission prompt |
 | `TerminalFocuser` | `BRBuddy/TerminalFocuser.swift` | Static namespace | Main actor; `osascript` on a detached task | Finds the running app hosting a session; selects its Terminal/iTerm2 tab by tty, else activates the app and raises the window for its folder (Accessibility) |
+| `SendLogsView` | `BRBuddy/SendLogsView.swift` | `AppWindows` (menu bar item and Settings → General) | Main actor (view) | Shows the whole diagnostic report before anything leaves the Mac; emails it to BRBuddy with the report attached, saves it for a GitHub issue, copies it, or clears the log |
+| `AppLog` | `BRBuddy/AppLog.swift` | Static namespace, called across the app | Any (writes are locked in `DiagnosticLog`); the report header on the main actor | One call writes a line to macOS's unified log and to `DiagnosticLog`; builds the report header (version, macOS, Mac model, screens, a few settings) |
 | `SettingsTab`, `SettingsView`, `LaunchAtLoginToggle` | `BRBuddy/SettingsView.swift` | `AppWindows`, one view per tab; the toggle also in `TourView` | Main actor (views) | Edits `AwaySettings` through `AppState`; the launch-at-login switch (shows when macOS is waiting for the user's OK in Login Items) |
 | `KeepAwake` | `BRBuddyCore/KeepAwake.swift` | `AppState`, app lifetime | Used from the main actor | Holds at most one IOKit power assertion; released on `deinit` |
+| `DiagnosticLog`, `LogRedaction`, `DiagnosticReport` | `BRBuddyCore/DiagnosticLog.swift` | `DiagnosticLog.shared` for the app lifetime | Any thread (a lock around file writes) | BRBuddy's log in rolling files (4 × 512 KB); takes the home folder, other users' paths and email addresses out of every line; the report text a user sends |
 | `AwaySettings` | `BRBuddyCore/AwaySettings.swift` | Value, held by `AppState` and copied into `AwayController` at start | Value type | Preferences; loads with defaults and clamping, saves to UserDefaults |
 | `AwayPolicy` | `BRBuddyCore/AwayPolicy.swift` | Static namespace | Pure | When to auto-start; when to escalate |
 | `IdleMonitor` | `BRBuddyCore/IdleMonitor.swift` | Static namespace | Any thread | Seconds since last HID input |
@@ -187,6 +191,10 @@ and what's left this round; `mirror.mode` holds the terminal mirror mode (defaul
 `off`); `away.showBattery` holds the battery badge (default on); `companion.boopSounds` holds boop sounds (default on); `proximity.*` holds walk-away (enabled, device ID and name, range, action); `tour.seen` records that the first-launch tour was finished, skipped or closed. Launch at login is
 held by macOS (`SMAppService`). Passwords are never stored or logged.
 
+The log: `~/Library/Application Support/BRBuddy/Logs/brbuddy.log` and up to three older `brbuddy.<n>.log` files
+(512 KB each), plus any `BRBuddy report <date>.txt` saved by Send Logs. Lines are local time, category and message;
+the same lines go to macOS's unified log (subsystem `com.dhaataalimited.brbuddy`, one category per area).
+
 Agent files: `~/Library/Application Support/BRBuddy/agents.sock` (the socket, 0600, recreated at launch) and
 `bin/brbuddy-hook` (the helper copy) in the same folder. Setting up an agent edits that agent's own file:
 `~/.claude/settings.json`, `~/.codex/hooks.json` (and `[features] hooks = true` in `~/.codex/config.toml`),
@@ -223,6 +231,7 @@ serial queue and hop to the main actor in `AgentMonitor`; the process scan runs 
 | The mirror is display-only: never send keys, attach a tmux client or forward input | `TmuxReader`, `TerminalMirrorView` |
 | The mirror is off by default and Settings warns that anyone at the Mac can read it | `TerminalMirrorMode`, `SettingsView` |
 | Hook events carry tool details, never the user's prompt text | `AgentEvent`, `ActivityFeedTests` |
+| Logs never hold passwords, typed text, terminal or mirror text, notes, project names or folders; agent lines only when a session's activity changes; nothing leaves the Mac until the user clicks Email, Save or Copy | `AppLog`, `LogRedaction`, `SendLogsView`, `DiagnosticLogTests` |
 | Touch Bluetooth only when walk-away is on or the picker is open (no surprise permission prompt) | `ProximityMonitor` |
 | Walk-away only uses an iPhone paired with this Mac: unpaired iPhones change address every ~15 min and get lost or confused with strangers' phones | `WalkAwayPairing`, `ProximityMonitor`, `WalkAwayPairingTests` |
 | The Bluetooth usage text must stay in the bundle's Info.plist, or macOS kills the app on first use | `Config/Info.plist`, `ProximityMonitor` |
@@ -241,6 +250,7 @@ Debug builds read these environment variables, all compiled out of release build
   `BRBUDDY_PROMO_ONLY=<seconds,...>` renders just those moments. `Tools/promo/make-promo.sh` turns them into MP4s.
 - `BRBUDDY_MENU_DUMP=1` prints the menu as it would open (`StatusItemController`); `BRBUDDY_OPEN_SETTINGS=<0-4>`
   opens Settings at that tab (`AppWindows`).
+- `BRBUDDY_SEND_LOGS=1` opens the Send Logs window (`AppWindows`).
 - `BRBUDDY_TOUR=1` shows the first-launch tour even if it was seen, and `BRBUDDY_TOUR_SNAPSHOTS=<dir>` saves PNGs of
   the hanging companion and every tour step (`TourController`).
 - `BRBUDDY_FAKE_BATTERY` (`BatteryMonitor`) and `BRBUDDY_SOCKET` (`AgentSocket`, used by the tests).
@@ -255,6 +265,7 @@ Debug builds read these environment variables, all compiled out of release build
 | `flows/terminal-mirror.md` | Turning on the terminal mirror and where its text comes from |
 | `flows/walk-away.md` | Picking a phone or watch and what happens when it leaves |
 | `flows/battery.md` | The battery badge on the away screen and how the companion reacts |
+| `flows/send-logs.md` | What BRBuddy logs, and sending the log from the menu or Settings |
 | `flows/first-launch-tour.md` | The companion hanging under the menu bar on first launch, and the tour it opens |
 
 ## File index
@@ -263,7 +274,9 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 **BRBuddy (app)**
 - `BRBuddy/BRBuddyApp.swift`: entry point, the app lifecycle and ⌘, command, accessory activation policy.
 - `BRBuddy/StatusItemController.swift`: the paw in the menu bar and its menu.
-- `BRBuddy/AppWindows.swift`: opens the Settings and Companion Studio windows.
+- `BRBuddy/AppWindows.swift`: opens the Settings, Companion Studio and Send Logs windows.
+- `BRBuddy/AppLog.swift`: writes log lines (unified log and the log file) and the report header.
+- `BRBuddy/SendLogsView.swift`: the Send Logs window.
 - `BRBuddy/AppDelegate.swift`: owns app state and updates, blocks quitting during BRB, debug launch hooks.
 - `BRBuddy/UpdateController.swift`: Sparkle automatic updates and "Check for Updates…".
 - `BRBuddy/AppState.swift`: app state; keep-awake mode, idle check, global shortcut, launch at login.
@@ -294,6 +307,7 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 **BRBuddyCore**
 - `BRBuddyCore/KeepAwake.swift`: IOKit power assertion wrapper (system only, or system and display).
 - `BRBuddyCore/AwaySettings.swift`: BRB preferences and their UserDefaults storage.
+- `BRBuddyCore/DiagnosticLog.swift`: the rolling log file, redaction and the diagnostic report.
 - `BRBuddyCore/AwayPolicy.swift`: auto-start and escalation rules.
 - `BRBuddyCore/IdleMonitor.swift`: time since last keyboard or mouse input.
 - `BRBuddyCore/ScreenLocker.swift`: shows the real macOS lock screen.

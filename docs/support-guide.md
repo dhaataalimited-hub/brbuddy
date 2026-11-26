@@ -34,6 +34,7 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 | Walk-away lock | Settings → Walk-away | Pair your iPhone with the Mac, then pick it; when it moves away, BRBuddy starts BRB or locks the Mac |
 | Open at login | Settings → General | |
 | Updates | Menu → Check for Updates… | Downloaded releases check once a day and offer new versions; builds made from source don't update themselves |
+| Send logs | Menu → Send Logs…, or Settings → General → Send Logs… | Shows the whole report first, then emails it to hello@dhaataa.com (attached), saves it for a GitHub issue, or copies it. Nothing is sent by itself |
 | Which version am I on? | Bottom of the paw menu, or Settings → General → Version | "Development build" means a copy built from source, which has no Check for Updates |
 
 Requires macOS 14 or later.
@@ -45,6 +46,10 @@ licence.
 ## Privacy
 - BRBuddy collects nothing and has no server. Everything stays on your Mac.
 - Your password is only checked by macOS; BRBuddy never stores or logs it.
+- **Logs** stay on your Mac (`~/Library/Application Support/BRBuddy/Logs`, a few MB at most) until you choose to
+  send them with Send Logs…, which shows everything first. They record what BRBuddy did (BRB starting, the tour,
+  agent status changes, updates, errors) and your Mac model and macOS version, never passwords, what you type,
+  terminal text, notes or project names.
 - **Agent setup** adds one small entry to that agent's own settings file and saves a backup copy next to it first.
   The entry only tells BRBuddy what the agent is doing (for example "running swift test"). It can't change or block
   anything the agent does, and it never sends your prompts.
@@ -55,6 +60,10 @@ licence.
   - **Bluetooth**: for the walk-away lock, to sense how far your phone or watch is.
 
 ## Troubleshooting
+
+**Something isn't working and I want to report it.**
+Click the paw → Send Logs…, then Email to BRBuddy… and add a line about what happened. If you use GitHub, Save for
+GitHub… and attach the file to an issue instead.
 
 **I installed BRBuddy but can't tell it's running.**
 It has no window or Dock icon: look for the paw in the menu bar, near the clock. On a MacBook with a notch, a full

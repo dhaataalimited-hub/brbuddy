@@ -20,6 +20,8 @@ final class AgentMonitor {
 
     /// Called whenever the overall summary may have changed.
     var onChange: (() -> Void)?
+    /// The last activity written to the log for each session, so the log only records changes.
+    @ObservationIgnored private var loggedActivity: [String: AgentActivity] = [:]
 
     private let listener = AgentEventListener()
     private var timer: Timer?
@@ -47,6 +49,7 @@ final class AgentMonitor {
             }
         } catch {
             listenerError = "BRBuddy couldn't listen for agents: \(error.localizedDescription)"
+            AppLog.error(.agents, listenerError ?? "")
         }
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
@@ -55,6 +58,12 @@ final class AgentMonitor {
     }
 
     private func receive(_ event: AgentEvent) {
+        // Only when a session's activity changes (not every tool call), and only the agent and what happened: no
+        // folder, prompt, detail or session id.
+        if let activity = event.activity, loggedActivity[event.session] != activity {
+            loggedActivity[event.session] = activity
+            AppLog.info(.agents, "\(event.agent.displayName): \(event.event) → \(activity)")
+        }
         tracker.apply(event)
         activity.record(event)
         lastAgent = event.agent
@@ -81,8 +90,10 @@ final class AgentMonitor {
         do {
             try installer.install(agent)
             setupErrors[agent] = nil
+            AppLog.info(.agents, "Connected \(agent.displayName)")
         } catch {
             setupErrors[agent] = error.localizedDescription
+            AppLog.error(.agents, "Connecting \(agent.displayName) failed: \(error.localizedDescription)")
         }
         refresh()
     }
@@ -91,8 +102,10 @@ final class AgentMonitor {
         do {
             try installer.uninstall(agent)
             setupErrors[agent] = nil
+            AppLog.info(.agents, "Disconnected \(agent.displayName)")
         } catch {
             setupErrors[agent] = error.localizedDescription
+            AppLog.error(.agents, "Disconnecting \(agent.displayName) failed: \(error.localizedDescription)")
         }
         refresh()
     }
@@ -120,6 +133,7 @@ final class AgentMonitor {
             try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
         } catch {
             listenerError = "BRBuddy couldn't install its hook helper: \(error.localizedDescription)"
+            AppLog.error(.agents, listenerError ?? "")
         }
     }
 }

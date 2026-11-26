@@ -76,7 +76,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         if state.isKeepingAwakeForAgent && !state.manualKeepAwake {
             note(to: menu, "Kept awake while your agent works")
         }
-        let brb = add(to: menu, "BRB now") { [state] in state.startAway() }
+        let brb = add(to: menu, "BRB now") { [state] in state.startAway("menu") }
         brb.setShortcut(for: .brbNow)
         if state.isKeepingAwake && state.settings.autoStartEnabled {
             note(to: menu, "BRB starts after \(state.settings.idleMinutes) min away")
@@ -91,6 +91,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         add(to: menu, "Settings…", key: ",") { [windows] in windows.showSettings() }
         add(to: menu, "Show tour again") { [showTour] in showTour() }
+        add(to: menu, "Send Logs…") { [windows] in windows.showSendLogs() }
         if updates.isAvailable {
             add(to: menu, "Check for Updates…") { [updates] in updates.checkForUpdates() }
         }
@@ -116,7 +117,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             let title = "\(icon(session.activity)) \(session.agent.displayName)\(project) — \(label(session.activity))"
             if TerminalFocuser.hostApp(of: session) != nil {
                 // Clicking jumps to the window (and tab, in Terminal and iTerm2) the agent runs in.
-                add(to: menu, title) { TerminalFocuser.focus(session) }
+                // Logged without the project name.
+                add(to: menu, title, logAs: "\(session.agent.displayName) session") { TerminalFocuser.focus(session) }
             } else {
                 note(to: menu, title)
             }
@@ -124,11 +126,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     @discardableResult
-    private func add(to menu: NSMenu, _ title: String, key: String = "", checked: Bool = false,
+    private func add(to menu: NSMenu, _ title: String, key: String = "", checked: Bool = false, logAs: String? = nil,
                      action: @escaping @MainActor () -> Void) -> NSMenuItem {
         let menuItem = NSMenuItem(title: title, action: #selector(run(_:)), keyEquivalent: key)
         menuItem.target = self
-        menuItem.representedObject = MenuAction(action)
+        menuItem.representedObject = MenuAction(action, logName: logAs)
         menuItem.state = checked ? .on : .off
         menu.addItem(menuItem)
         return menuItem
@@ -142,7 +144,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     @objc private func run(_ sender: NSMenuItem) {
-        (sender.representedObject as? MenuAction)?.action()
+        guard let action = sender.representedObject as? MenuAction else { return }
+        AppLog.info(.menu, "Chose \(action.logName ?? sender.title)")
+        action.action()
     }
 
     private func icon(_ activity: AgentActivity) -> String {
@@ -168,5 +172,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 /// A menu item's action, carried in its `representedObject`.
 private final class MenuAction: NSObject {
     let action: @MainActor () -> Void
-    init(_ action: @escaping @MainActor () -> Void) { self.action = action }
+    /// What the log calls this item, when its title shouldn't go in the log.
+    let logName: String?
+    init(_ action: @escaping @MainActor () -> Void, logName: String? = nil) {
+        self.action = action
+        self.logName = logName
+    }
 }
