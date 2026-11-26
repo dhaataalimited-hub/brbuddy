@@ -34,6 +34,7 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 | Walk-away lock | Settings → Walk-away | Pair your iPhone with the Mac, then pick it; when it moves away, BRBuddy starts BRB or locks the Mac |
 | Open at login | Settings → General | |
 | Updates | Menu → Check for Updates… | Downloaded releases check once a day and offer new versions; builds made from source don't update themselves |
+| Which version am I on? | Bottom of the paw menu, or Settings → General → Version | "Development build" means a copy built from source, which has no Check for Updates |
 
 Requires macOS 14 or later.
 

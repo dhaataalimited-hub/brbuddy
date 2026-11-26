@@ -94,6 +94,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         if updates.isAvailable {
             add(to: menu, "Check for Updates…") { [updates] in updates.checkForUpdates() }
         }
+        menu.addItem(.separator())
+        note(to: menu, "BRBuddy \(AppVersion.label())")
         add(to: menu, "Quit BRBuddy", key: "q") { NSApplication.shared.terminate(nil) }
     }
 

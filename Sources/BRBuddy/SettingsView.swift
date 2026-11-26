@@ -100,6 +100,7 @@ struct SettingsView: View {
 
         Section("General") {
             LaunchAtLoginToggle(state: state, label: "Open BRBuddy at login")
+            LabeledContent("Version", value: AppVersion.label())
         }
 
         Section {
