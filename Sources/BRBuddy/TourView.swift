@@ -71,7 +71,8 @@ private struct SpeechBubble: View {
                     Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+                // A fixed colour: the bubble is always light, so .secondary would vanish in dark mode.
+                .foregroundStyle(Color(red: 0.16, green: 0.08, blue: 0.13).opacity(0.6))
                 .help("Not now (Show tour again is in the menu)")
             }
         }

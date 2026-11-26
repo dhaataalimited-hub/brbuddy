@@ -23,6 +23,8 @@ final class TourController {
     private var buddyPanel: NSPanel?
     private var tourPanel: NSPanel?
     private var closeObserver: NSObjectProtocol?
+    /// Closes the hanging companion if it isn't clicked in time (`FirstLaunchTour.hangSeconds`).
+    private var hangTimeout: Task<Void, Never>?
     /// Where the companion hangs, worked out when the tour opens, so both panels line up with the same paw.
     private var place: (anchor: CGRect?, visible: CGRect)?
 
@@ -55,10 +57,18 @@ final class TourController {
         bubble = "Hi! I live up here in your menu bar. Click me for a quick tour."
         place = findPlace()
         showBuddy()
+        // If it isn't clicked, it says goodbye and climbs back up by itself; Show tour again is in the menu.
+        hangTimeout?.cancel()
+        hangTimeout = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(FirstLaunchTour.hangSeconds))
+            guard !Task.isCancelled, let self, self.isOpen, !self.isTouring, !self.isLeaving else { return }
+            self.finish()
+        }
     }
 
     /// Opens the tour panel (clicking the hanging companion does this).
     func startTour() {
+        hangTimeout?.cancel()
         isTouring = true
         bubble = nil
         state.agents.refresh()
@@ -137,6 +147,7 @@ final class TourController {
     }
 
     private func closeAll() {
+        hangTimeout?.cancel()
         removeCloseObserver()
         tourPanel?.orderOut(nil)
         buddyPanel?.orderOut(nil)
@@ -154,15 +165,15 @@ final class TourController {
     }
 
     private func makeBuddyPanel() -> NSPanel {
-        let panel = NSPanel(contentRect: CGRect(origin: .zero, size: Self.buddySize),
-                            styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        let panel = HangingPanel(contentRect: CGRect(origin: .zero, size: Self.buddySize),
+                                 styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
         panel.level = .statusBar
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         panel.hidesOnDeactivate = false
-        panel.contentView = NSHostingView(rootView: HangingBuddyView(tour: self))
+        panel.contentView = FirstClickHostingView(rootView: HangingBuddyView(tour: self))
         return panel
     }
 
@@ -187,4 +198,15 @@ final class TourController {
         }
         return panel
     }
+}
+
+/// The hanging companion's panel. Borderless panels can't become key by default, so while another app is in front
+/// macOS would spend each click on the window instead of passing it on; this one can (without activating BRBuddy).
+private final class HangingPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+}
+
+/// Takes the first click even when its window isn't key, so clicking the companion works straight away.
+private final class FirstClickHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }

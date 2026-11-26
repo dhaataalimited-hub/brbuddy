@@ -16,8 +16,8 @@ panel under it, with four steps:
    unlocking.
 
 **Finish** on the last step (or **Skip tour**, the panel's close button, or the × on the companion's bubble) ends
-it without BRB: the companion says "See you up there!" and climbs back up. **Show tour again** in the menu runs it
-again.
+it without BRB: the companion says "See you up there!" and climbs back up. If the companion isn't clicked within
+15 seconds, it does the same by itself. **Show tour again** in the menu runs it again.
 
 ## Types involved, in order
 `AppDelegate` finishes launching → `TourController` checks `FirstLaunchTour` (not seen yet) → after 1.5 s it finds
@@ -40,11 +40,12 @@ flowchart LR
 ```
 
 ## States and edge cases
-- Seen means finished, skipped or closed. Quitting before doing any of those shows it again next launch.
+- Seen means finished, skipped, closed or left unclicked for 15 seconds (`FirstLaunchTour`'s hang time). Quitting
+  before any of those shows it again next launch.
 - If the menu bar item can't be found or isn't visible (behind the notch, or hidden by a menu bar organiser), both
   panels go in the upper middle of the main screen instead.
-- The hanging companion's panel floats at status-bar level on every Space and never takes focus; the tour panel is
-  a normal floating panel that can be dragged.
+- The hanging companion's panel floats at status-bar level on every Space and never activates BRBuddy; the tour
+  panel is a normal floating panel that can be dragged.
 - The tour doesn't open while BRB is up.
 - The paw counts as hidden when it's off screen, below the menu bar, or behind the notch (`FirstLaunchTour` checks
   it against the screen's areas beside the notch).
@@ -57,6 +58,10 @@ flowchart LR
 - Try BRB is the last step on purpose: BRB hides the menu bar and Dock, and anything reopened right after it has to
   find the paw while the menu bar is still coming back. Ending the tour first means nothing does. `FirstLaunchTourTests`
   checks it stays last.
+- The hanging panel can become key and its hosting view takes the first click (both private to
+  `TourController.swift`). Without that, a borderless panel in an app that isn't in front swallows every click, so
+  the companion couldn't be clicked after an install or update (0.1.4 and earlier); it worked when started from
+  Terminal only because BRBuddy was in front. The bubble's × uses a fixed dark colour so it shows in dark mode.
 - Debug builds: `BRBUDDY_TOUR=1` forces the tour; `BRBUDDY_TOUR_SNAPSHOTS=<dir>` renders the companion and each step.
 
 ## Code to check

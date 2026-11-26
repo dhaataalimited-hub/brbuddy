@@ -26,6 +26,10 @@ struct FirstLaunchTourTests {
         #expect(!FirstLaunchTour.shouldShowAtLaunch(store: store))
     }
 
+    @Test func hangsForFifteenSecondsBeforeClimbingAway() {
+        #expect(FirstLaunchTour.hangSeconds == 15)
+    }
+
     // A 1440 x 900 screen with a 25 pt menu bar.
     let visible = CGRect(x: 0, y: 0, width: 1440, height: 875)
     let size = CGSize(width: 200, height: 160)
