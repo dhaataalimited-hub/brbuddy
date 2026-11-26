@@ -9,6 +9,9 @@ import SwiftUI
 @Observable
 final class TourController {
     let state: AppState
+    let windows: AppWindows
+    /// Where the paw is right now (`StatusItemController`), or nil when it can't be seen.
+    private let findPlace: () -> (anchor: CGRect?, visible: CGRect)
     private(set) var step: FirstLaunchTour.Step = .agents
     /// What the hanging companion says, if anything.
     private(set) var bubble: String?
@@ -20,16 +23,16 @@ final class TourController {
     private var buddyPanel: NSPanel?
     private var tourPanel: NSPanel?
     private var closeObserver: NSObjectProtocol?
-    /// Where the companion hangs, worked out once when the tour opens. Kept for when it comes back after BRB: right
-    /// then the menu bar is still reappearing and the item can't be found, which would put it mid-screen.
+    /// Where the companion hangs, worked out when the tour opens, so both panels line up with the same paw.
     private var place: (anchor: CGRect?, visible: CGRect)?
 
     static let buddySize = CGSize(width: 230, height: 196)
     static let tourSize = CGSize(width: 400, height: 360)
 
-    init(state: AppState) {
+    init(state: AppState, windows: AppWindows, place: @escaping () -> (anchor: CGRect?, visible: CGRect)) {
         self.state = state
-        state.onAwayEnded = { [weak self] in self?.cameBackFromBRB() }
+        self.windows = windows
+        self.findPlace = place
     }
 
     var isOpen: Bool { buddyPanel != nil }
@@ -50,7 +53,7 @@ final class TourController {
         isTouring = false
         isLeaving = false
         bubble = "Hi! I live up here in your menu bar. Click me for a quick tour."
-        place = Self.menuBarPlace()
+        place = findPlace()
         showBuddy()
     }
 
@@ -64,10 +67,15 @@ final class TourController {
 
     func go(to next: FirstLaunchTour.Step) { step = next }
 
-    /// Covers the screen for real so the user sees BRB and how to come back; the tour picks up again afterwards.
+    /// The tour's last step: ends the tour, then covers the screen for real so the user sees BRB and how to come
+    /// back. Nothing reopens afterwards, so the panels never have to find the paw again.
     func tryBRB() {
-        hidePanels()
-        state.startAway()
+        FirstLaunchTour.markSeen()
+        closeAll()
+        Task {
+            try? await Task.sleep(for: .seconds(0.3))
+            state.startAway()
+        }
     }
 
     /// Ends the tour for good: the companion says goodbye and climbs back up to the menu bar.
@@ -109,17 +117,10 @@ final class TourController {
 
     // MARK: Panels
 
-    private func cameBackFromBRB() {
-        guard buddyPanel != nil, step == .tryBRB else { return }
-        step = .companion
-        showBuddy()
-        if isTouring { showTourPanel() }
-    }
-
     private func showBuddy() {
         let panel = buddyPanel ?? makeBuddyPanel()
         buddyPanel = panel
-        let (anchor, visible) = place ?? Self.menuBarPlace()
+        let (anchor, visible) = place ?? findPlace()
         panel.setFrameOrigin(FirstLaunchTour.origin(size: Self.buddySize, anchor: anchor, visible: visible))
         panel.orderFrontRegardless()
     }
@@ -127,17 +128,12 @@ final class TourController {
     private func showTourPanel() {
         let panel = tourPanel ?? makeTourPanel()
         tourPanel = panel
-        let (anchor, visible) = place ?? Self.menuBarPlace()
+        let (anchor, visible) = place ?? findPlace()
         // Under the hanging companion, its string and feet; the tour reads as something it's holding up.
         panel.setFrameOrigin(FirstLaunchTour.origin(size: Self.tourSize, anchor: anchor, visible: visible,
                                                     below: Self.buddySize.height - 92))
         NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
-    }
-
-    private func hidePanels() {
-        tourPanel?.orderOut(nil)
-        buddyPanel?.orderOut(nil)
     }
 
     private func closeAll() {
@@ -190,15 +186,5 @@ final class TourController {
             }
         }
         return panel
-    }
-
-    /// The menu bar item's frame and the visible frame of its screen. The item is nil when it can't be found or is
-    /// hidden (behind the notch, or by a menu bar organiser); the tour then opens in the middle of the main screen.
-    private static func menuBarPlace() -> (anchor: CGRect?, visible: CGRect) {
-        let item = NSApp.windows.first {
-            $0.className.contains("NSStatusBarWindow") && $0.isVisible && $0.occlusionState.contains(.visible)
-        }
-        let screen = item?.screen ?? NSScreen.main ?? NSScreen.screens.first
-        return (item?.frame, screen?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 875))
     }
 }

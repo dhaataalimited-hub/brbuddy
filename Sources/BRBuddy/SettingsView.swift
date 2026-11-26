@@ -4,55 +4,73 @@ import KeyboardShortcuts
 import ServiceManagement
 import SwiftUI
 
-/// The Settings window, in tabs so it fits small screens: General (when BRB starts and when it hands off to the real
-/// lock screen, the shortcut, launch at login), Agents, Companion, Away screen (battery, terminal mirror) and
-/// Walk-away.
-struct SettingsView: View {
-    @Bindable var state: AppState
+/// The Settings window's tabs. `AppWindows` shows each in a toolbar tab, like a standard macOS Settings window.
+enum SettingsTab: Int, CaseIterable {
+    case general, agents, companion, awayScreen, walkAway
 
-    var body: some View {
-        TabView {
-            tab { generalSections }
-                .tabItem { Label("General", systemImage: "gearshape") }
-            tab { agentsSection }
-                .tabItem { Label("Agents", systemImage: "terminal") }
-            tab {
-                CompanionSection(library: state.companions, agent: state.agents.relevantAgent, boopSounds: state.settings.boopSounds)
-                Section("Boops") {
-                    Toggle("Play a sound when the companion is clicked", isOn: $state.settings.boopSounds)
-                    Text("Click your companion on the away screen (or in the preview above) for one of five reactions. Click too fast and it gets grumpy.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-                .tabItem { Label("Companion", systemImage: "pawprint") }
-            tab {
-                Section("Battery") {
-                    Toggle("Show the battery on the away screen", isOn: $state.settings.showBattery)
-                    Text("Your companion reacts too: it cheers when you plug in, sweats when the battery's low, and moves in slow motion in Low Power Mode. Macs without a battery skip this.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                MirrorSection(mirror: state.mirror)
-            }
-                .tabItem { Label("Away Screen", systemImage: "display") }
-            tab { WalkAwaySection(monitor: state.proximity) }
-                .tabItem { Label("Walk-away", systemImage: "figure.walk") }
-        }
-        // A fixed size that fits a 13-inch screen; each tab scrolls if its content is taller.
-        .frame(width: 540, height: 480)
-        .onAppear {
-            state.agents.refresh()
-            // Belt and braces for the menu's activation: bring the Settings window above other apps' windows.
-            DispatchQueue.main.async {
-                NSApp.activate()
-                NSApp.windows.first { $0.isVisible && $0.canBecomeKey && $0.level == .normal }?.makeKeyAndOrderFront(nil)
-            }
+    var title: String {
+        switch self {
+        case .general: "General"
+        case .agents: "Agents"
+        case .companion: "Companion"
+        case .awayScreen: "Away Screen"
+        case .walkAway: "Walk-away"
         }
     }
 
-    private func tab<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        Form { content() }.formStyle(.grouped)
+    var symbol: String {
+        switch self {
+        case .general: "gearshape"
+        case .agents: "terminal"
+        case .companion: "pawprint"
+        case .awayScreen: "display"
+        case .walkAway: "figure.walk"
+        }
+    }
+}
+
+/// One tab of the Settings window: General (when BRB starts and when it hands off to the real lock screen, the
+/// shortcut, launch at login), Agents, Companion, Away screen (battery, terminal mirror) or Walk-away.
+struct SettingsView: View {
+    @Bindable var state: AppState
+    let tab: SettingsTab
+    /// Opens Companion Studio (from the Companion tab).
+    let openStudio: () -> Void
+
+    /// Fits a 13-inch screen; each tab scrolls if its content is taller.
+    static let size = CGSize(width: 540, height: 430)
+
+    var body: some View {
+        Form { content }
+            .formStyle(.grouped)
+            .frame(width: Self.size.width, height: Self.size.height)
+            .onAppear { state.agents.refresh() }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch tab {
+        case .general: generalSections
+        case .agents: agentsSection
+        case .companion:
+            CompanionSection(library: state.companions, agent: state.agents.relevantAgent,
+                             boopSounds: state.settings.boopSounds, openStudio: openStudio)
+            Section("Boops") {
+                Toggle("Play a sound when the companion is clicked", isOn: $state.settings.boopSounds)
+                Text("Click your companion on the away screen (or in the preview above) for one of five reactions. Click too fast and it gets grumpy.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .awayScreen:
+            Section("Battery") {
+                Toggle("Show the battery on the away screen", isOn: $state.settings.showBattery)
+                Text("Your companion reacts too: it cheers when you plug in, sweats when the battery's low, and moves in slow motion in Low Power Mode. Macs without a battery skip this.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            MirrorSection(mirror: state.mirror)
+        case .walkAway:
+            WalkAwaySection(monitor: state.proximity)
+        }
     }
 
     @ViewBuilder private var generalSections: some View {
@@ -117,7 +135,7 @@ private struct CompanionSection: View {
     @Bindable var library: CompanionLibrary
     let agent: AgentKind?
     let boopSounds: Bool
-    @Environment(\.openWindow) private var openWindow
+    let openStudio: () -> Void
 
     var body: some View {
         Section("Companion") {
@@ -151,10 +169,7 @@ private struct CompanionSection: View {
                 }
             }
             HStack {
-                Button("Companion Studio…") {
-                    NSApp.activate()
-                    openWindow(id: CompanionStudioView.windowID)
-                }
+                Button("Companion Studio…", action: openStudio)
                 Button("Add companion pack…") { library.chooseAndImport() }
                 Button("Show companions folder") { library.revealFolder() }
             }

@@ -7,26 +7,25 @@ import Foundation
 /// marked seen when it is finished, skipped or closed, and can be reopened from the menu.
 public enum FirstLaunchTour {
     public enum Step: Int, CaseIterable, Sendable {
-        case agents, tryBRB, companion, extras, done
+        case agents, companion, extras, tryBRB
 
         public var title: String {
             switch self {
             case .agents: "Connect your agent"
-            case .tryBRB: "Try BRB"
             case .companion: "Pick a companion"
             case .extras: "A few extras"
-            case .done: "You're all set"
+            case .tryBRB: "Try BRB"
             }
         }
 
-        /// The step after this one; `done` stays `done`.
-        public var next: Step { Step(rawValue: rawValue + 1) ?? .done }
+        /// The step after this one; the last step, Try BRB, stays put. It comes last because trying BRB covers the
+        /// screen and ends the tour, so nothing has to come back afterwards.
+        public var next: Step { Step(rawValue: rawValue + 1) ?? .tryBRB }
         /// The step before this one; `agents` stays `agents`.
         public var previous: Step { Step(rawValue: rawValue - 1) ?? .agents }
-        /// "Step 2 of 4", or nil for the closing screen.
-        public var counter: String? {
-            self == .done ? nil : "Step \(rawValue + 1) of \(Step.allCases.count - 1)"
-        }
+        public var isLast: Bool { self == Step.allCases.last }
+        /// "Step 2 of 4".
+        public var counter: String { "Step \(rawValue + 1) of \(Step.allCases.count)" }
     }
 
     static let seenKey = "tour.seen"
@@ -38,6 +37,24 @@ public enum FirstLaunchTour {
 
     public static func markSeen(store: UserDefaults = .standard) {
         store.set(true, forKey: seenKey)
+    }
+
+    /// Whether a menu bar item at `item` can be seen on the screen at `screen` (both Cocoa coordinates): it is inside
+    /// the screen's width, in its top band, and not hidden behind the notch. `notchLeft` and `notchRight` are the
+    /// screen's usable areas beside the notch (`NSScreen.auxiliaryTopLeftArea` / `auxiliaryTopRightArea`), nil on
+    /// screens without one; they may be given relative to the screen or in global coordinates.
+    public static func isVisible(item: CGRect, screen: CGRect, notchLeft: CGRect? = nil,
+                                 notchRight: CGRect? = nil) -> Bool {
+        guard item.width > 0, item.midX >= screen.minX, item.midX <= screen.maxX,
+              item.minY >= screen.maxY - 60, item.minY <= screen.maxY else { return false }
+        guard var left = notchLeft, var right = notchRight else { return true }
+        // Relative to the screen: shift into global coordinates.
+        if screen.minX != 0, right.maxX <= screen.width + 1, !right.intersects(screen) {
+            left = left.offsetBy(dx: screen.minX, dy: screen.minY)
+            right = right.offsetBy(dx: screen.minX, dy: screen.minY)
+        }
+        // In the gap between the two areas is behind the notch.
+        return item.maxX <= left.maxX + 1 || item.minX >= right.minX - 1
     }
 
     /// Where to put a panel of `size` so it hangs just under the menu bar item at `anchor`, kept inside `visible`

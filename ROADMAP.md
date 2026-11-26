@@ -144,12 +144,15 @@ string just under the BRBuddy icon and says "I live up here. Click me." Clicking
 skippable:
 
 1. **Connect your agent:** installs the hooks for the agents it finds.
-2. **Try BRB now:** starts BRB for real, so the user also learns how to come back (Touch ID or password); the tour
-   picks up again after unlocking. (Planned as a 5-second demo; a real BRB avoids adding a way to end BRB without
-   unlocking.)
-3. **Pick a companion:** the built-ins, Companion Studio, and a link to the gallery.
-4. **Optional extras:** launch at login, keep awake while an agent works, and the walk-away lock (Phase 6). The
+2. **Pick a companion:** the built-ins, Companion Studio, and a link to the gallery.
+3. **Optional extras:** launch at login, keep awake while an agent works, and the walk-away lock (Phase 6). The
    desktop companion joins this step when Phase 8 is built.
+4. **Try BRB now:** ends the tour and starts BRB for real, so the user also learns how to come back (Touch ID or
+   password). (Planned as a 5-second demo; a real BRB avoids adding a way to end BRB without unlocking. First built
+   as step 2 with the tour reopening after it; moved last in 0.1.3, because reopening right after BRB was where the
+   tour went wrong on Tahoe.)
+- 0.1.3 also moved the menu bar item from SwiftUI's `MenuBarExtra` to BRBuddy's own AppKit status item, so the tour
+  always knows where the paw is.
 
 - **Show tour again** in the menu bar menu brings it back.
 - If the icon is hidden (behind the notch, or by a menu bar organiser), the buddy and the tour show in the middle of

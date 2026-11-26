@@ -1,13 +1,19 @@
 import AppKit
 
-/// Owns `AppState` and the first-launch tour (`TourController`), and refuses to quit while BRB is up, so ⌘Q or a script can't take the away screen down.
+/// Owns `AppState`, the menu bar item (`StatusItemController`), BRBuddy's windows (`AppWindows`) and the first-launch
+/// tour (`TourController`), and refuses to quit while BRB is up, so ⌘Q or a script can't take the away screen down.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let state = AppState()
     let updates = UpdateController()
-    private(set) lazy var tour = TourController(state: state)
+    private(set) lazy var windows: AppWindows = AppWindows(state: state)
+    private(set) lazy var statusItem: StatusItemController = StatusItemController(state: state, updates: updates, windows: windows) { [unowned self] in
+        tour.show()
+    }
+    private(set) lazy var tour: TourController = TourController(state: state, windows: windows) { [unowned self] in statusItem.place() }
 
     func applicationDidFinishLaunching(_: Notification) {
+        _ = statusItem
         tour.showAtLaunchIfNew()
         #if DEBUG
         // Lets a developer (or a test script) open BRB straight away: BRBUDDY_START_AWAY=1. Debug builds only.
@@ -36,6 +42,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let path = ProcessInfo.processInfo.environment["BRBUDDY_PROMO"] {
             PromoFilm.render(to: URL(fileURLWithPath: path))
             exit(0)
+        }
+        // BRBUDDY_MENU_DUMP=1: print the menu bar item's menu. BRBUDDY_OPEN_SETTINGS=<tab number>: open Settings there.
+        if ProcessInfo.processInfo.environment["BRBUDDY_MENU_DUMP"] == "1" {
+            FileHandle.standardError.write(Data((statusItem.debugMenuLines().joined(separator: "\n") + "\n").utf8))
+        }
+        if let tab = ProcessInfo.processInfo.environment["BRBUDDY_OPEN_SETTINGS"].flatMap(Int.init).flatMap(SettingsTab.init) {
+            windows.showSettings(tab)
         }
         // BRBUDDY_TOUR=1: show the first-launch tour even if it has been seen.
         if ProcessInfo.processInfo.environment["BRBUDDY_TOUR"] == "1" {

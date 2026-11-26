@@ -7,23 +7,25 @@ panel under it, with four steps:
 
 1. **Connect your agent:** the agents found on this Mac, each with a Connect button (the same hook setup as Settings →
    Agents).
-2. **Try BRB:** what BRB does and how to come back (Touch ID or password), the shortcut, and the idle auto-start.
-   **Try BRB now** covers the screen for real; after unlocking, the companion and the tour come back at step 3.
-3. **Pick a companion:** a live preview (click it to boop) and the same choice as Settings → Companion, plus
+2. **Pick a companion:** a live preview (click it to boop) and the same choice as Settings → Companion, plus
    Companion Studio and a link to the gallery.
-4. **A few extras:** launch at login, keep awake while an agent works, and the walk-away lock (opens Settings).
+3. **A few extras:** launch at login, keep awake while an agent works, and the walk-away lock (opens Settings at
+   Walk-away).
+4. **Try BRB:** what BRB does, how to come back (Touch ID or password), that the paw is where it lives, the shortcut
+   and the idle auto-start. **Try BRB now** ends the tour and covers the screen for real; nothing reopens after
+   unlocking.
 
-Then "You're all set": the paw is where everything lives. **Done** (or **Skip tour**, the panel's close button, or
-the × on the companion's bubble) ends it: the companion says "See you up there!" and climbs back up. **Show tour
-again** in the menu runs it again.
+**Finish** on the last step (or **Skip tour**, the panel's close button, or the × on the companion's bubble) ends
+it without BRB: the companion says "See you up there!" and climbs back up. **Show tour again** in the menu runs it
+again.
 
 ## Types involved, in order
 `AppDelegate` finishes launching → `TourController` checks `FirstLaunchTour` (not seen yet) → after 1.5 s it finds
 the menu bar item's window and its screen, places a clear borderless panel with `HangingBuddyView` under it
 (`FirstLaunchTour`'s placement) → a click opens a titled panel with `TourView` just below → each step reads and
-changes the same objects Settings uses (`AgentMonitor`, `AppState`, `CompanionLibrary`) → **Try BRB now** hides
-both panels and calls `AppState` to start BRB → `AwayController` ends → `AppState`'s away-ended callback →
-`TourController` shows both panels again at the companion step → finishing marks the tour seen.
+changes the same objects Settings uses (`AgentMonitor`, `AppState`, `CompanionLibrary`) → **Try BRB now** marks the
+tour seen, closes both panels and, a moment later, asks `AppState` to start BRB. Finishing any other way marks it
+seen too.
 
 ```mermaid
 flowchart LR
@@ -32,10 +34,9 @@ flowchart LR
   T --> H[HangingBuddyView panel]
   H -->|click| V[TourView panel]
   V --> M[AgentMonitor: Connect]
-  V -->|Try BRB now| S[AppState] --> A[AwayController]
-  A -->|ended| S -->|onAwayEnded| T
   V --> L[CompanionLibrary: choice]
-  V -->|Done / Skip / close| F
+  V -->|Try BRB now: ends the tour| S[AppState] --> A[AwayController]
+  V -->|Finish / Skip / close| F
 ```
 
 ## States and edge cases
@@ -45,20 +46,23 @@ flowchart LR
 - The hanging companion's panel floats at status-bar level on every Space and never takes focus; the tour panel is
   a normal floating panel that can be dragged.
 - The tour doesn't open while BRB is up.
-- Where the companion hangs is worked out once, when the tour opens, and reused when it comes back after the BRB
-  demo (the menu bar is still reappearing then, so the item can't be found yet).
+- The paw counts as hidden when it's off screen, below the menu bar, or behind the notch (`FirstLaunchTour` checks
+  it against the screen's areas beside the notch).
 - Connect only changes an agent's settings when pressed, like Settings → Agents.
 
 ## Gotchas
-- The menu bar item's window is found by its AppKit class name (`NSStatusBarWindow`), since SwiftUI's
-  `MenuBarExtra` doesn't hand out its status item. If a macOS update renames it, the tour falls back to the middle of
-  the screen rather than failing.
+- BRBuddy owns its menu bar item (`StatusItemController`), so the paw's position comes straight from its status
+  item. (Until 0.1.2 it was SwiftUI's `MenuBarExtra`, found by a hidden window's class name, which broke on Tahoe
+  after the BRB demo.)
+- Try BRB is the last step on purpose: BRB hides the menu bar and Dock, and anything reopened right after it has to
+  find the paw while the menu bar is still coming back. Ending the tour first means nothing does. `FirstLaunchTourTests`
+  checks it stays last.
 - Debug builds: `BRBUDDY_TOUR=1` forces the tour; `BRBUDDY_TOUR_SNAPSHOTS=<dir>` renders the companion and each step.
 
 ## Code to check
 Function names change: read the current code in these files before relying on any detail above.
-- `FirstLaunchTour.swift`, `TourController.swift`, `TourView.swift`, `AppDelegate.swift`, `AppState.swift`,
-  `MenuContent.swift`, `BRBuddyApp.swift`, `AgentMonitor.swift`, `CompanionLibrary.swift`, `CompanionView.swift`
+- `FirstLaunchTour.swift`, `TourController.swift`, `TourView.swift`, `AppDelegate.swift`, `AppState.swift`, `AppWindows.swift`,
+  `StatusItemController.swift`, `BRBuddyApp.swift`, `AgentMonitor.swift`, `CompanionLibrary.swift`, `CompanionView.swift`
 - Types: `FirstLaunchTour`, `TourController`, `HangingBuddyView`, `TourView`, `AppDelegate`, `AppState`,
-  `MenuContent`, `AgentMonitor`, `CompanionLibrary`, `CompanionView`
+  `StatusItemController`, `AgentMonitor`, `CompanionLibrary`, `CompanionView`
 - Tests: `FirstLaunchTourTests`

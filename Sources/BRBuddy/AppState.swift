@@ -28,8 +28,6 @@ final class AppState {
     /// Keep-awake switched on by hand from the menu.
     private(set) var manualKeepAwake = false
     private(set) var launchAtLoginError: String?
-    /// Called after BRB ends (the first-launch tour picks up again after its BRB demo).
-    var onAwayEnded: (() -> Void)?
 
     var settings: AwaySettings {
         didSet {
@@ -48,10 +46,7 @@ final class AppState {
         away.battery = battery
         mirror.agents = agents
         proximity.onLeft = { [weak self] in self?.deviceLeft() }
-        away.onEnded = { [weak self] _ in
-            self?.applyKeepAwakeMode()
-            self?.onAwayEnded?()
-        }
+        away.onEnded = { [weak self] _ in self?.applyKeepAwakeMode() }
         agents.onChange = { [weak self] in self?.applyKeepAwakeMode() }
         KeyboardShortcuts.onKeyUp(for: .brbNow) { [weak self] in self?.startAway() }
         idleTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in

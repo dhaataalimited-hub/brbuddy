@@ -11,9 +11,9 @@ noted as open: they have no hooks.
 ## Types involved, in order
 Setup: `SettingsView` (`AgentRow`) → `AgentMonitor` → `AgentHookInstaller` → the agent's config file.
 Events: agent hook → `brbuddy-hook/main.swift` (`AgentEvent` from stdin, `AgentSocket` send) → `AgentEventListener`
-→ `AgentMonitor` (`AgentTracker`) → `AppState` (keep-awake mode) and the views (`MenuContent`, `AwayView`).
+→ `AgentMonitor` (`AgentTracker`) → `AppState` (keep-awake mode) and the views (`StatusItemController`, `AwayView`).
 Jump: `brbuddy-hook` adds a `TerminalLocation` (ancestor apps, tty) to each event → `AgentTracker.Session` →
-`MenuContent` row → `TerminalFocuser` (AppleScript tab select for Terminal/iTerm2, else activate + Accessibility raise).
+`StatusItemController` row → `TerminalFocuser` (AppleScript tab select for Terminal/iTerm2, else activate + Accessibility raise).
 Detection: `AgentMonitor` every 15 s → `AgentProcessScanner` (detached) and running desktop apps.
 
 ```mermaid
@@ -73,7 +73,7 @@ sequenceDiagram
 
 ## Code to check
 Function names change: read the current code in these files before relying on any detail above.
-- `AgentMonitor.swift`, `SettingsView.swift`, `MenuContent.swift`, `TerminalFocuser.swift`, `TerminalLocation.swift`, `AgentKind.swift`, `AgentEvent.swift`,
+- `AgentMonitor.swift`, `SettingsView.swift`, `StatusItemController.swift`, `TerminalFocuser.swift`, `TerminalLocation.swift`, `AgentKind.swift`, `AgentEvent.swift`,
   `AgentTracker.swift`, `AgentHookInstaller.swift`, `AgentSocket.swift`, `AgentProcessScanner.swift`,
   `brbuddy-hook/main.swift`
 - Types: `AgentMonitor`, `AgentKind`, `AgentActivity`, `AgentEvent`, `AgentTracker`, `AgentHookInstaller`,

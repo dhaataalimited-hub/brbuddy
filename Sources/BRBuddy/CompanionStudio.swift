@@ -6,8 +6,6 @@ import SwiftUI
 /// BRBuddy draws a saved design live from its `design.json`; the pack's spritesheets are for other pet apps and
 /// sharing. Opened from Settings → Companion.
 struct CompanionStudioView: View {
-    static let windowID = "studio"
-
     let library: CompanionLibrary
 
     @State private var design = StudioDesign.starter
