@@ -6,12 +6,12 @@ the Mac sleep normally again. With an agent hooked up, they don't have to: while
 them, the paw fills in by itself and the menu says "Kept awake while your agent works".
 
 ## Types involved, in order
-`MenuContent` → `AppState` → `KeepAwake` → IOKit power assertion. For agents: `AgentMonitor` (summary changed) →
+`StatusItemController` → `AppState` → `KeepAwake` → IOKit power assertion. For agents: `AgentMonitor` (summary changed) →
 `AppState` → `KeepAwake`.
 
 ```mermaid
 sequenceDiagram
-  participant V as MenuContent
+  participant V as StatusItemController
   participant M as AppState
   participant S as KeepAwake
   V->>M: toggle changed
@@ -36,6 +36,6 @@ sequenceDiagram
 
 ## Code to check
 Function names change: read the current code in these files before relying on any detail above.
-- `MenuContent.swift`, `AppState.swift`, `KeepAwake.swift`
-- Types: `MenuContent`, `AppState`, `KeepAwake`, `AwaySettings`, `AgentMonitor`, `AgentTracker`
+- `StatusItemController.swift`, `AppState.swift`, `KeepAwake.swift`
+- Types: `StatusItemController`, `AppState`, `KeepAwake`, `AwaySettings`, `AgentMonitor`, `AgentTracker`
 - Tests: `KeepAwakeTests`

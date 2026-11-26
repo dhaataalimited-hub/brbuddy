@@ -131,7 +131,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
       <text class="lane" x="12" y="320">BRBUDDYCORE</text>
       <text class="lane" x="12" y="420">PLATFORM</text>
 
-      <a href="#j-keep"><rect class="box" x="130" y="12" width="200" height="46" rx="8"/><text class="t" x="230" y="32" text-anchor="middle">Menu bar paw</text><text class="s" x="230" y="48" text-anchor="middle">MenuContent</text></a>
+      <a href="#j-keep"><rect class="box" x="130" y="12" width="200" height="46" rx="8"/><text class="t" x="230" y="32" text-anchor="middle">Menu bar paw</text><text class="s" x="230" y="48" text-anchor="middle">StatusItemController</text></a>
       <a href="#j-agents"><rect class="box" x="400" y="12" width="200" height="46" rx="8"/><text class="t" x="500" y="32" text-anchor="middle">Settings window</text><text class="s" x="500" y="48" text-anchor="middle">SettingsView</text></a>
       <a href="#j-brb"><rect class="box" x="670" y="12" width="290" height="46" rx="8"/><text class="t" x="815" y="32" text-anchor="middle">Away window per display</text><text class="s" x="815" y="48" text-anchor="middle">AwayWindow · AwayView · UnlockPanel</text></a>
 
@@ -183,7 +183,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   <h3>Surfaces</h3>
   <div class="tablebox"><table>
     <tr><th>Surface</th><th>What it is</th><th>Made by</th></tr>
-    <tr><td>Menu bar item</td><td>Paw (filled while kept awake): keep-awake toggle, BRB now, agents list (click one to jump to its terminal), Settings, Quit. No Dock icon (<code>LSUIElement</code>).</td><td><code>BRBuddyApp</code> → <code>MenuContent</code></td></tr>
+    <tr><td>Menu bar item</td><td>Paw (filled while kept awake): keep-awake toggle, BRB now, agents list (click one to jump to its terminal), Settings, Show tour again, Quit. BRBuddy's own status item, so it knows where the paw is. No Dock icon (<code>LSUIElement</code>).</td><td><code>AppDelegate</code> → <code>StatusItemController</code></td></tr>
     <tr><td>Settings window</td><td>Five tabs: General (starting BRB, locking for real, shortcut, login), Agents, Companion, Away Screen (terminal mirror), Walk-away. Fixed 540×480; each tab scrolls.</td><td><code>BRBuddyApp</code> → <code>SettingsView</code></td></tr>
     <tr><td>Away windows</td><td>One borderless window per display at screen-saver level, on every Space.</td><td><code>AwayController</code> → <code>AwayWindow</code> hosting <code>AwayView</code></td></tr>
     <tr><td>Companion</td><td>Animated character on the away screen and in Settings' preview.</td><td><code>CompanionView</code> (<code>CritterView</code> or <code>SpritePackView</code>)</td></tr>
@@ -198,20 +198,22 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   <div class="tablebox"><table>
     <tr><th>Type</th><th>File</th><th>Created by · lifetime</th><th>Thread</th><th>Job</th></tr>
     <tr><td><code>AppDelegate</code></td><td class="mono">BRBuddy/AppDelegate.swift</td><td>SwiftUI adaptor · app</td><td>Main</td><td>Owns <code>AppState</code>, <code>UpdateController</code> and <code>TourController</code>; opens the tour on first launch; refuses to quit while BRB is up; debug launch hooks</td></tr>
+    <tr><td><code>StatusItemController</code></td><td class="mono">BRBuddy/StatusItemController.swift</td><td><code>AppDelegate</code> · app</td><td>Main</td><td>The paw <code>NSStatusItem</code> and its menu (rebuilt on open); says where the paw is, for the tour</td></tr>
+    <tr><td><code>AppWindows</code></td><td class="mono">BRBuddy/AppWindows.swift</td><td><code>AppDelegate</code> · app</td><td>Main</td><td>Opens Settings (toolbar tabs, any tab) and Companion Studio</td></tr>
     <tr><td><code>UpdateController</code></td><td class="mono">BRBuddy/UpdateController.swift</td><td><code>AppDelegate</code> · app</td><td>Main</td><td>Sparkle updates and Check for Updates…; only in release builds that carry a feed and public key</td></tr>
     <tr><td><code>AppState</code></td><td class="mono">BRBuddy/AppState.swift</td><td><code>AppDelegate</code> · app</td><td>Main, observable</td><td>Keep-awake decision, 5 s idle check, global shortcut, launch at login, walk-away action</td></tr>
     <tr><td><code>AwayController</code></td><td class="mono">BRBuddy/AwayController.swift</td><td><code>AppState</code> · app</td><td>Main, observable</td><td>Windows, locked-down presentation options, focus guard, unlock, failures, escalation</td></tr>
     <tr><td><code>AgentMonitor</code></td><td class="mono">BRBuddy/AgentMonitor.swift</td><td><code>AppState</code> · app</td><td>Main; socket on own queue</td><td>Listener, <code>AgentTracker</code>, activity feed, process scan every 15 s, hook setup</td></tr>
     <tr><td><code>CompanionLibrary</code></td><td class="mono">BRBuddy/CompanionLibrary.swift</td><td><code>AppState</code> · app</td><td>Main; frames cut detached</td><td>Companion choice, packs and their frames, import</td></tr>
     <tr><td><code>TerminalMirror</code></td><td class="mono">BRBuddy/TerminalMirror.swift</td><td><code>AppState</code> · app</td><td>Main; capture detached</td><td>Picks a source, refreshes once a second while retained</td></tr>
-    <tr><td><code>CompanionStudioView</code>, <code>StudioSheetRenderer</code></td><td class="mono">BRBuddy/CompanionStudio.swift</td><td>Window scene</td><td>Main</td><td>Companion Studio: edit a design with a live boopable preview; render its spritesheets; save and pick it</td></tr>
+    <tr><td><code>CompanionStudioView</code>, <code>StudioSheetRenderer</code></td><td class="mono">BRBuddy/CompanionStudio.swift</td><td><code>AppWindows</code></td><td>Main</td><td>Companion Studio: edit a design with a live boopable preview; render its spritesheets; save and pick it</td></tr>
     <tr><td><code>StudioDesign</code>, <code>StudioPackWriter</code></td><td class="mono">BRBuddyCore/StudioDesign.swift</td><td>Values</td><td>Pure + file writes</td><td>A Studio companion's parts and colours; random designs; writes design.json, pet.json and sheets</td></tr>
     <tr><td><code>Boop</code>, <code>BoopPicker</code>, <code>BoopSound</code></td><td class="mono">BRBuddyCore/Boop.swift</td><td>Values in <code>CompanionView</code></td><td>Pure</td><td>Five click reactions; which comes next (grumpy if clicked too fast); synthesised sounds</td></tr>
     <tr><td><code>BoopPlayer</code>, <code>BoopFlair</code></td><td class="mono">BRBuddy/BoopView.swift</td><td><code>CompanionView</code></td><td>Main</td><td>Plays boop sounds; boop motion, effects and bubble</td></tr>
     <tr><td><code>BatteryMonitor</code></td><td class="mono">BRBuddy/BatteryMonitor.swift</td><td><code>AppState</code> · app</td><td>Main; 1 s timer while BRB is up</td><td>Reads the battery while retained by <code>AwayController</code>; notices plug and unplug (<code>BatteryWatch</code>)</td></tr>
     <tr><td><code>BatteryBadge</code>, <code>BatteryFlair</code></td><td class="mono">BRBuddy/BatteryView.swift</td><td><code>AwayView</code>, <code>CompanionView</code></td><td>Main (views)</td><td>The away screen's battery pill; the companion's battery props and speech bubble</td></tr>
-    <tr><td><code>TourController</code></td><td class="mono">BRBuddy/TourController.swift</td><td><code>AppDelegate</code> · app</td><td>Main, observable</td><td>First-launch tour: the hanging companion and tour panels, placed under the menu bar item (or mid-screen); resumes after its BRB demo</td></tr>
-    <tr><td><code>HangingBuddyView</code>, <code>TourView</code></td><td class="mono">BRBuddy/TourView.swift</td><td>The tour's panels</td><td>Main (views)</td><td>The swaying companion on its string with a bubble; the four tour steps and the closing screen</td></tr>
+    <tr><td><code>TourController</code></td><td class="mono">BRBuddy/TourController.swift</td><td><code>AppDelegate</code> · app</td><td>Main, observable</td><td>First-launch tour: the hanging companion and tour panels, placed under the menu bar item (or mid-screen); its last step ends the tour, then starts BRB</td></tr>
+    <tr><td><code>HangingBuddyView</code>, <code>TourView</code></td><td class="mono">BRBuddy/TourView.swift</td><td>The tour's panels</td><td>Main (views)</td><td>The swaying companion on its string with a bubble; the four tour steps</td></tr>
     <tr><td><code>FirstLaunchTour</code></td><td class="mono">BRBuddyCore/FirstLaunchTour.swift</td><td>Static</td><td>Pure</td><td>Tour steps, the seen flag, panel placement</td></tr>
     <tr><td><code>BatteryStatus</code>, <code>BatteryReaction</code></td><td class="mono">BRBuddyCore/Battery.swift</td><td>Values in <code>BatteryMonitor</code></td><td>Pure (+ IOKit read)</td><td>Battery from IOKit power sources; which reaction to show</td></tr>
     <tr><td><code>ProximityMonitor</code></td><td class="mono">BRBuddy/ProximityMonitor.swift</td><td><code>AppState</code> · app</td><td>Main (CoreBluetooth queue)</td><td>Device picker (accessories filtered, models read, closest marked); test mode (live signal, no BRB); only paired iPhones (<code>WalkAwayPairing</code>, <code>PairedDevices</code>); connects, reads signal every 2 s, reports departure</td></tr>
@@ -237,9 +239,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <article class="card" id="j-keep">
       <span class="status ok">verified</span>
       <h3>Keep awake</h3>
-      <div class="chain"><b>MenuContent</b> → <b>AppState</b> → <b>KeepAwake</b> → IOKit. Agents: <b>AgentMonitor</b> → <b>AppState</b>.</div>
+      <div class="chain"><b>StatusItemController</b> → <b>AppState</b> → <b>KeepAwake</b> → IOKit. Agents: <b>AgentMonitor</b> → <b>AppState</b>.</div>
       <ul><li>Kept awake when ticked by hand, or while an agent is working or waiting.</li><li>Display held too while BRB auto-start is on, so macOS's screen saver can't beat BRB.</li><li>Quitting or crashing releases the assertion.</li></ul>
-      <div class="files">BRBuddy/MenuContent.swift · BRBuddy/AppState.swift · BRBuddyCore/KeepAwake.swift</div>
+      <div class="files">BRBuddy/StatusItemController.swift · BRBuddy/AppState.swift · BRBuddyCore/KeepAwake.swift</div>
     </article>
     <article class="card" id="j-brb">
       <span class="status ok">Touch ID verified</span>
@@ -252,7 +254,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
       <span class="status ok">Claude Code verified</span>
       <h3>Agents: setup and status</h3>
       <div class="chain">Agent hook → helper (main.swift) → <b>AgentSocket</b> → <b>AgentEventListener</b> → <b>AgentMonitor</b> → <b>AgentTracker</b> → <b>AppState</b></div>
-      <ul><li>Six agents; per-agent config shapes; our entries found by the helper's name, backups saved once.</li><li>Helper prints nothing, exits 0, gives up within about 2 s.</li><li>Timeouts: working 30 min, waiting 4 h, finished 15 min.</li><li>Jump: the helper adds a <code>TerminalLocation</code> (ancestor apps, tty); <b>MenuContent</b> → <b>TerminalFocuser</b> selects the Terminal/iTerm2 tab by tty, else activates the app and raises the folder's window. Verified with Terminal.app.</li></ul>
+      <ul><li>Six agents; per-agent config shapes; our entries found by the helper's name, backups saved once.</li><li>Helper prints nothing, exits 0, gives up within about 2 s.</li><li>Timeouts: working 30 min, waiting 4 h, finished 15 min.</li><li>Jump: the helper adds a <code>TerminalLocation</code> (ancestor apps, tty); <b>StatusItemController</b> → <b>TerminalFocuser</b> selects the Terminal/iTerm2 tab by tty, else activates the app and raises the folder's window. Verified with Terminal.app.</li></ul>
       <div class="files">BRBuddy/AgentMonitor.swift · BRBuddyCore/AgentKind.swift · BRBuddyCore/AgentEvent.swift · BRBuddyCore/AgentHookInstaller.swift · BRBuddyCore/AgentSocket.swift · BRBuddyCore/AgentProcessScanner.swift · BRBuddyCore/TerminalLocation.swift · BRBuddy/TerminalFocuser.swift</div>
     </article>
     <article class="card" id="j-companions">
@@ -285,8 +287,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
     <article class="card" id="j-tour">
       <h3>First-launch tour</h3>
       <div class="chain"><b>AppDelegate</b> → <b>TourController</b> (<b>FirstLaunchTour</b>: seen?) → <b>HangingBuddyView</b> panel → click → <b>TourView</b> panel → <b>AgentMonitor</b> / <b>AppState</b> / <b>CompanionLibrary</b></div>
-      <ul><li>First launch only: the companion hangs on a string under the paw, then a four-step tour (connect agents, try BRB, pick a companion, extras).</li><li>Try BRB now starts real BRB; after unlocking, <code>AppState</code>'s away-ended callback brings the tour back at step 3.</li><li>Seen once finished, skipped or closed; Show tour again in the menu reruns it.</li><li>Menu bar item hidden (notch, organiser) or not found: both panels go mid-screen.</li></ul>
-      <div class="files">BRBuddyCore/FirstLaunchTour.swift · BRBuddy/TourController.swift · BRBuddy/TourView.swift · BRBuddy/AppDelegate.swift · BRBuddy/AppState.swift · BRBuddy/MenuContent.swift</div>
+      <ul><li>First launch only: the companion hangs on a string under the paw, then a four-step tour (connect agents, pick a companion, extras, try BRB).</li><li>Try BRB now is last: it ends the tour, then starts real BRB, so nothing has to reappear and find the paw afterwards.</li><li>Seen once finished, skipped or closed; Show tour again in the menu reruns it.</li><li>Menu bar item hidden (notch, organiser) or not found: both panels go mid-screen.</li></ul>
+      <div class="files">BRBuddyCore/FirstLaunchTour.swift · BRBuddy/TourController.swift · BRBuddy/TourView.swift · BRBuddy/AppDelegate.swift · BRBuddy/AppState.swift · BRBuddy/StatusItemController.swift</div>
     </article>
   </div>
 </section>
@@ -362,5 +364,5 @@ html { scroll-behavior: smooth; scroll-padding-top: 60px; }
   </dl>
 </section>
 
-<footer>Generated 2026-11-26 from docs/architecture after adding the first-launch tour (branch first-launch-tour). The markdown is the source; regenerate this page after changes.</footer>
+<footer>Generated 2026-11-26 from docs/architecture after moving the menu bar item and windows to AppKit (branch own-status-item). The markdown is the source; regenerate this page after changes.</footer>
 </div>

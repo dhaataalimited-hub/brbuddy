@@ -86,16 +86,12 @@ private struct SpeechBubble: View {
 /// The tour panel: four short steps (connect an agent, try BRB, pick a companion, extras) and a closing screen.
 struct TourView: View {
     @Bindable var tour: TourController
-    @Environment(\.openSettings) private var openSettings
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if let counter = tour.step.counter {
-                Text(counter.uppercased())
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(Color(red: 0.93, green: 0.45, blue: 0.52))
-            }
+            Text(tour.step.counter.uppercased())
+                .font(.caption.weight(.bold))
+                .foregroundStyle(Color(red: 0.93, green: 0.45, blue: 0.52))
             Text(tour.step.title)
                 .font(.system(size: 20, weight: .bold, design: .rounded))
             content
@@ -115,25 +111,24 @@ struct TourView: View {
         case .tryBRB: tryStep
         case .companion: companionStep
         case .extras: extrasStep
-        case .done: doneStep
         }
     }
 
     private var footer: some View {
         HStack {
-            if tour.step != .done {
+            if !tour.step.isLast {
                 Button("Skip tour") { tour.finish() }
                     .buttonStyle(.link)
             }
             Spacer()
-            if tour.step != .agents && tour.step != .done {
+            if tour.step != .agents {
                 Button("Back") { tour.go(to: tour.step.previous) }
             }
-            if tour.step == .done {
-                Button("Done") { tour.finish() }
-                    .keyboardShortcut(.defaultAction)
+            if tour.step.isLast {
+                // Ending without trying BRB; Try BRB now (in the step) is the main way out.
+                Button("Finish") { tour.finish() }
             } else {
-                Button(tour.step == .extras ? "Finish" : "Next") { tour.go(to: tour.step.next) }
+                Button("Next") { tour.go(to: tour.step.next) }
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -143,14 +138,21 @@ struct TourView: View {
 
     private var tryStep: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("BRB covers your screen with your companion while your agent works, and keeps your Mac awake. Your companion shows what the agent is up to.")
-            Text("To come back, use Touch ID or your password.")
-                .fontWeight(.semibold)
-            Text("Start it any time from the menu bar\(shortcutText). While your Mac is kept awake, it also starts by itself after \(tour.state.settings.idleMinutes) minutes away.")
-                .foregroundStyle(.secondary)
-            Button("Try BRB now") { tour.tryBRB() }
-                .controlSize(.large)
-                .padding(.top, 4)
+            Text("BRB covers your screen with your companion while your agent works, and keeps your Mac awake. To come back, use Touch ID or your password.")
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Image(systemName: "pawprint.fill")
+                Text("I'm the paw in your menu bar. Start BRB from there any time\(shortcutText); while your Mac is kept awake it also starts by itself after \(tour.state.settings.idleMinutes) minutes away.")
+            }
+            .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Button("Try BRB now") { tour.tryBRB() }
+                    .controlSize(.large)
+                    .keyboardShortcut(.defaultAction)
+                Text("This ends the tour.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 4)
         }
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -161,8 +163,7 @@ struct TourView: View {
 
     private var companionStep: some View {
         CompanionStep(library: tour.state.companions, agent: tour.state.agents.relevantAgent) {
-            NSApp.activate()
-            openWindow(id: CompanionStudioView.windowID)
+            tour.windows.showStudio()
         }
     }
 
@@ -177,25 +178,9 @@ struct TourView: View {
                 Text("Start BRB (or lock your Mac) when your iPhone or Apple Watch leaves with you. Set it up in Settings → Walk-away.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Button("Open Settings…") {
-                    NSApp.activate()
-                    openSettings()
-                }
+                Button("Set up walk-away…") { tour.windows.showSettings(.walkAway) }
                 .controlSize(.small)
             }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var doneStep: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "pawprint.fill")
-                Text("I'm the paw in your menu bar.")
-                    .fontWeight(.semibold)
-            }
-            Text("Click it any time to BRB, keep your Mac awake, see what your agents are doing, or open Settings. This tour is there too, under Show tour again.")
-                .foregroundStyle(.secondary)
         }
         .fixedSize(horizontal: false, vertical: true)
     }

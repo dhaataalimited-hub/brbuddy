@@ -9,7 +9,7 @@ the mouse, the main display shows Touch ID and a password field. A good fingerpr
 Too many failed tries, or being away too long, shows a message and switches to the real macOS lock screen.
 
 ## Types involved, in order
-Start: `MenuContent` / KeyboardShortcuts / `AppState`'s idle check (`IdleMonitor` + `AwayPolicy`) → `AppState` →
+Start: `StatusItemController` / KeyboardShortcuts / `AppState`'s idle check (`IdleMonitor` + `AwayPolicy`) → `AppState` →
 `AwayController` → `AwayWindow` per display hosting `AwayView` (`CompanionView`) → `KeepAwake` switches to
 system-and-display.
 Unlock: `AwayWindow` reports input → `AwayController` (phase unlocking, new `LAContext`) → `UnlockPanel` (embedded

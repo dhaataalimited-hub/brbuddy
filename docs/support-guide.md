@@ -13,7 +13,7 @@ back in. BRBuddy isn't made by or affiliated with any of those AI companies.
 ## Features
 | Feature | Where | Notes |
 |---|---|---|
-| First-launch tour | Shows by itself the first time; Menu bar paw → Show tour again | The companion hangs under the paw in the menu bar to show where BRBuddy lives; click it for four short steps: connect your agent, try BRB, pick a companion, a few extras. Skip it any time |
+| First-launch tour | Shows by itself the first time; Menu bar paw → Show tour again | The companion hangs under the paw in the menu bar to show where BRBuddy lives; click it for four short steps: connect your agent, pick a companion, a few extras, then try BRB (which ends the tour). Skip it any time |
 | Keep Mac awake | Menu bar paw → Keep Mac awake | The paw fills in while the Mac is being kept awake |
 | Keep awake while an agent works | Settings → Agents | On by default once an agent is set up; turns off by itself when the agent finishes |
 | BRB (the away screen) | Menu → BRB now, or ⌃⌥⌘B | Covers every display; shows your companion, how long you've been away and what your agent is doing |

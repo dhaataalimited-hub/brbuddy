@@ -86,7 +86,7 @@ doesn't follow the phone means the wrong device was picked.
 
 ## Code to check
 Function names change: read the current code in these files before relying on any detail above.
-- `ProximityMonitor.swift`, `PairedDevices.swift`, `SettingsView.swift`, `AppState.swift`, `MenuContent.swift`, `ProximityTracker.swift`,
+- `ProximityMonitor.swift`, `PairedDevices.swift`, `SettingsView.swift`, `AppState.swift`, `StatusItemController.swift`, `ProximityTracker.swift`,
   `AppleDeviceInfo.swift`
 - Types: `ProximityMonitor`, `ProximityTracker`, `ProximitySettings`, `WalkAwayTest`, `WalkAwayPairing`, `PairedDevices`, `AppleDeviceInfo`, `AppState`, `ScreenLocker`
 - Tests: `ProximityTrackerTests`, `AppleDeviceInfoTests`, `WalkAwayTestTests`, `WalkAwayPairingTests`

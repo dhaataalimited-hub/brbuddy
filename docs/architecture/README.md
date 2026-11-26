@@ -36,16 +36,18 @@ LE, reads its signal strength, and starts BRB (or locks the Mac) when it moves a
 ## Scenes / surfaces
 ```mermaid
 flowchart LR
-  App[BRBuddyApp] --> Menu[MenuBarExtra: MenuContent]
-  App --> Settings[Settings: SettingsView]
-  App --> Studio[Window: CompanionStudioView]
+  App[BRBuddyApp] --> Delegate[AppDelegate]
+  Delegate --> Menu[StatusItemController: NSStatusItem + NSMenu]
+  Delegate --> Windows[AppWindows]
+  Windows --> Settings[Settings window: SettingsView per SettingsTab]
+  Windows --> Studio[Companion Studio window: CompanionStudioView]
   State[AppState] --> Away[AwayController]
   Away --> Win[AwayWindow per display: AwayView]
   Win --> Unlock[UnlockPanel, main display only]
   Win --> Comp[CompanionView: CritterView or SpritePackView]
   Win --> Mirror[TerminalMirrorView, when enabled]
   Win --> Batt[BatteryBadge + BatteryFlair, on MacBooks]
-  Delegate[AppDelegate] --> Tour[TourController: HangingBuddyView + TourView panels]
+  Delegate --> Tour[TourController: HangingBuddyView + TourView panels]
   Agents[AI agent hooks] --> Hook[brbuddy-hook helper process]
   Hook --> Sock[(agents.sock)] --> Monitor[AgentMonitor]
   State --> Monitor
@@ -53,10 +55,10 @@ flowchart LR
 
 | Surface | What it is | Made by |
 |---|---|---|
-| Menu bar item | Paw icon (filled while keeping awake): keep-awake toggle, BRB now, Settings, Show tour again, Quit | `BRBuddyApp` showing `MenuContent` |
+| Menu bar item | Paw icon (filled while keeping awake): keep-awake toggle, BRB now, Settings, Show tour again, Quit. BRBuddy's own `NSStatusItem`, so it knows where the paw is | `StatusItemController`, made by `AppDelegate` |
 | First-launch tour | The companion hanging on a string under the menu bar icon (a clear borderless panel), and a four-step tour panel under it; first launch only, or from Show tour again | `TourController` hosting `HangingBuddyView` and `TourView` |
-| Companion Studio window | Build a critter from parts, preview and boop it, save it as a pack; opened from Settings → Companion | `BRBuddyApp`'s Window scene showing `CompanionStudioView` |
-| Settings window | Tabs: General (when BRB starts, when it locks for real, shortcut, launch at login), Agents, Companion, Away Screen (terminal mirror), Walk-away; fixed 540×480, each tab scrolls | `BRBuddyApp`'s Settings scene showing `SettingsView` |
+| Companion Studio window | Build a critter from parts, preview and boop it, save it as a pack; opened from Settings → Companion and the tour | `AppWindows` hosting `CompanionStudioView` |
+| Settings window | Tabs: General (when BRB starts, when it locks for real, shortcut, launch at login), Agents, Companion, Away Screen (terminal mirror), Walk-away; each tab 540×430 and scrolls; can open at any tab | `AppWindows`: a toolbar `NSTabViewController` hosting `SettingsView` per `SettingsTab` |
 | Away windows | One borderless window per display at screen-saver level, on every Space | `AwayController` makes `AwayWindow`s hosting `AwayView` |
 | Companion | Animated character on the away screen and in Settings' preview | `CompanionView` (built-in `CritterView` or pack `SpritePackView`) |
 | Terminal mirror | Read-only panel on the away screen and in Settings' preview | `TerminalMirrorView` showing `TerminalMirror`'s snapshot |
@@ -68,7 +70,7 @@ policy for `swift run`.
 ## Layers
 ```mermaid
 flowchart TD
-  Views[BRBuddy views: MenuContent, SettingsView, AwayView, UnlockPanel, PlaceholderBuddy] --> State[AppState]
+  Views[BRBuddy views: StatusItemController's menu, SettingsView, AwayView, UnlockPanel, PlaceholderBuddy] --> State[AppState]
   State --> Away[AwayController + AwayWindow]
   State --> Core[BRBuddyCore]
   Away --> Core
@@ -110,7 +112,9 @@ automatic updates; both are used only by the app target.
 ## Who owns what
 | Type | File | Created by / lifetime | Isolation / thread | Job |
 |---|---|---|---|---|
-| `BRBuddyApp` | `BRBuddy/BRBuddyApp.swift` | System, app lifetime | Main actor | Entry point; menu bar and Settings scenes; reads `AppState` from `AppDelegate` |
+| `BRBuddyApp` | `BRBuddy/BRBuddyApp.swift` | System, app lifetime | Main actor | Entry point: the SwiftUI app lifecycle, with one scene that never shows (an uninserted menu bar extra); its ⌘, command opens `AppWindows`' Settings |
+| `StatusItemController` | `BRBuddy/StatusItemController.swift` | `AppDelegate` (lazily, at launch), app lifetime | Main actor | The paw `NSStatusItem` and its `NSMenu`, rebuilt each time it opens; the icon follows keep-awake through observation; tells the tour where the paw is (`FirstLaunchTour` checks it's on screen and not behind the notch) |
+| `AppWindows` | `BRBuddy/AppWindows.swift` | `AppDelegate`, app lifetime | Main actor | Opens the Settings window (an `NSTabViewController` with a toolbar tab per `SettingsTab`, each hosting `SettingsView`) at any tab, and the Companion Studio window |
 | `AppDelegate` | `BRBuddy/AppDelegate.swift` | SwiftUI delegate adaptor, app lifetime | Main actor | Owns `AppState`, `UpdateController` and `TourController`; opens the tour on first launch; refuses to quit while BRB is up; debug-only launch hooks |
 | `UpdateController` | `BRBuddy/UpdateController.swift` | `AppDelegate`, app lifetime | Main actor | Sparkle updater; exists only when the build's Info.plist has a feed URL and public key (release builds) |
 | `AppState` | `BRBuddy/AppState.swift` | `AppDelegate`, app lifetime | `@MainActor`, `@Observable` | Owns `KeepAwake`, `AgentMonitor`, `AwayController`, settings, the 5-second idle check, the global shortcut, launch at login; decides keep-awake (by hand or for an agent) |
@@ -124,10 +128,10 @@ automatic updates; both are used only by the app target.
 | `BoopPlayer`, `BoopFlair` | `BRBuddy/BoopView.swift` | Static namespace; `CompanionView` | Main actor | Plays boop sounds; the boop's motion, effects and speech bubble |
 | `BatteryMonitor` | `BRBuddy/BatteryMonitor.swift` | `AppState`, app lifetime | `@MainActor`, `@Observable`; 1-second timer while retained | Reads the battery while BRB is up (retained by `AwayController`); holds `BatteryWatch` and the current reaction |
 | `BatteryBadge`, `BatteryFlair` | `BRBuddy/BatteryView.swift` | `AwayView`; `CompanionView` | Main actor (views) | The away screen's battery pill (liquid fill, bubbles, glow, sparks); the companion's battery props and speech bubble |
-| `TourController` | `BRBuddy/TourController.swift` | `AppDelegate` (lazily), app lifetime | `@MainActor`, `@Observable` | Opens the first-launch tour once, or from the menu; the hanging-companion and tour panels and where they go; picks the tour up again after its BRB demo through `AppState`'s away-ended callback |
-| `HangingBuddyView`, `TourView` | `BRBuddy/TourView.swift` | `TourController`'s panels | Main actor (views) | The swaying companion on its string with its speech bubble; the tour's steps (connect agents, try BRB, pick a companion, extras, done) |
+| `TourController` | `BRBuddy/TourController.swift` | `AppDelegate` (lazily), app lifetime | `@MainActor`, `@Observable` | Opens the first-launch tour once, or from the menu; the hanging-companion and tour panels and where they go (asking `StatusItemController` where the paw is); its last step ends the tour and then starts BRB |
+| `HangingBuddyView`, `TourView` | `BRBuddy/TourView.swift` | `TourController`'s panels | Main actor (views) | The swaying companion on its string with its speech bubble; the tour's steps (connect agents, pick a companion, extras, try BRB) |
 | `CritterView`, `CritterDesign` | `BRBuddy/CritterView.swift` | `CompanionView`, contact sheet | Main actor (views) | Draws and animates the six built-in critters per mood |
-| `CompanionStudioView`, `StudioSheetRenderer` | `BRBuddy/CompanionStudio.swift` | `BRBuddyApp`'s Window scene | Main actor; sheets rendered on the main actor, yielding between rows | Companion Studio: edits a `StudioDesign` with a live, boopable preview; renders the pack's two spritesheets from `CritterView`; saves through `StudioPackWriter` and picks it |
+| `CompanionStudioView`, `StudioSheetRenderer` | `BRBuddy/CompanionStudio.swift` | `AppWindows` | Main actor; sheets rendered on the main actor, yielding between rows | Companion Studio: edits a `StudioDesign` with a live, boopable preview; renders the pack's two spritesheets from `CritterView`; saves through `StudioPackWriter` and picks it |
 | `CompanionContactSheet` | `BRBuddy/CompanionContactSheet.swift` | `AppDelegate` (debug only) | Main actor | Renders every built-in in every mood to a PNG, and the app icon options |
 | `AppIconArt` | `BRBuddy/CompanionContactSheet.swift` | `CompanionContactSheet` (debug only) | Main actor | The app icon artwork, drawn with `CritterView`; option 2 ("BRB bubble") is `Config/AppIcon.icns` |
 | `PromoFilm` | `BRBuddy/PromoFilm.swift` | `AppDelegate` (debug only) | Main actor | Draws the promo film frame by frame with `CritterView`, `BoopFlair` and `AppIconArt` |
@@ -136,9 +140,8 @@ automatic updates; both are used only by the app target.
 | `ProximityMonitor` | `BRBuddy/ProximityMonitor.swift` | `AppState`, app lifetime; Bluetooth manager created only when walk-away is on or the picker is open | `@MainActor`, `@Observable`; CoreBluetooth on the main queue | Lists nearby iPhones and Watches (filters accessories by Continuity type, briefly connects to read each model, hides Macs/iPads, marks the closest); connects to the chosen one, reads RSSI every 2 s, reconnects; tells `AppState` when it leaves |
 | `PairedDevices` | `BRBuddy/PairedDevices.swift` | Static namespace | Main actor in practice | Names of phones paired in System Settings → Bluetooth (IOBluetooth); the Bluetooth settings link |
 | `AccessibilityTerminalReader` | `BRBuddy/AccessibilityTerminalReader.swift` | Static namespace | Running apps on main; AX reads off main | Text of a Terminal/iTerm2/Ghostty window; Accessibility permission prompt |
-| `MenuContent` | `BRBuddy/MenuContent.swift` | `BRBuddyApp`'s menu scene | Main actor (view) | Menu items; agent rows jump to their terminal |
 | `TerminalFocuser` | `BRBuddy/TerminalFocuser.swift` | Static namespace | Main actor; `osascript` on a detached task | Finds the running app hosting a session; selects its Terminal/iTerm2 tab by tty, else activates the app and raises the window for its folder (Accessibility) |
-| `SettingsView`, `LaunchAtLoginToggle` | `BRBuddy/SettingsView.swift` | `BRBuddyApp`'s Settings scene; the toggle also in `TourView` | Main actor (views) | Edits `AwaySettings` through `AppState`; the launch-at-login switch (shows when macOS is waiting for the user's OK in Login Items) |
+| `SettingsTab`, `SettingsView`, `LaunchAtLoginToggle` | `BRBuddy/SettingsView.swift` | `AppWindows`, one view per tab; the toggle also in `TourView` | Main actor (views) | Edits `AwaySettings` through `AppState`; the launch-at-login switch (shows when macOS is waiting for the user's OK in Login Items) |
 | `KeepAwake` | `BRBuddyCore/KeepAwake.swift` | `AppState`, app lifetime | Used from the main actor | Holds at most one IOKit power assertion; released on `deinit` |
 | `AwaySettings` | `BRBuddyCore/AwaySettings.swift` | Value, held by `AppState` and copied into `AwayController` at start | Value type | Preferences; loads with defaults and clamping, saves to UserDefaults |
 | `AwayPolicy` | `BRBuddyCore/AwayPolicy.swift` | Static namespace | Pure | When to auto-start; when to escalate |
@@ -235,6 +238,8 @@ Debug builds read these environment variables, all compiled out of release build
   website's companion images; see `site/README.md`).
 - `BRBUDDY_PROMO=<dir>` (`PromoFilm`): the 30-second promo film's frames (wide and tall) and boop sounds, then quits;
   `BRBUDDY_PROMO_ONLY=<seconds,...>` renders just those moments. `Tools/promo/make-promo.sh` turns them into MP4s.
+- `BRBUDDY_MENU_DUMP=1` prints the menu as it would open (`StatusItemController`); `BRBUDDY_OPEN_SETTINGS=<0-4>`
+  opens Settings at that tab (`AppWindows`).
 - `BRBUDDY_TOUR=1` shows the first-launch tour even if it was seen, and `BRBUDDY_TOUR_SNAPSHOTS=<dir>` saves PNGs of
   the hanging companion and every tour step (`TourController`).
 - `BRBUDDY_FAKE_BATTERY` (`BatteryMonitor`) and `BRBUDDY_SOCKET` (`AgentSocket`, used by the tests).
@@ -255,7 +260,9 @@ Debug builds read these environment variables, all compiled out of release build
 Every source file in `Sources/`. The docs test fails if a file is missing here or a listed one is gone.
 
 **BRBuddy (app)**
-- `BRBuddy/BRBuddyApp.swift`: entry point, menu bar and Settings scenes, accessory activation policy.
+- `BRBuddy/BRBuddyApp.swift`: entry point, the app lifecycle and ⌘, command, accessory activation policy.
+- `BRBuddy/StatusItemController.swift`: the paw in the menu bar and its menu.
+- `BRBuddy/AppWindows.swift`: opens the Settings and Companion Studio windows.
 - `BRBuddy/AppDelegate.swift`: owns app state and updates, blocks quitting during BRB, debug launch hooks.
 - `BRBuddy/UpdateController.swift`: Sparkle automatic updates and "Check for Updates…".
 - `BRBuddy/AppState.swift`: app state; keep-awake mode, idle check, global shortcut, launch at login.
@@ -279,7 +286,6 @@ Every source file in `Sources/`. The docs test fails if a file is missing here o
 - `BRBuddy/AccessibilityTerminalReader.swift`: reads terminal window text via Accessibility.
 - `BRBuddy/ProximityMonitor.swift`: Bluetooth device picker and walk-away watching.
 - `BRBuddy/PairedDevices.swift`: phones paired with this Mac, from macOS's paired-device list.
-- `BRBuddy/MenuContent.swift`: the menu's items.
 - `BRBuddy/TerminalFocuser.swift`: jumps from a menu row to the agent's terminal tab or window.
 - `BRBuddy/SettingsView.swift`: the Settings window and its five tabs.
 - `BRBuddy/AgentMonitor.swift`: agent events, sessions, process scan and hook setup for the app.
