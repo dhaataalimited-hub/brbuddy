@@ -158,16 +158,9 @@ skippable:
 - If the icon is hidden (behind the notch, or by a menu bar organiser), the buddy and the tour show in the middle of
   the screen instead.
 - Permissions (Accessibility, Bluetooth) are asked for only at the step that needs them.
-- **Still open (Tahoe):** on a tester's Tahoe Mac, clicking the hanging companion still doesn't open the tour in
-  0.1.5 (the 15-second climb-away works). 0.1.5 let its panel become key and take the first click, which fixed
-  nothing there. Next ideas: handle the click in AppKit instead of a SwiftUI tap gesture, check whether the click
-  reaches the panel at all (Phase 11's logs will show it), and let clicking the paw open the tour while the
-  companion is hanging. A restart of that Mac is being tried first.
-- The hanging buddy is drawn over any pack (string and swing added on top), and is the same piece Phase 8's
-  **Hang out** mode uses.
-
-Phase 8 gains a fourth mode, **Hang out:** the buddy dangles under its menu bar icon, sways when the mouse comes near,
-drops down to wave when the agent finishes, and climbs back up.
+- **Fixed in 0.1.6 (Tahoe):** clicks on the hanging companion fell through to the window behind it, because macOS
+  judged its see-through panel per pixel. The panel now takes mouse events outright. (0.1.5 let it take the first
+  click and added the 15-second climb-away, which wasn't enough on its own.)
 
 ## Phase 11: Send logs (planned 2026-11-27, next up)
 Bugs on other people's Macs (like the Tahoe tour click) can't be seen from here. BRBuddy should keep a log a user can

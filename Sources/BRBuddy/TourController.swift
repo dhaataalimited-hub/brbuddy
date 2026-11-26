@@ -173,6 +173,9 @@ final class TourController {
         panel.level = .statusBar
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         panel.hidesOnDeactivate = false
+        // Set outright: left at its default, macOS decides per pixel whether a see-through window takes a click, and
+        // on Tahoe clicks on the companion fell through to the window behind it.
+        panel.ignoresMouseEvents = false
         panel.contentView = FirstClickHostingView(rootView: HangingBuddyView(tour: self))
         return panel
     }

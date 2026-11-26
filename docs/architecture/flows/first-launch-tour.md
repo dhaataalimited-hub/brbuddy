@@ -58,10 +58,11 @@ flowchart LR
 - Try BRB is the last step on purpose: BRB hides the menu bar and Dock, and anything reopened right after it has to
   find the paw while the menu bar is still coming back. Ending the tour first means nothing does. `FirstLaunchTourTests`
   checks it stays last.
-- The hanging panel can become key and its hosting view takes the first click (both private to
-  `TourController.swift`). Without that, a borderless panel in an app that isn't in front swallows every click, so
-  the companion couldn't be clicked after an install or update (0.1.4 and earlier); it worked when started from
-  Terminal only because BRBuddy was in front. The bubble's × uses a fixed dark colour so it shows in dark mode.
+- The hanging panel sets `ignoresMouseEvents` to false outright. Left at its default, macOS decides per pixel
+  whether a see-through window takes a click, and on Tahoe clicks on the companion fell through to the window behind
+  it (fixed in 0.1.6). It can also become key and its hosting view takes the first click (both private to
+  `TourController.swift`, since 0.1.5), so the click works while another app is in front. The bubble's × uses a
+  fixed dark colour so it shows in dark mode.
 - Debug builds: `BRBUDDY_TOUR=1` forces the tour; `BRBUDDY_TOUR_SNAPSHOTS=<dir>` renders the companion and each step.
 
 ## Code to check
