@@ -49,3 +49,8 @@ ffmpeg -y -i $F/tall/0540.png -vf scale=720:1280 -q:v 4 site/img/promo-poster-ta
    Verify the domain for the account first (Settings → Pages on your profile → Add a domain) so nobody else can
    claim it, then tick **Enforce HTTPS** once the certificate is issued.
 4. If the domain isn't `brbuddy.app`, update `og:url` and `og:image` at the top of `index.html`.
+
+## Version badge
+The hero's version badge (`<b data-version>`) is stamped in by `.github/workflows/pages.yml` from the latest GitHub
+release each time the site deploys, and the site redeploys after every successful Release run. The value in
+`index.html` is only what a local preview shows.

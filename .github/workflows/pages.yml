@@ -1,11 +1,15 @@
 # Publishes the website in site/ to GitHub Pages. Needs Pages turned on once with "Source: GitHub Actions"
-# (see site/README.md). Runs when site/ changes on main, or by hand.
+# (see site/README.md). Runs when site/ changes on main, after each release (so the version badge is current), or by
+# hand. The badge's version is stamped in at deploy time from the latest GitHub release.
 name: Website
 
 on:
   push:
     branches: [main]
     paths: ["site/**", ".github/workflows/pages.yml"]
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -17,6 +21,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,6 +32,15 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
+      - name: Stamp the latest release version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)
+          echo "Latest release: $tag"
+          [[ "$tag" =~ ^v[0-9]+(\.[0-9]+)*$ ]] || { echo "Unexpected tag '$tag'"; exit 1; }
+          sed -i "s|<b data-version>[^<]*</b>|<b data-version>$tag</b>|" site/index.html
+          grep -q "<b data-version>$tag</b>" site/index.html
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d  # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
         with:
